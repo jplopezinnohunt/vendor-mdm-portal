@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Proveedores - MDM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .status {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            margin-top: 1rem;
+        }
+        .btn:hover {
+            background: #5568d3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 Portal de Proveedores</h1>
+        <p class="subtitle">Sistema de Gesti\u00f3n de Maestro de Datos</p>
+        
+        <div class="status">
+            <h3>Estado del Sistema</h3>
+            <p>✅ Conectado con Azure Static Web App</p>
+            <p>🔗 Preparado para integraci\u00f3n con SAP ECC</p>
+        </div>
+        
+        <button class="btn" onclick="alert('Portal en desarrollo. Pr\u00f3ximamente: registro de proveedores')">Registrar Nuevo Proveedor</button>
+        <button class="btn" onclick="alert('Portal en desarrollo. Pr\u00f3ximamente: acceso a proveedores')">Acceso Proveedores Existentes</button>
+    </div>
+</body>
+</html>
