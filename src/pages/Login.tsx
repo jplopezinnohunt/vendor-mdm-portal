@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth, UserRole } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserPlus, Building2, ArrowRight, ShieldCheck, UserCog } from 'lucide-react';
+import { VersionInfo } from '../components/VersionInfo';
 
 export const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
@@ -39,11 +40,11 @@ export const Login: React.FC = () => {
           <p className="text-gray-600 mb-8 h-12">
             Submit your application to become an authorized supplier.
           </p>
-          <Link 
-            to="/register" 
+          <Link
+            to="/register"
             className="inline-flex items-center text-blue-600 font-semibold hover:text-blue-700 text-lg group"
           >
-            Start Application 
+            Start Application
             <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
@@ -57,11 +58,11 @@ export const Login: React.FC = () => {
           <p className="text-gray-600 mb-8 h-12">
             Log in to update your company details, tax info, and services.
           </p>
-          <button 
+          <button
             onClick={() => handleLogin('Vendor')}
             className="inline-flex items-center text-green-600 font-semibold hover:text-green-700 text-lg group bg-transparent border-none p-0 cursor-pointer focus:outline-none"
           >
-            Access Portal 
+            Access Portal
             <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
@@ -73,14 +74,14 @@ export const Login: React.FC = () => {
           Internal System Access (Demo)
         </p>
         <div className="flex justify-center space-x-8">
-          <button 
+          <button
             onClick={() => handleLogin('Approver')}
             className="flex items-center text-sm text-gray-500 hover:text-brand-600 transition-colors"
           >
             <ShieldCheck className="h-4 w-4 mr-2" />
             Log in as Approver
           </button>
-          <button 
+          <button
             onClick={() => handleLogin('Admin')}
             className="flex items-center text-sm text-gray-500 hover:text-brand-600 transition-colors"
           >
@@ -90,8 +91,11 @@ export const Login: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-12 text-center text-sm text-gray-400">
-        &copy; {new Date().getFullYear()} Vendor Master Data Portal. Secured by Azure AD.
+      <div className="mt-12 text-center">
+        <div className="text-sm text-gray-400 mb-2">
+          &copy; {new Date().getFullYear()} Vendor Master Data Portal. Secured by Azure AD.
+        </div>
+        <VersionInfo />
       </div>
     </div>
   );
