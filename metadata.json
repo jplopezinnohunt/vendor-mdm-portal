@@ -1,0 +1,5 @@
+{
+  "name": "Vendor Master Data Portal",
+  "description": "A self-service portal for vendors to onboard, view their master data from SAP, and submit change requests via a serverless Azure architecture.",
+  "requestFramePermissions": []
+}
