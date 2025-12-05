@@ -24,25 +24,65 @@ builder.Services.AddCors(options =>
         });
 });
 
-// 1. Azure Clients (Managed Identity)
+// --- CONNECTION STRING LOGIC ---
+var useLocalEmulators = builder.Configuration.GetValue<bool>("UseLocalEmulators");
+var sqlConnection = builder.Configuration.GetConnectionString("Sql");
+var cosmosConnection = builder.Configuration.GetConnectionString("Cosmos");
+var serviceBusConnection = builder.Configuration.GetConnectionString("ServiceBus");
+
+// Auto-fallback: If Azure connection strings are still placeholders, use local emulators
+if (!useLocalEmulators && (sqlConnection.Contains("YOUR_SERVER_NAME") || string.IsNullOrEmpty(sqlConnection)))
+{
+    Console.WriteLine("⚠️ Azure connection strings are placeholders. Falling back to Local Emulators.");
+    useLocalEmulators = true;
+}
+
+if (useLocalEmulators)
+{
+    Console.WriteLine("🔧 Using Local Emulators for development.");
+    sqlConnection = builder.Configuration.GetSection("LocalConnectionStrings")["Sql"];
+    cosmosConnection = builder.Configuration.GetSection("LocalConnectionStrings")["Cosmos"];
+    serviceBusConnection = builder.Configuration.GetSection("LocalConnectionStrings")["ServiceBus"];
+}
+else
+{
+    Console.WriteLine("☁️ Using Azure Resources.");
+}
+
+// 1. Azure Clients
 builder.Services.AddAzureClients(clientBuilder =>
 {
     // Service Bus
-    clientBuilder.AddServiceBusClient(builder.Configuration.GetConnectionString("ServiceBus"));
+    clientBuilder.AddServiceBusClient(serviceBusConnection);
     
-    // Default Credential (Managed Identity in Azure, VS Creds locally)
-    clientBuilder.UseCredential(new DefaultAzureCredential());
+    // Default Credential (only needed for Azure Identity, not connection strings with keys)
+    if (!useLocalEmulators && !serviceBusConnection.Contains("SharedAccessKey"))
+    {
+        clientBuilder.UseCredential(new DefaultAzureCredential());
+    }
 });
 
 // 2. SQL Database
 builder.Services.AddDbContext<SqlDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("Sql")));
+    options.UseSqlServer(sqlConnection));
 
 // 3. Cosmos DB
 builder.Services.AddSingleton<CosmosClient>(sp =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("Cosmos");
-    return new CosmosClient(connectionString, new DefaultAzureCredential());
+    if (useLocalEmulators)
+    {
+        // Emulator usually uses a key, not Managed Identity
+        return new CosmosClient(cosmosConnection);
+    }
+    else
+    {
+        // Azure: Use Managed Identity if no key in connection string, otherwise use string
+        if (cosmosConnection.Contains("AccountKey"))
+        {
+            return new CosmosClient(cosmosConnection);
+        }
+        return new CosmosClient(cosmosConnection, new DefaultAzureCredential());
+    }
 });
 
 // 4. Custom Services
