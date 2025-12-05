@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth, UserRole } from './context/AuthContext';
 import { MainLayout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -42,11 +42,11 @@ const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<VendorRegistration />} />
-          
+
           {/* Main Layout Wrapper */}
           <Route path="/" element={
             <ProtectedRoute>
@@ -55,7 +55,7 @@ const App: React.FC = () => {
           }>
             {/* VENDOR ROUTES */}
             <Route index element={<RoleBasedRedirect />} />
-            
+
             <Route path="profile" element={
               <ProtectedRoute allowedRoles={['Vendor']}>
                 <VendorProfile />
@@ -83,7 +83,7 @@ const App: React.FC = () => {
                 <ApproverDashboard mode="worklist" />
               </ProtectedRoute>
             } />
-             <Route path="approver/history" element={
+            <Route path="approver/history" element={
               <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <ApproverDashboard mode="history" />
               </ProtectedRoute>
@@ -105,7 +105,7 @@ const App: React.FC = () => {
                 <AdminDashboard />
               </ProtectedRoute>
             } />
-             <Route path="admin/rules" element={
+            <Route path="admin/rules" element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <AdminDashboard />
               </ProtectedRoute>
@@ -115,7 +115,7 @@ const App: React.FC = () => {
           {/* Catch all */}
           <Route path="*" element={<RoleBasedRedirect />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </AuthProvider>
   );
 };
@@ -123,12 +123,12 @@ const App: React.FC = () => {
 // Helper to redirect to correct home page based on role
 const RoleBasedRedirect = () => {
   const { user, isLoading } = useAuth();
-  
+
   if (isLoading) return null;
-  
+
   if (user?.role === 'Approver') return <Navigate to="/approver/worklist" replace />;
   if (user?.role === 'Admin') return <Navigate to="/admin/dashboard" replace />;
-  
+
   // Default to Vendor profile
   return <Navigate to="/profile" replace />;
 };

@@ -18,7 +18,7 @@ export const VendorRegistration: React.FC = () => {
   const onSubmit = async (data: RegistrationForm) => {
     // In a real implementation, this would POST to the Prospect API
     console.log('Prospect Registration:', data);
-    
+
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     setSubmitted(true);
@@ -28,20 +28,20 @@ export const VendorRegistration: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
-           <Card>
-             <div className="text-center py-8">
-               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
-                 <CheckCircle className="h-6 w-6 text-green-600" />
-               </div>
-               <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
-               <p className="text-gray-600 mb-6 px-4">
-                 Thank you for your interest. We have received your application and sent a confirmation email to <strong>{document.querySelector('input[type="email"]')?.getAttribute('value')}</strong>.
-               </p>
-               <Link to="/login">
-                 <Button className="w-full">Return to Home</Button>
-               </Link>
-             </div>
-           </Card>
+          <Card>
+            <div className="text-center py-8">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 mb-4">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Application Submitted!</h2>
+              <p className="text-gray-600 mb-6 px-4">
+                Thank you for your interest. We have received your application and sent a confirmation email to <strong>{document.querySelector('input[type="email"]')?.getAttribute('value')}</strong>.
+              </p>
+              <Link to="/login">
+                <Button className="w-full">Return to Home</Button>
+              </Link>
+            </div>
+          </Card>
         </div>
       </div>
     );
@@ -53,7 +53,7 @@ export const VendorRegistration: React.FC = () => {
         <Link to="/login" className="text-sm font-medium text-brand-600 hover:text-brand-500 mb-6 inline-block">
           &larr; Back to Login
         </Link>
-        
+
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">New Vendor Application</h1>
           <p className="mt-2 text-gray-600">
@@ -65,17 +65,17 @@ export const VendorRegistration: React.FC = () => {
           <Card>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="md:col-span-2">
-                <Input 
-                  label="Company Name" 
+                <Input
+                  label="Company Name"
                   {...register('companyName', { required: 'Company name is required' })}
                   error={errors.companyName?.message}
                   placeholder="Legal entity name"
                 />
               </div>
-              
+
               <div>
-                <Input 
-                  label="Tax ID / VAT Number" 
+                <Input
+                  label="Tax ID / VAT Number"
                   {...register('taxId', { required: 'Tax ID is required' })}
                   error={errors.taxId?.message}
                   placeholder="e.g. US-123456789"
@@ -83,8 +83,8 @@ export const VendorRegistration: React.FC = () => {
               </div>
 
               <div>
-                <Input 
-                  label="Contact Person" 
+                <Input
+                  label="Contact Person"
                   {...register('contactName', { required: 'Contact name is required' })}
                   error={errors.contactName?.message}
                   placeholder="Full name"
@@ -92,10 +92,10 @@ export const VendorRegistration: React.FC = () => {
               </div>
 
               <div className="md:col-span-2">
-                <Input 
-                  label="Email Address" 
+                <Input
+                  label="Email Address"
                   type="email"
-                  {...register('email', { 
+                  {...register('email', {
                     required: 'Email is required',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -113,6 +113,17 @@ export const VendorRegistration: React.FC = () => {
               <Button type="submit" className="w-full justify-center" size="lg">
                 Submit Application
               </Button>
+            </div>
+            {/* Service Indicators */}
+            <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="h-1.5 w-1.5 bg-blue-500 rounded-full"></div>
+                <span>Form Validation: Client-side</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <div className="h-1.5 w-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
+                <span>Submission: Mock (Not Persisted)</span>
+              </div>
             </div>
           </Card>
         </form>

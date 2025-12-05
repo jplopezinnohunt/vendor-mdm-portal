@@ -34,18 +34,18 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      
+
       const [allChangeRequests, allOnboarding] = await Promise.all([
         VendorService.getAllChangeRequests(),
         VendorService.getOnboardingRequests()
       ]);
 
       if (mode === 'worklist') {
-         // Filter for items that need attention
-        const pendingChanges = allChangeRequests.filter(r => 
-            r.status === ChangeRequestStatus.New || 
-            r.status === ChangeRequestStatus.InReview ||
-            r.status === ChangeRequestStatus.Applied 
+        // Filter for items that need attention
+        const pendingChanges = allChangeRequests.filter(r =>
+          r.status === ChangeRequestStatus.New ||
+          r.status === ChangeRequestStatus.InReview ||
+          r.status === ChangeRequestStatus.Applied
         );
         const pendingOnboarding = allOnboarding.filter(a => a.status === ApplicationStatus.Submitted);
 
@@ -53,21 +53,21 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
         setOnboardingRequests(pendingOnboarding);
       } else {
         // History Mode: Final statuses
-        const historyChanges = allChangeRequests.filter(r => 
-            r.status === ChangeRequestStatus.Approved || 
-            r.status === ChangeRequestStatus.Rejected ||
-            r.status === ChangeRequestStatus.Applied ||
-            r.status === ChangeRequestStatus.Error
+        const historyChanges = allChangeRequests.filter(r =>
+          r.status === ChangeRequestStatus.Approved ||
+          r.status === ChangeRequestStatus.Rejected ||
+          r.status === ChangeRequestStatus.Applied ||
+          r.status === ChangeRequestStatus.Error
         );
-        const historyOnboarding = allOnboarding.filter(a => 
-            a.status === ApplicationStatus.Approved || 
-            a.status === ApplicationStatus.Rejected
+        const historyOnboarding = allOnboarding.filter(a =>
+          a.status === ApplicationStatus.Approved ||
+          a.status === ApplicationStatus.Rejected
         );
 
         setChangeRequests(historyChanges);
         setOnboardingRequests(historyOnboarding);
       }
-    
+
       setLoading(false);
     };
 
@@ -78,7 +78,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   const highRiskCount = changeRequests.filter(r => r.items.some(i => i.isSensitive)).length;
 
   // Filter Logic
-  const filteredOnboarding = onboardingRequests.filter(app => 
+  const filteredOnboarding = onboardingRequests.filter(app =>
     app.id.toLowerCase().includes(obFilters.id.toLowerCase()) &&
     app.companyName.toLowerCase().includes(obFilters.company.toLowerCase()) &&
     app.taxId.toLowerCase().includes(obFilters.tax.toLowerCase()) &&
@@ -89,11 +89,11 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
     const isSensitive = req.items.some(i => i.isSensitive);
     const risk = isSensitive ? 'High Risk' : 'Standard';
     return (
-       req.id.toLowerCase().includes(crFilters.id.toLowerCase()) &&
-       req.vendorId.toLowerCase().includes(crFilters.vendor.toLowerCase()) &&
-       (crFilters.type === '' || req.requestType === crFilters.type) &&
-       (crFilters.status === '' || req.status === crFilters.status) &&
-       (crFilters.risk === '' || risk === crFilters.risk)
+      req.id.toLowerCase().includes(crFilters.id.toLowerCase()) &&
+      req.vendorId.toLowerCase().includes(crFilters.vendor.toLowerCase()) &&
+      (crFilters.type === '' || req.requestType === crFilters.type) &&
+      (crFilters.status === '' || req.status === crFilters.status) &&
+      (crFilters.risk === '' || risk === crFilters.risk)
     );
   });
 
@@ -101,11 +101,11 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   const getOnboardingStatusDisplay = (app: VendorApplication) => {
     if (app.status === ApplicationStatus.Approved) return { label: 'Approved', style: 'bg-green-100 text-green-800' };
     if (app.status === ApplicationStatus.Rejected) return { label: 'Rejected', style: 'bg-red-100 text-red-800' };
-    
+
     // Status is Submitted, check sanctions
     if (app.sanctionCheckStatus === 'Pending') return { label: 'Sanction Screening', style: 'bg-yellow-100 text-yellow-800' };
     if (app.sanctionCheckStatus === 'Failed') return { label: 'Sanction Failed', style: 'bg-red-100 text-red-800' };
-    
+
     // Passed sanctions, so it's in internal review
     return { label: 'Internal Review', style: 'bg-blue-100 text-blue-800' };
   };
@@ -114,28 +114,28 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   const FilterInput = ({ value, onChange, placeholder }: { value: string, onChange: (val: string) => void, placeholder?: string }) => (
     <div className="relative rounded-md shadow-sm mt-1">
       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-2">
-         <Search className="h-3 w-3 text-gray-400" />
+        <Search className="h-3 w-3 text-gray-400" />
       </div>
-      <input 
-          type="text" 
-          className="block w-full rounded-md border-gray-300 pl-8 focus:border-brand-500 focus:ring-brand-500 sm:text-xs py-1" 
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+      <input
+        type="text"
+        className="block w-full rounded-md border-gray-300 pl-8 focus:border-brand-500 focus:ring-brand-500 sm:text-xs py-1"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
       />
     </div>
   );
 
   const FilterSelect = ({ value, onChange, options }: { value: string, onChange: (val: string) => void, options: string[] }) => (
-    <select 
+    <select
       className="block w-full rounded-md border-gray-300 focus:border-brand-500 focus:ring-brand-500 sm:text-xs py-1 mt-1"
       value={value}
       onChange={(e) => onChange(e.target.value)}
     >
-        <option value="">All</option>
-        {options.map((opt) => (
-            <option key={opt} value={opt}>{opt}</option>
-        ))}
+      <option value="">All</option>
+      {options.map((opt) => (
+        <option key={opt} value={opt}>{opt}</option>
+      ))}
     </select>
   );
 
@@ -144,34 +144,49 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
       <div className="sm:flex sm:items-center">
         <div className="sm:flex-auto">
           <h1 className="text-2xl font-bold text-gray-900">
-              {mode === 'worklist' ? 'Approver Worklist' : 'Request History'}
+            {mode === 'worklist' ? 'Approver Worklist' : 'Request History'}
           </h1>
           <p className="mt-2 text-sm text-gray-700">
-            {mode === 'worklist' 
-                ? 'Review pending onboarding applications and master data change requests.'
-                : 'View past decisions and finalized requests.'}
+            {mode === 'worklist'
+              ? 'Review pending onboarding applications and master data change requests.'
+              : 'View past decisions and finalized requests.'}
           </p>
+          {/* Service Indicators */}
+          <div className="mt-4 flex items-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="h-1.5 w-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
+              <span>Change Requests: 3 Mock Items</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="h-1.5 w-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
+              <span>Onboarding: 2 Mock Applications</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <div className="h-1.5 w-1.5 bg-blue-500 rounded-full"></div>
+              <span>Filtering: Client-side</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* KPI Cards - Only show in Worklist mode */}
       {mode === 'worklist' && (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
-          <dt className="truncate text-sm font-medium text-gray-500">Total Pending</dt>
-          <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{totalCount}</dd>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
+            <dt className="truncate text-sm font-medium text-gray-500">Total Pending</dt>
+            <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{totalCount}</dd>
+          </div>
+          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
+            <dt className="truncate text-sm font-medium text-gray-500">New Onboarding</dt>
+            <dd className="mt-1 text-3xl font-semibold tracking-tight text-blue-600">{onboardingRequests.length}</dd>
+          </div>
+          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
+            <dt className="truncate text-sm font-medium text-gray-500">High Risk Changes</dt>
+            <dd className="mt-1 text-3xl font-semibold tracking-tight text-red-600">
+              {highRiskCount}
+            </dd>
+          </div>
         </div>
-        <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
-          <dt className="truncate text-sm font-medium text-gray-500">New Onboarding</dt>
-          <dd className="mt-1 text-3xl font-semibold tracking-tight text-blue-600">{onboardingRequests.length}</dd>
-        </div>
-        <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
-          <dt className="truncate text-sm font-medium text-gray-500">High Risk Changes</dt>
-          <dd className="mt-1 text-3xl font-semibold tracking-tight text-red-600">
-             {highRiskCount}
-          </dd>
-        </div>
-      </div>
       )}
 
       {/* Tabs */}
@@ -179,11 +194,10 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           <button
             onClick={() => setActiveTab('onboarding')}
-            className={`${
-              activeTab === 'onboarding'
+            className={`${activeTab === 'onboarding'
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
           >
             <UserPlus className={`mr-2 h-5 w-5 ${activeTab === 'onboarding' ? 'text-brand-500' : 'text-gray-400'}`} />
             Onboarding Requests
@@ -193,11 +207,10 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
           </button>
           <button
             onClick={() => setActiveTab('changes')}
-            className={`${
-              activeTab === 'changes'
+            className={`${activeTab === 'changes'
                 ? 'border-brand-500 text-brand-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
           >
             <FileText className={`mr-2 h-5 w-5 ${activeTab === 'changes' ? 'text-brand-500' : 'text-gray-400'}`} />
             Vendor Master Data Changes
@@ -237,21 +250,21 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                   {/* Filter Row */}
                   <tr className="bg-gray-50">
                     <td className="px-6 py-2">
-                       <FilterInput value={obFilters.id} onChange={(v) => setObFilters({...obFilters, id: v})} placeholder="Filter ID" />
+                      <FilterInput value={obFilters.id} onChange={(v) => setObFilters({ ...obFilters, id: v })} placeholder="Filter ID" />
                     </td>
                     <td className="px-6 py-2">
-                       <FilterInput value={obFilters.company} onChange={(v) => setObFilters({...obFilters, company: v})} placeholder="Filter Name" />
+                      <FilterInput value={obFilters.company} onChange={(v) => setObFilters({ ...obFilters, company: v })} placeholder="Filter Name" />
                     </td>
                     <td className="px-6 py-2">
-                       <FilterInput value={obFilters.tax} onChange={(v) => setObFilters({...obFilters, tax: v})} placeholder="Filter Tax" />
+                      <FilterInput value={obFilters.tax} onChange={(v) => setObFilters({ ...obFilters, tax: v })} placeholder="Filter Tax" />
                     </td>
                     <td className="px-6 py-2"></td>
                     <td className="px-6 py-2">
-                       <FilterSelect 
-                         value={obFilters.status} 
-                         onChange={(v) => setObFilters({...obFilters, status: v})} 
-                         options={Object.values(ApplicationStatus)} 
-                       />
+                      <FilterSelect
+                        value={obFilters.status}
+                        onChange={(v) => setObFilters({ ...obFilters, status: v })}
+                        options={Object.values(ApplicationStatus)}
+                      />
                     </td>
                     <td className="px-6 py-2"></td>
                   </tr>
@@ -265,31 +278,32 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                     filteredOnboarding.map((app) => {
                       const statusDisplay = getOnboardingStatusDisplay(app);
                       return (
-                      <tr key={app.id}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{app.id}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{app.companyName}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{app.taxId}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                          {new Date(app.submittedAt).toLocaleDateString()}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusDisplay.style}`}>
-                            {statusDisplay.label}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                          {mode === 'worklist' ? (
-                            <Link to={`/approver/onboarding/${app.id}`}>
+                        <tr key={app.id}>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{app.id}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">{app.companyName}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{app.taxId}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                            {new Date(app.submittedAt).toLocaleDateString()}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusDisplay.style}`}>
+                              {statusDisplay.label}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                            {mode === 'worklist' ? (
+                              <Link to={`/approver/onboarding/${app.id}`}>
                                 <Button size="sm" variant="outline">
-                                <CheckSquare className="mr-2 h-3 w-3" /> Review
+                                  <CheckSquare className="mr-2 h-3 w-3" /> Review
                                 </Button>
-                            </Link>
-                          ) : (
-                            <span className="text-gray-400 text-xs">Closed</span>
-                          )}
-                        </td>
-                      </tr>
-                    )})
+                              </Link>
+                            ) : (
+                              <span className="text-gray-400 text-xs">Closed</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
                   )}
                 </tbody>
               </table>
@@ -310,35 +324,35 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-32">Risk Level</th>
                     <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                   </tr>
-                   {/* Filter Row */}
+                  {/* Filter Row */}
                   <tr className="bg-gray-50">
                     <td className="px-6 py-2">
-                       <FilterInput value={crFilters.id} onChange={(v) => setCrFilters({...crFilters, id: v})} placeholder="Filter ID" />
+                      <FilterInput value={crFilters.id} onChange={(v) => setCrFilters({ ...crFilters, id: v })} placeholder="Filter ID" />
                     </td>
                     <td className="px-6 py-2">
-                       <FilterInput value={crFilters.vendor} onChange={(v) => setCrFilters({...crFilters, vendor: v})} placeholder="Filter Vendor" />
+                      <FilterInput value={crFilters.vendor} onChange={(v) => setCrFilters({ ...crFilters, vendor: v })} placeholder="Filter Vendor" />
                     </td>
                     <td className="px-6 py-2">
-                        <FilterSelect 
-                         value={crFilters.type} 
-                         onChange={(v) => setCrFilters({...crFilters, type: v})} 
-                         options={Object.values(RequestType)} 
-                       />
+                      <FilterSelect
+                        value={crFilters.type}
+                        onChange={(v) => setCrFilters({ ...crFilters, type: v })}
+                        options={Object.values(RequestType)}
+                      />
                     </td>
                     <td className="px-6 py-2"></td>
                     <td className="px-6 py-2">
-                       <FilterSelect 
-                         value={crFilters.status} 
-                         onChange={(v) => setCrFilters({...crFilters, status: v})} 
-                         options={Object.values(ChangeRequestStatus)} 
-                       />
+                      <FilterSelect
+                        value={crFilters.status}
+                        onChange={(v) => setCrFilters({ ...crFilters, status: v })}
+                        options={Object.values(ChangeRequestStatus)}
+                      />
                     </td>
                     <td className="px-6 py-2">
-                       <FilterSelect 
-                         value={crFilters.risk} 
-                         onChange={(v) => setCrFilters({...crFilters, risk: v})} 
-                         options={['Standard', 'High Risk']} 
-                       />
+                      <FilterSelect
+                        value={crFilters.risk}
+                        onChange={(v) => setCrFilters({ ...crFilters, risk: v })}
+                        options={['Standard', 'High Risk']}
+                      />
                     </td>
                     <td className="px-6 py-2"></td>
                   </tr>
@@ -363,25 +377,25 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                             <StatusBadge status={req.status} />
                           </td>
                           <td className="whitespace-nowrap px-6 py-4 text-sm">
-                             {isSensitive ? (
-                                <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
-                                  High Risk
-                                </span>
-                             ) : (
-                                <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
-                                  Standard
-                                </span>
-                             )}
+                            {isSensitive ? (
+                              <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                                High Risk
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                                Standard
+                              </span>
+                            )}
                           </td>
                           <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
                             {mode === 'worklist' ? (
-                                <Link to={`/approver/requests/${req.id}`}>
+                              <Link to={`/approver/requests/${req.id}`}>
                                 <Button size="sm" variant="outline">
-                                    <CheckSquare className="mr-2 h-3 w-3" /> Review
+                                  <CheckSquare className="mr-2 h-3 w-3" /> Review
                                 </Button>
-                                </Link>
+                              </Link>
                             ) : (
-                                <span className="text-gray-400 text-xs">Closed</span>
+                              <span className="text-gray-400 text-xs">Closed</span>
                             )}
                           </td>
                         </tr>

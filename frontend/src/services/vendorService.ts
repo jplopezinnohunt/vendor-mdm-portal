@@ -1,5 +1,5 @@
-
 import { VendorMasterData, ChangeRequest, ChangeRequestStatus, RequestType, VendorApplication, ApplicationStatus } from '../types';
+import { api } from './api';
 
 // Mock data to simulate Backend/SAP ECC response
 const MOCK_VENDOR_DATA: VendorMasterData = {
@@ -116,44 +116,92 @@ export const VendorService = {
   // --- Vendor Methods ---
 
   getCurrentVendor: async (): Promise<VendorMasterData> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve(MOCK_VENDOR_DATA), 800);
-    });
+    try {
+      // Try Real Backend
+      const response = await api.get('/vendor/100450');
+      const data = response.data;
+
+      // Map Backend DTO to Frontend Type
+      return {
+        sapVendorId: data.vendorId || '100450',
+        name: data.name || 'Acme Corp',
+        legalForm: 'Inc.',
+        taxNumber1: 'US123456789',
+        address: {
+          street: data.address || '123 Innovation Drive',
+          city: 'Tech Park',
+          postalCode: '94000',
+          country: 'US'
+        },
+        email: 'finance@acme.com',
+        phone: '+1 555 0123',
+        banks: MOCK_VENDOR_DATA.banks
+      };
+    } catch (error) {
+      console.warn('Backend unreachable, using Mock Data for Vendor', error);
+      return new Promise((resolve) => {
+        setTimeout(() => resolve(MOCK_VENDOR_DATA), 800);
+      });
+    }
   },
 
   getChangeRequests: async (): Promise<ChangeRequest[]> => {
-    return new Promise((resolve) => {
-      // Filter for current mock user (100450)
-      const myRequests = MOCK_REQUESTS_DB.filter(r => r.vendorId === '100450');
-      setTimeout(() => resolve(myRequests), 600);
-    });
+    try {
+      const response = await api.get('/changerequest/vendor/100450');
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unreachable, using Mock Data for Change Requests', error);
+      return new Promise((resolve) => {
+        const myRequests = MOCK_REQUESTS_DB.filter(r => r.vendorId === '100450');
+        setTimeout(() => resolve(myRequests), 600);
+      });
+    }
   },
 
   submitChangeRequest: async (
-    deltaItems: any[], 
+    deltaItems: any[],
     attachments: File[]
   ): Promise<ChangeRequest> => {
-    return new Promise((resolve) => {
-      const newReq: ChangeRequest = {
-        id: `cr-${Date.now()}`,
-        vendorId: '100450',
-        requestType: RequestType.General, // Simplified logic
-        status: ChangeRequestStatus.New, // Starts as NEW/Draft or IN_REVIEW based on auto-rules
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        items: deltaItems,
-        attachments: [] // Mock: attachments not actually stored in simulated DB array
+    try {
+      const payload = {
+        requesterId: '00000000-0000-0000-0000-000000000001',
+        sapVendorId: '100450',
+        payload: { items: deltaItems }
       };
-      
-      MOCK_REQUESTS_DB.unshift(newReq);
-      
-      setTimeout(() => resolve(newReq), 1000);
-    });
+      const response = await api.post('/changerequest', payload);
+
+      const backendReq = response.data;
+      return {
+        id: backendReq.id,
+        vendorId: backendReq.sapVendorId || '100450',
+        requestType: RequestType.General,
+        status: ChangeRequestStatus.New,
+        createdAt: backendReq.createdAt,
+        updatedAt: backendReq.updatedAt || backendReq.createdAt,
+        items: deltaItems,
+        attachments: []
+      };
+    } catch (error) {
+      console.warn('Backend unreachable, simulating Submit', error);
+      return new Promise((resolve) => {
+        const newReq: ChangeRequest = {
+          id: `cr-${Date.now()}`,
+          vendorId: '100450',
+          requestType: RequestType.General,
+          status: ChangeRequestStatus.New,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          items: deltaItems,
+          attachments: []
+        };
+        MOCK_REQUESTS_DB.unshift(newReq);
+        setTimeout(() => resolve(newReq), 1000);
+      });
+    }
   },
 
   // --- Approver / Admin Methods ---
 
-  // Get Onboarding Requests
   getOnboardingRequests: async (): Promise<VendorApplication[]> => {
     return new Promise((resolve) => {
       setTimeout(() => resolve([...MOCK_ONBOARDING_DB]), 600);
@@ -172,46 +220,56 @@ export const VendorService = {
       const idx = MOCK_ONBOARDING_DB.findIndex(a => a.id === id);
       if (idx >= 0) {
         MOCK_ONBOARDING_DB[idx] = {
-            ...MOCK_ONBOARDING_DB[idx],
-            status: status
+          ...MOCK_ONBOARDING_DB[idx],
+          status: status
         };
       }
       setTimeout(resolve, 800);
     });
   },
 
-  // Get ALL requests (Worklist)
   getAllChangeRequests: async (): Promise<ChangeRequest[]> => {
     return new Promise((resolve) => {
       setTimeout(() => resolve([...MOCK_REQUESTS_DB]), 600);
     });
   },
 
-  // Get Single Request by ID
   getChangeRequestById: async (id: string): Promise<ChangeRequest | undefined> => {
-    return new Promise((resolve) => {
-      const req = MOCK_REQUESTS_DB.find(r => r.id === id);
-      setTimeout(() => resolve(req), 400);
-    });
+    try {
+      const response = await api.get(`/changerequest/${id}`);
+      return response.data;
+    } catch (error) {
+      console.warn('Backend unreachable, using Mock Data for Request Details', error);
+      return new Promise((resolve) => {
+        const req = MOCK_REQUESTS_DB.find(r => r.id === id);
+        setTimeout(() => resolve(req), 400);
+      });
+    }
   },
 
-  // Approve or Reject
   processChangeRequest: async (id: string, status: ChangeRequestStatus.Approved | ChangeRequestStatus.Rejected, comment?: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const reqIndex = MOCK_REQUESTS_DB.findIndex(r => r.id === id);
-      if (reqIndex >= 0) {
-        MOCK_REQUESTS_DB[reqIndex] = {
-          ...MOCK_REQUESTS_DB[reqIndex],
-          status: status,
-          updatedAt: new Date().toISOString()
-        };
+    try {
+      if (status === ChangeRequestStatus.Approved) {
+        await api.post(`/changerequest/${id}/approve`, {});
+      } else {
+        throw new Error("Reject not implemented");
       }
-      setTimeout(resolve, 800);
-    });
+    } catch (error) {
+      console.warn('Backend unreachable, simulating Process Request', error);
+      return new Promise((resolve) => {
+        const reqIndex = MOCK_REQUESTS_DB.findIndex(r => r.id === id);
+        if (reqIndex >= 0) {
+          MOCK_REQUESTS_DB[reqIndex] = {
+            ...MOCK_REQUESTS_DB[reqIndex],
+            status: status,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        setTimeout(resolve, 800);
+      });
+    }
   },
 
-  // --- Admin Config Methods ---
-  
   getWorkflowRules: async (): Promise<string> => {
     const mockRules = {
       rules: [

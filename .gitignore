@@ -24,4 +24,4 @@ dist-ssr
 *.sw?
 
 # Auto-generated version file
-src/version.ts
+frontend/src/version.ts

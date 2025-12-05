@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth, UserRole } from '../context/AuthContext';
-import { 
-  LayoutDashboard, 
-  User, 
-  FileText, 
-  LogOut, 
-  Menu, 
+import { ServiceStatusPanel } from './ServiceStatusPanel';
+import {
+  LayoutDashboard,
+  User,
+  FileText,
+  LogOut,
+  Menu,
   X,
   Bell,
   ClipboardList,
@@ -53,14 +54,14 @@ export const MainLayout: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar Navigation */}
-      <div className={`fixed inset-y-0 z-50 flex w-64 flex-col bg-brand-900 transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed inset-y-0 z-50 flex w-full lg:w-64 flex-col bg-brand-900 transition-transform lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex h-16 shrink-0 items-center bg-brand-900 px-4">
           <span className="text-xl font-bold text-white">Vendor Portal</span>
           <button className="ml-auto text-white lg:hidden" onClick={() => setSidebarOpen(false)}>
@@ -68,12 +69,12 @@ export const MainLayout: React.FC = () => {
           </button>
         </div>
         <div className="flex flex-1 flex-col overflow-y-auto pt-5 pb-4">
-           {/* Role Badge */}
-           <div className="px-4 mb-4">
-             <span className="inline-flex items-center rounded-md bg-brand-800 px-2 py-1 text-xs font-medium text-brand-100 ring-1 ring-inset ring-brand-700/10">
-               {user?.role === 'Vendor' ? 'Vendor Account' : user?.role === 'Admin' ? 'System Administrator' : 'Internal Approver'}
-             </span>
-           </div>
+          {/* Role Badge */}
+          <div className="px-4 mb-4">
+            <span className="inline-flex items-center rounded-md bg-brand-800 px-2 py-1 text-xs font-medium text-brand-100 ring-1 ring-inset ring-brand-700/10">
+              {user?.role === 'Vendor' ? 'Vendor Account' : user?.role === 'Admin' ? 'System Administrator' : 'Internal Approver'}
+            </span>
+          </div>
 
           <nav className="flex-1 space-y-1 px-2">
             {navigation.map((item) => (
@@ -81,10 +82,9 @@ export const MainLayout: React.FC = () => {
                 key={item.name}
                 to={item.href}
                 className={({ isActive }) =>
-                  `group flex items-center rounded-md px-2 py-2 text-base font-medium ${
-                    isActive
-                      ? 'bg-brand-800 text-white'
-                      : 'text-brand-100 hover:bg-brand-800 hover:text-white'
+                  `group flex items-center rounded-md px-2 py-2 text-base font-medium ${isActive
+                    ? 'bg-brand-800 text-white'
+                    : 'text-brand-100 hover:bg-brand-800 hover:text-white'
                   }`
                 }
                 onClick={() => setSidebarOpen(false)}
@@ -97,12 +97,12 @@ export const MainLayout: React.FC = () => {
         </div>
         <div className="flex shrink-0 border-t border-brand-800 bg-brand-900 p-4">
           <div className="flex w-full items-center">
-             <div className="ml-3">
+            <div className="ml-3">
               <p className="text-sm font-medium text-white">{user?.name}</p>
               {user?.role === 'Vendor' && (
                 <p className="text-xs font-medium text-brand-200">ID: {user?.sapId}</p>
               )}
-              <button 
+              <button
                 onClick={handleLogout}
                 className="mt-2 flex items-center text-xs text-brand-200 hover:text-white"
               >
@@ -115,6 +115,7 @@ export const MainLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex flex-col lg:pl-64">
+        <ServiceStatusPanel />
         {/* Top Header */}
         <div className="sticky top-0 z-10 flex h-16 shrink-0 bg-white shadow">
           <button
@@ -124,7 +125,7 @@ export const MainLayout: React.FC = () => {
           >
             <Menu className="h-6 w-6" />
           </button>
-          
+
           <div className="flex flex-1 justify-end px-4 sm:px-6 lg:px-8">
             <div className="flex items-center">
               <button className="rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
