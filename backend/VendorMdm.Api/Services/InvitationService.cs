@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Azure.Cosmos;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Models;
 
@@ -22,15 +23,20 @@ public class InvitationService : IInvitationService
     private readonly SqlDbContext _context;
     private readonly ILogger<InvitationService> _logger;
     private readonly ServiceBusService _serviceBusService;
+    private readonly Container _cosmosArtifactsContainer;
+    private readonly Container _cosmosEventsContainer;
 
     public InvitationService(
         SqlDbContext context, 
         ILogger<InvitationService> logger,
-        ServiceBusService serviceBusService)
+        ServiceBusService serviceBusService,
+        CosmosClient cosmosClient)
     {
         _context = context;
         _logger = logger;
         _serviceBusService = serviceBusService;
+        _cosmosArtifactsContainer = cosmosClient.GetContainer("VendorMdm", "InvitationArtifacts");
+        _cosmosEventsContainer = cosmosClient.GetContainer("VendorMdm", "DomainEvents");
     }
 
     public async Task<CreateInvitationResponse> CreateInvitationAsync(
@@ -86,7 +92,67 @@ public class InvitationService : IInvitationService
             "Invitation created: {InvitationId} for {Email} by {InvitedBy}",
             invitation.Id, request.PrimaryContactEmail, invitedByName);
 
-        // Send invitation email via Service Bus
+        // HYBRID ARCHITECTURE PATTERN IMPLEMENTATION
+        // Following: SQL (State) → Cosmos (Artifact) → Cosmos (Event) → Service Bus (Integration)
+
+        // B. COSMOS: Store invitation artifact (full payload for audit trail)
+        try
+        {
+            await SaveInvitationArtifactAsync(invitation.Id.ToString(), new
+            {
+                InvitationId = invitation.Id,
+                VendorLegalName = request.VendorLegalName,
+                PrimaryContactEmail = request.PrimaryContactEmail,
+                InvitedBy = invitedBy,
+                InvitedByName = invitedByName,
+                Token = token,
+                ExpiresAt = expiresAt,
+                ExpirationDays = request.ExpirationDays,
+                Notes = request.Notes,
+                Status = InvitationStatus.Pending,
+                CreatedAt = DateTime.UtcNow,
+                OriginalRequest = request // Complete request for full audit trail
+            });
+
+            _logger.LogInformation(
+                "Invitation artifact stored in Cosmos for {InvitationId}",
+                invitation.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to store invitation artifact in Cosmos for {InvitationId}",
+                invitation.Id);
+            // Continue - artifact storage failure shouldn't block invitation
+        }
+
+        // C. COSMOS: Emit domain event (event sourcing)
+        try
+        {
+            await EmitDomainEventAsync("InvitationCreated", invitation.Id.ToString(), new
+            {
+                InvitationId = invitation.Id,
+                VendorName = request.VendorLegalName,
+                Email = request.PrimaryContactEmail,
+                InvitedBy = invitedBy,
+                InvitedByName = invitedByName,
+                ExpiresAt = expiresAt,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            _logger.LogInformation(
+                "Domain event InvitationCreated emitted for {InvitationId}",
+                invitation.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to emit domain event for {InvitationId}",
+                invitation.Id);
+            // Continue - event emission failure shouldn't block invitation
+        }
+
+        // D. SERVICE BUS: Queue email notification (async processing)
         try
         {
             var emailMessage = new
@@ -230,6 +296,7 @@ public class InvitationService : IInvitationService
             return false;
         }
 
+        // A. SQL: Update invitation state
         invitation.Status = InvitationStatus.Completed;
         invitation.CompletedAt = DateTime.UtcNow;
         invitation.VendorApplicationId = vendorApplicationId;
@@ -239,6 +306,55 @@ public class InvitationService : IInvitationService
         _logger.LogInformation(
             "Invitation {InvitationId} completed with application {ApplicationId}",
             invitation.Id, vendorApplicationId);
+
+        // B. COSMOS: Store completion artifact
+        try
+        {
+            var completionArtifact = new InvitationCompletionArtifact
+            {
+                Id = Guid.NewGuid().ToString(),
+                InvitationId = invitation.Id.ToString(),
+                VendorApplicationId = vendorApplicationId.ToString(),
+                CompletedAt = DateTime.UtcNow
+            };
+
+            await _cosmosArtifactsContainer.UpsertItemAsync(
+                completionArtifact,
+                new PartitionKey(invitation.Id.ToString()));
+
+            _logger.LogInformation(
+                "Invitation completion artifact stored for {InvitationId}",
+                invitation.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to store completion artifact for invitation {InvitationId}",
+                invitation.Id);
+        }
+
+        // C. COSMOS: Emit domain event
+        try
+        {
+            await EmitDomainEventAsync("InvitationCompleted", invitation.Id.ToString(), new
+            {
+                InvitationId = invitation.Id,
+                VendorApplicationId = vendorApplicationId,
+                CompletedAt = DateTime.UtcNow,
+                VendorName = invitation.VendorLegalName,
+                Email = invitation.PrimaryContactEmail
+            });
+
+            _logger.LogInformation(
+                "Domain event InvitationCompleted emitted for {InvitationId}",
+                invitation.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to emit completion event for {InvitationId}",
+                invitation.Id);
+        }
 
         return true;
     }
@@ -308,6 +424,46 @@ public class InvitationService : IInvitationService
                 "Expired {Count} old invitations", 
                 expiredInvitations.Count);
         }
+    }
+
+    // --- HYBRID ARCHITECTURE PATTERN: Cosmos Helpers ---
+    // Following same pattern as ArtifactService for consistency
+
+    /// <summary>
+    /// Store invitation artifact in Cosmos DB for complete audit trail
+    /// </summary>
+    private async Task SaveInvitationArtifactAsync(string invitationId, object payload)
+    {
+        var artifact = new InvitationArtifact
+        {
+            Id = invitationId,
+            InvitationId = invitationId, // Partition key
+            FullPayload = payload,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _cosmosArtifactsContainer.UpsertItemAsync(
+            artifact, 
+            new PartitionKey(invitationId));
+    }
+
+    /// <summary>
+    /// Emit domain event to Cosmos DB for event sourcing
+    /// </summary>
+    private async Task EmitDomainEventAsync(string eventType, string entityId, object data)
+    {
+        var domainEvent = new DomainEvent
+        {
+            Id = Guid.NewGuid().ToString(),
+            EventType = eventType, // Partition key
+            EntityId = entityId,
+            Timestamp = DateTime.UtcNow,
+            Data = data
+        };
+
+        await _cosmosEventsContainer.CreateItemAsync(
+            domainEvent, 
+            new PartitionKey(eventType));
     }
 
     private static string GenerateSecureToken()

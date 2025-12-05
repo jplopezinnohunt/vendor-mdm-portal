@@ -112,5 +112,25 @@ resource containerValidationRules 'Microsoft.DocumentDB/databaseAccounts/sqlData
   }
 }
 
+// Container for Invitation Artifacts (follows hybrid architecture pattern)
+resource containerInvitationArtifacts 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'InvitationArtifacts'
+  properties: {
+    resource: {
+      id: 'InvitationArtifacts'
+      partitionKey: {
+        paths: [
+          '/invitationId'
+        ]
+        kind: 'Hash'
+      }
+    }
+    options: {
+      throughput: 400
+    }
+  }
+}
+
 output cosmosAccountName string = cosmosAccount.name
 output cosmosEndpoint string = cosmosAccount.properties.documentEndpoint
