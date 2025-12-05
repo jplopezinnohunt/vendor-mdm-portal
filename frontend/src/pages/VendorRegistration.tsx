@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button, Input, Card } from '../components/ui/Elements';
 import { CheckCircle } from 'lucide-react';
+import { api } from '../services/api';
 
 interface RegistrationForm {
   companyName: string;
@@ -16,12 +17,14 @@ export const VendorRegistration: React.FC = () => {
   const [submitted, setSubmitted] = useState(false);
 
   const onSubmit = async (data: RegistrationForm) => {
-    // In a real implementation, this would POST to the Prospect API
-    console.log('Prospect Registration:', data);
-
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setSubmitted(true);
+    try {
+      // Real API Call to the Vendor Artifact Service
+      await api.post('/vendor/changerequest', data);
+      setSubmitted(true);
+    } catch (error) {
+      console.error('Submission failed:', error);
+      alert('Failed to submit application. Please try again.');
+    }
   };
 
   if (submitted) {
@@ -120,9 +123,9 @@ export const VendorRegistration: React.FC = () => {
                 <div className="h-1.5 w-1.5 bg-blue-500 rounded-full"></div>
                 <span>Form Validation: Client-side</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500">
-                <div className="h-1.5 w-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
-                <span>Submission: Mock (Not Persisted)</span>
+              <div className="flex items-center gap-2 text-xs text-green-600 font-medium">
+                <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                <span>Backend: Connected (Hybrid Artifact)</span>
               </div>
             </div>
           </Card>

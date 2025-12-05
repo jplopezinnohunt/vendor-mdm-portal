@@ -55,4 +55,15 @@ public class VendorArtifactFunction
             return errorResponse;
         }
     }
+    [Function("GetPendingOnboardingRequests")]
+    public async Task<HttpResponseData> GetPendingOnboardingRequests(
+        [HttpTrigger(AuthorizationLevel.Function, "get", Route = "vendor/onboarding/pending")] HttpRequestData req)
+    {
+        _logger.LogInformation("Fetching pending onboarding requests.");
+        var requests = await _artifactService.GetPendingOnboardingRequestsAsync();
+
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        await response.WriteAsJsonAsync(requests);
+        return response;
+    }
 }

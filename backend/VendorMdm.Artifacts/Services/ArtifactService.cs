@@ -23,6 +23,9 @@ public interface IArtifactService
 
     // 5. Read: Hybrid Data
     Task<(ChangeRequest? Request, object? Payload)> GetRequestDetailsAsync(Guid requestId);
+
+    // 6. Read: Worklists
+    Task<IEnumerable<VendorApplication>> GetPendingOnboardingRequestsAsync();
 }
 
 public class ArtifactService : IArtifactService
@@ -151,6 +154,14 @@ public class ArtifactService : IArtifactService
         {
             return (request, null);
         }
+    }
+
+    public async Task<IEnumerable<VendorApplication>> GetPendingOnboardingRequestsAsync()
+    {
+        return await _sqlContext.VendorApplications
+            .Where(v => v.Status == "Pending")
+            .OrderByDescending(v => v.CreatedAt)
+            .ToListAsync();
     }
 
     // --- Helpers ---

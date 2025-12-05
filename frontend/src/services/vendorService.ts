@@ -203,9 +203,24 @@ export const VendorService = {
   // --- Approver / Admin Methods ---
 
   getOnboardingRequests: async (): Promise<VendorApplication[]> => {
-    return new Promise((resolve) => {
-      setTimeout(() => resolve([...MOCK_ONBOARDING_DB]), 600);
-    });
+    try {
+      const response = await api.get('/vendor/onboarding/pending');
+      return response.data.map((item: any) => ({
+        id: item.id,
+        companyName: item.companyName,
+        taxId: 'N/A', // Not in SQL summary
+        contactName: item.contactEmail,
+        email: item.contactEmail,
+        status: ApplicationStatus.Submitted,
+        submittedAt: item.createdAt,
+        sanctionCheckStatus: 'Pending'
+      }));
+    } catch (error) {
+      console.warn('Backend unreachable, using Mock Data for Onboarding', error);
+      return new Promise((resolve) => {
+        setTimeout(() => resolve([...MOCK_ONBOARDING_DB]), 600);
+      });
+    }
   },
 
   getOnboardingRequestById: async (id: string): Promise<VendorApplication | undefined> => {

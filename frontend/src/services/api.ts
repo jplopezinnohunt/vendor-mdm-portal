@@ -1,7 +1,8 @@
 import axios from 'axios';
 
-// In Azure Static Web Apps, /api routes automatically to the backend (Functions/Container Apps)
-const API_BASE_URL = '/api';
+// In Azure Static Web Apps, /api routes automatically to the backend
+// For local dev, we point to the Functions emulator
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:7071/api' : '/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
