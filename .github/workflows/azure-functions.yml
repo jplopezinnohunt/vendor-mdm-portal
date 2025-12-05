@@ -10,7 +10,7 @@ on:
       - '.github/workflows/azure-functions.yml'
 
 env:
-  AZURE_FUNCTIONAPP_NAME: 'mdmportal-func-dev' # Update with your app name
+
   AZURE_FUNCTIONAPP_PACKAGE_PATH: 'backend/VendorMdm.Artifacts'
   DOTNET_VERSION: '8.0.x'
 
@@ -27,12 +27,12 @@ jobs:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: 'Deploy Infrastructure (Bicep)'
-      uses: azure/arm-deploy@v1
-      with:
-        subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-        resourceGroupName: ${{ secrets.AZURE_RESOURCE_GROUP }}
-        template: ./infrastructure/main.bicep
-        parameters: environmentName=dev
+      id: deploy
+      shell: pwsh
+      run: |
+        $deployment = az deployment group create --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" --template-file ./infrastructure/main.bicep --parameters environmentName=dev --output json | ConvertFrom-Json
+        $funcAppName = $deployment.properties.outputs.functionAppName.value
+        echo "functionAppName=$funcAppName" >> $env:GITHUB_OUTPUT
 
     - name: Setup DotNet ${{ env.DOTNET_VERSION }} Environment
       uses: actions/setup-dotnet@v3
@@ -50,5 +50,5 @@ jobs:
       uses: Azure/functions-action@v1
       id: fa
       with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        app-name: ${{ steps.deploy.outputs.functionAppName }}
         package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output'

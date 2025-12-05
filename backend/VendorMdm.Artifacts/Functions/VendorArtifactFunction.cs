@@ -41,7 +41,7 @@ public class VendorArtifactFunction
         try
         {
             // In a real scenario, 'fullPayload' might be the raw JSON or a specific part of the request
-            var resultId = await _artifactService.SubmitVendorChangeAsync(data, data);
+            var resultId = await _artifactService.SubmitNewVendorRequestAsync(data, data);
 
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(new { RequestId = resultId, Status = "Submitted" });

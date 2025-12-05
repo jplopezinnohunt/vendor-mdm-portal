@@ -51,3 +51,5 @@ resource cosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssi
     scope: resourceId('Microsoft.DocumentDB/databaseAccounts', cosmos.outputs.cosmosAccountName)
   }
 }
+
+output functionAppName string = functionApp.outputs.functionAppName

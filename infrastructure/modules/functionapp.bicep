@@ -4,8 +4,8 @@ param environmentName string
 @description('The Azure region')
 param location string
 
-var appName = 'mdmportal-func-${environmentName}'
-var storageAccountName = 'mdmportalfuncsa${environmentName}'
+var appName = 'mdmportal-func-${environmentName}-${uniqueString(resourceGroup().id)}'
+var storageAccountName = 'mdmst${uniqueString(resourceGroup().id)}'
 var appServicePlanName = 'mdmportal-asp-${environmentName}'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2022-09-01' = {
