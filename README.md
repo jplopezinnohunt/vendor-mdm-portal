@@ -107,6 +107,36 @@ vendor-mdm-portal/
 └── tsconfig.json           # TypeScript configuration
 ```
 
+## 🧠 Domain Model
+
+The application utilizes a **Hybrid Data Architecture**, combining **Azure SQL** for structured relational data and **Azure Cosmos DB** for flexible, high-volume document storage.
+
+### 1. Relational Domain Entities (Azure SQL)
+*Managed via Entity Framework Core*
+
+| Entity | Description | Key Properties |
+| :--- | :--- | :--- |
+| **ChangeRequest** | Central entity for vendor modification or onboarding requests. | `Id` (PK), `Status`, `SapVendorId`, `RequesterId` |
+| **VendorApplication** | Initial data for new vendor onboarding requests. | `Id` (PK), `CompanyName`, `ContactEmail`, `Status` |
+| **Attachment** | Metadata for uploaded files (e.g., tax docs). | `Id` (PK), `LinkedEntityId`, `BlobUrl` |
+| **UserRole** | Manages user permissions and roles. | `Id` (PK), `Username`, `Role` (Admin, Requester, Approver) |
+| **WorkflowState** | Reference data for valid request states. | `StateName` (PK), `Description` |
+| **SapEnvironment** | Reference data for target SAP environments. | `EnvironmentCode` (PK), `Description` |
+
+### 2. Document Domain Entities (Azure Cosmos DB)
+*Managed via Cosmos SDK*
+
+| Entity | Description | Key Properties |
+| :--- | :--- | :--- |
+| **ChangeRequestData** | Stores the complex JSON payload for a `ChangeRequest`. | `id` (Link to SQL), `requestId` (Partition), `payload` (JSON), `oldValue`/`newValue` |
+| **DomainEvent** | Immutable record of system events for auditing/sourcing. | `id`, `eventType` (Partition), `entityId`, `timestamp`, `data` |
+
+### Architecture Pattern
+- **Aggregate Root:** `ChangeRequest` (SQL) + `ChangeRequestData` (Cosmos)
+- **Entities:** `VendorApplication`, `Attachment`
+- **Value Objects:** `WorkflowState`, `SapEnvironment`
+- **Domain Events:** `DomainEvent`
+
 ## 🔒 Security Features
 
 - Content Security Policy (CSP) headers

@@ -1,0 +1,10 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+        "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+        "SqlConnectionString": "Server=tcp:mdmportal-sqldb-dev.database.windows.net,1433;Initial Catalog=mdmportal-db;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=\"Active Directory Default\";",
+        "CosmosConnectionString": "AccountEndpoint=https://mdmportal-cosmos-dev.documents.azure.com:443/;AccountKey=Key;",
+        "ServiceBusConnection": "Endpoint=sb://mdmportal-sb-dev.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=Key;"
+    }
+}
