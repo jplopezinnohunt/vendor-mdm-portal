@@ -17,8 +17,8 @@ module sql 'modules/sql.bicep' = {
   params: {
     environmentName: environmentName
     location: location
-    sqlAdminLogin: 'mdmadmin' // In real scenario, use KeyVault
-    sqlAdminPassword: 'ChangeMe123!' // In real scenario, use KeyVault
+    adminLogin: 'mdmadmin' // In real scenario, use KeyVault
+    adminPassword: 'ChangeMe123!' // In real scenario, use KeyVault
   }
 }
 
@@ -38,17 +38,21 @@ module functionApp 'modules/functionapp.bicep' = {
   }
 }
 
-// Role Assignments (Simplified for example)
-// Assign Function App Managed Identity access to Cosmos, SQL, Service Bus
-// Note: SQL requires AAD Auth setup which is complex in Bicep alone, skipping for brevity
-// Cosmos Role Assignment
-// Cosmos Role Assignment
+// Role Assignments
+// Assign Function App Managed Identity access to Cosmos
+var cosmosAccountName = cosmos.outputs.cosmosAccountName
+var roleAssignmentName = guid(cosmosAccountName, functionApp.outputs.functionAppPrincipalId, '00000000-0000-0000-0000-000000000002')
+
+resource cosmosAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' existing = {
+  name: cosmosAccountName
+}
+
 resource cosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@2023-04-15' = {
-  name: guid(cosmos.outputs.cosmosAccountName, functionApp.outputs.functionAppPrincipalId, '00000000-0000-0000-0000-000000000002') // Data Contributor Role
+  name: '${cosmosAccount.name}/${roleAssignmentName}'
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions', cosmos.outputs.cosmosAccountName, '00000000-0000-0000-0000-000000000002')
+    roleDefinitionId: resourceId('Microsoft.DocumentDB/databaseAccounts/sqlRoleDefinitions', cosmosAccountName, '00000000-0000-0000-0000-000000000002')
     principalId: functionApp.outputs.functionAppPrincipalId
-    scope: resourceId('Microsoft.DocumentDB/databaseAccounts', cosmos.outputs.cosmosAccountName)
+    scope: cosmosAccount.id
   }
 }
 
