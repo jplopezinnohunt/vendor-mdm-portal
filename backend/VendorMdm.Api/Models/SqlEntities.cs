@@ -30,12 +30,27 @@ public class VendorApplication
     [MaxLength(200)]
     public string CompanyName { get; set; } = string.Empty;
 
+    [MaxLength(100)]
+    public string? TaxId { get; set; }
+
+    [Required]
+    [MaxLength(200)]
+    public string ContactName { get; set; } = string.Empty;
+
     [Required]
     [EmailAddress]
     public string ContactEmail { get; set; } = string.Empty;
 
     public string Status { get; set; } = "Pending";
+    
+    // Track registration source
+    [MaxLength(20)]
+    public string RegistrationType { get; set; } = "SelfRegistration"; // SelfRegistration or Invitation
+    
+    public Guid? InvitationId { get; set; } // FK to VendorInvitation if came from invitation
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 }
 
 public class WorkflowState
@@ -64,6 +79,48 @@ public class UserRole
     public string Role { get; set; } = "User"; // Admin, Requester, Approver
 }
 
+public class VendorInvitation
+{
+    [Key]
+    public Guid Id { get; set; }
+
+    [Required]
+    [MaxLength(100)]
+    public string InvitationToken { get; set; } = string.Empty; // Unique secure token
+
+    [Required]
+    [MaxLength(200)]
+    public string VendorLegalName { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(255)]
+    public string PrimaryContactEmail { get; set; } = string.Empty;
+
+    [Required]
+    public Guid InvitedBy { get; set; } // FK to UserRole
+
+    [Required]
+    [MaxLength(200)]
+    public string InvitedByName { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [Required]
+    public DateTime ExpiresAt { get; set; }
+
+    [Required]
+    [MaxLength(20)]
+    public string Status { get; set; } = InvitationStatus.Pending; // Pending, Accepted, Expired, Completed
+
+    public DateTime? CompletedAt { get; set; }
+
+    public Guid? VendorApplicationId { get; set; } // FK to VendorApplication when completed
+
+    [MaxLength(1000)]
+    public string? Notes { get; set; } // Internal notes
+}
+
 public class Attachment
 {
     [Key]
@@ -72,4 +129,14 @@ public class Attachment
     public string FileName { get; set; } = string.Empty;
     public string BlobUrl { get; set; } = string.Empty;
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+}
+
+// Enums
+public static class InvitationStatus
+{
+    public const string Pending = "Pending";
+    public const string Accepted = "Accepted";
+    public const string Expired = "Expired";
+    public const string Completed = "Completed";
+    public const string Cancelled = "Cancelled";
 }

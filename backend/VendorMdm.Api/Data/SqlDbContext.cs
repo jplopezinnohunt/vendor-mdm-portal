@@ -9,10 +9,12 @@ public class SqlDbContext : DbContext
 
     public DbSet<ChangeRequest> ChangeRequests { get; set; }
     public DbSet<VendorApplication> VendorApplications { get; set; }
+    public DbSet<VendorInvitation> VendorInvitations { get; set; }
     public DbSet<WorkflowState> WorkflowStates { get; set; }
     public DbSet<SapEnvironment> SapEnvironments { get; set; }
     public DbSet<UserRole> UsersAndRoles { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

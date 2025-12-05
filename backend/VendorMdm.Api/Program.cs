@@ -49,6 +49,7 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 builder.Services.AddScoped<CosmosRepository>();
 builder.Services.AddScoped<ServiceBusService>();
 builder.Services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
+builder.Services.AddScoped<IInvitationService, InvitationService>();
 builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();

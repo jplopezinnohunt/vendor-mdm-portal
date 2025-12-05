@@ -8,10 +8,13 @@ import { ChangeRequestForm } from './pages/ChangeRequestForm';
 import { RequestHistory } from './pages/RequestHistory';
 import { Login } from './pages/Login';
 import { VendorRegistration } from './pages/VendorRegistration';
+import { InvitationRegistration } from './pages/InvitationRegistration';
 import { ApproverDashboard } from './pages/approver/ApproverDashboard';
 import { RequestReview } from './pages/approver/RequestReview';
 import { OnboardingReview } from './pages/approver/OnboardingReview';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { InviteVendorForm } from './pages/admin/InviteVendorForm';
+import { InvitationManagement } from './pages/admin/InvitationManagement';
 
 // Protected Route Guard
 const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode, allowedRoles?: UserRole[] }) => {
@@ -44,8 +47,10 @@ const App: React.FC = () => {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<VendorRegistration />} />
+          <Route path="/invitation/register/:token" element={<InvitationRegistration />} />
 
           {/* Main Layout Wrapper */}
           <Route path="/" element={
@@ -108,6 +113,16 @@ const App: React.FC = () => {
             <Route path="admin/rules" element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/invite-vendor" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Approver']}>
+                <InviteVendorForm />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/invitations" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Approver']}>
+                <InvitationManagement />
               </ProtectedRoute>
             } />
           </Route>

@@ -12,7 +12,9 @@ import {
   Bell,
   ClipboardList,
   Settings,
-  ShieldAlert
+  ShieldAlert,
+  Mail,
+  UserPlus
 } from 'lucide-react';
 
 const VENDOR_NAV = [
@@ -23,13 +25,17 @@ const VENDOR_NAV = [
 
 const APPROVER_NAV = [
   { name: 'My Worklist', href: '/approver/worklist', icon: ClipboardList },
-  { name: 'Request History', href: '/approver/history', icon: FileText }, // Reusing RequestHistory page logic if needed, or separate
+  { name: 'Request History', href: '/approver/history', icon: FileText },
+  { name: 'Invite Vendor', href: '/admin/invite-vendor', icon: UserPlus },
+  { name: 'Invitations', href: '/admin/invitations', icon: Mail },
 ];
 
 const ADMIN_NAV = [
   { name: 'System Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Workflow Rules', href: '/admin/rules', icon: Settings },
   { name: 'Audit Logs', href: '/admin/audit', icon: ShieldAlert },
+  { name: 'Invite Vendor', href: '/admin/invite-vendor', icon: UserPlus },
+  { name: 'Manage Invitations', href: '/admin/invitations', icon: Mail },
 ];
 
 export const MainLayout: React.FC = () => {
