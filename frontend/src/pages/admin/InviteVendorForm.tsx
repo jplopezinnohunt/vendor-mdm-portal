@@ -25,9 +25,24 @@ export const InviteVendorForm: React.FC = () => {
             setInvitationData(response.data);
             setSubmitted(true);
         } catch (error: any) {
-            const errorMessage = error.response?.data?.error || 'Failed to create invitation';
-            alert(errorMessage);
             console.error('Failed to create invitation:', error);
+            
+            // Provide more helpful error messages
+            let errorMessage = 'Failed to create invitation';
+            
+            if (error.userMessage) {
+                errorMessage = error.userMessage;
+            } else if (error.code === 'ECONNREFUSED' || error.message?.includes('Network Error')) {
+                errorMessage = 'Cannot connect to backend API. Please ensure the backend is running on http://localhost:5001';
+            } else if (error.response?.data?.error) {
+                errorMessage = error.response.data.error;
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            alert(`Error: ${errorMessage}\n\nPlease check:\n1. Backend API is running (http://localhost:5001)\n2. Backend is accessible\n3. Check browser console for details`);
         }
     };
 

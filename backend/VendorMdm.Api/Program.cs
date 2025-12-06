@@ -31,9 +31,14 @@ var cosmosConnection = builder.Configuration.GetConnectionString("Cosmos");
 var serviceBusConnection = builder.Configuration.GetConnectionString("ServiceBus");
 
 // Auto-fallback: If Azure connection strings are still placeholders, use local emulators
-if (!useLocalEmulators && (sqlConnection.Contains("YOUR_SERVER_NAME") || string.IsNullOrEmpty(sqlConnection)))
+if (!useLocalEmulators && (sqlConnection?.Contains("YOUR_") == true || 
+    sqlConnection?.Contains("YOUR_SERVER_NAME") == true || 
+    cosmosConnection?.Contains("YOUR_") == true ||
+    serviceBusConnection?.Contains("YOUR_") == true ||
+    string.IsNullOrEmpty(sqlConnection)))
 {
-    Console.WriteLine("⚠️ Azure connection strings are placeholders. Falling back to Local Emulators.");
+    Console.WriteLine("⚠️ Azure connection strings contain placeholders. Falling back to Local Emulators.");
+    Console.WriteLine("💡 To use Azure resources, update appsettings.Development.json or use User Secrets.");
     useLocalEmulators = true;
 }
 
