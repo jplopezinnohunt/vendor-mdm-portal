@@ -119,6 +119,7 @@ public class InvitationController : ControllerBase
             
             if (!validation.IsValid)
             {
+                _logger.LogWarning("Invitation validation failed for token {Token}: {Error}", token, validation.ErrorMessage);
                 return BadRequest(new { error = validation.ErrorMessage });
             }
 
@@ -138,12 +139,27 @@ public class InvitationController : ControllerBase
             _context.VendorApplications.Add(application);
             await _context.SaveChangesAsync();
 
-            // Link invitation to application
-            await _invitationService.CompleteInvitationAsync(token, application.Id);
-
             _logger.LogInformation(
-                "Vendor application {ApplicationId} created from invitation {Token}",
+                "Vendor application {ApplicationId} created for invitation token {Token}",
                 application.Id, token);
+
+            // Link invitation to application and update status
+            var completed = await _invitationService.CompleteInvitationAsync(token, application.Id);
+            
+            if (!completed)
+            {
+                _logger.LogWarning(
+                    "Failed to complete invitation for token {Token}. Application {ApplicationId} was created but invitation status not updated.",
+                    token, application.Id);
+                // Don't fail the request - application was created successfully
+                // The invitation might already be completed or in an invalid state
+            }
+            else
+            {
+                _logger.LogInformation(
+                    "Invitation for token {Token} completed successfully with application {ApplicationId}",
+                    token, application.Id);
+            }
 
             return Ok(new
             {
@@ -154,7 +170,7 @@ public class InvitationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error completing invitation");
+            _logger.LogError(ex, "Error completing invitation for token {Token}", token);
             return StatusCode(500, new { error = "Failed to complete registration" });
         }
     }

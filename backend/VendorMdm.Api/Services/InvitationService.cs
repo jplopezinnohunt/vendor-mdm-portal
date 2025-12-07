@@ -23,6 +23,8 @@ public class InvitationService : IInvitationService
     private readonly SqlDbContext _context;
     private readonly ILogger<InvitationService> _logger;
     private readonly ServiceBusService _serviceBusService;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
     private readonly Container _cosmosArtifactsContainer;
     private readonly Container _cosmosEventsContainer;
 
@@ -30,11 +32,15 @@ public class InvitationService : IInvitationService
         SqlDbContext context, 
         ILogger<InvitationService> logger,
         ServiceBusService serviceBusService,
+        IEmailService emailService,
+        IConfiguration configuration,
         CosmosClient cosmosClient)
     {
         _context = context;
         _logger = logger;
         _serviceBusService = serviceBusService;
+        _emailService = emailService;
+        _configuration = configuration;
         _cosmosArtifactsContainer = cosmosClient.GetContainer("VendorMdm", "InvitationArtifacts");
         _cosmosEventsContainer = cosmosClient.GetContainer("VendorMdm", "DomainEvents");
     }
@@ -152,33 +158,78 @@ public class InvitationService : IInvitationService
             // Continue - event emission failure shouldn't block invitation
         }
 
-        // D. SERVICE BUS: Queue email notification (async processing)
+        // D. SERVICE BUS: Queue email notification (async processing for production)
+        var useLocalEmulators = _configuration.GetValue<bool>("UseLocalEmulators");
+        if (!useLocalEmulators)
+        {
+            try
+            {
+                var emailMessage = new
+                {
+                    InvitationId = invitation.Id.ToString(),
+                    VendorName = request.VendorLegalName,
+                    Email = request.PrimaryContactEmail,
+                    Token = token,
+                    ExpiresAt = expiresAt.ToString("o"), // ISO 8601 format
+                    InvitedByName = invitedByName,
+                    CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
+                    Notes = request.Notes
+                };
+
+                await _serviceBusService.PublishEventAsync("invitation-created", emailMessage);
+                
+                _logger.LogInformation(
+                    "Invitation email queued via Service Bus for {Email}", 
+                    request.PrimaryContactEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, 
+                    "Failed to queue invitation email via Service Bus for {Email}. Will try direct email.", 
+                    request.PrimaryContactEmail);
+            }
+        }
+
+        // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
         try
         {
-            var emailMessage = new
+            var baseUrl = _configuration["App:BaseUrl"] 
+                ?? (useLocalEmulators ? "http://localhost:3002" : "https://vendor-portal.company.com");
+            
+            var emailData = new InvitationEmailData
             {
                 InvitationId = invitation.Id.ToString(),
                 VendorName = request.VendorLegalName,
                 Email = request.PrimaryContactEmail,
                 Token = token,
-                ExpiresAt = expiresAt.ToString("o"), // ISO 8601 format
+                ExpiresAt = expiresAt,
                 InvitedByName = invitedByName,
-                CompanyName = "Your Company", // TODO: Load from configuration
-                Notes = request.Notes
+                CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
+                Notes = request.Notes,
+                BaseUrl = baseUrl
             };
 
-            await _serviceBusService.PublishEventAsync("invitation-created", emailMessage);
+            var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
             
-            _logger.LogInformation(
-                "Invitation email queued for {Email}", 
-                request.PrimaryContactEmail);
+            if (emailSent)
+            {
+                _logger.LogInformation(
+                    "Invitation email sent successfully to {Email}", 
+                    request.PrimaryContactEmail);
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Invitation email sending returned false for {Email}. Email details logged.", 
+                    request.PrimaryContactEmail);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, 
-                "Failed to queue invitation email for {Email}. Invitation created but email not sent.", 
+                "Failed to send invitation email directly for {Email}. Invitation created but email not sent.", 
                 request.PrimaryContactEmail);
-            // Don't fail the invitation creation if email queueing fails
+            // Don't fail the invitation creation if email sending fails
         }
 
         var invitationLink = $"/invitation/register/{token}";
@@ -291,12 +342,22 @@ public class InvitationService : IInvitationService
         var invitation = await _context.VendorInvitations
             .FirstOrDefaultAsync(i => i.InvitationToken == token);
 
-        if (invitation == null || invitation.Status == InvitationStatus.Completed)
+        if (invitation == null)
         {
+            _logger.LogWarning("Invitation not found for token {Token}", token);
+            return false;
+        }
+
+        if (invitation.Status == InvitationStatus.Completed)
+        {
+            _logger.LogWarning(
+                "Invitation {InvitationId} is already completed. Application {ApplicationId} will not be linked.",
+                invitation.Id, vendorApplicationId);
             return false;
         }
 
         // A. SQL: Update invitation state
+        var previousStatus = invitation.Status;
         invitation.Status = InvitationStatus.Completed;
         invitation.CompletedAt = DateTime.UtcNow;
         invitation.VendorApplicationId = vendorApplicationId;
@@ -304,8 +365,8 @@ public class InvitationService : IInvitationService
         await _context.SaveChangesAsync();
 
         _logger.LogInformation(
-            "Invitation {InvitationId} completed with application {ApplicationId}",
-            invitation.Id, vendorApplicationId);
+            "Invitation {InvitationId} status updated from {PreviousStatus} to Completed with application {ApplicationId}",
+            invitation.Id, previousStatus, vendorApplicationId);
 
         // B. COSMOS: Store completion artifact
         try
@@ -376,26 +437,80 @@ public class InvitationService : IInvitationService
 
         await _context.SaveChangesAsync();
 
-        // Send resend email notification via Service Bus
+        // D. SERVICE BUS: Queue email notification (async processing for production)
+        var useLocalEmulators = _configuration.GetValue<bool>("UseLocalEmulators");
+        if (!useLocalEmulators)
+        {
+            try
+            {
+                var emailMessage = new
+                {
+                    InvitationId = invitation.Id.ToString(),
+                    VendorName = invitation.VendorLegalName,
+                    Email = invitation.PrimaryContactEmail,
+                    Token = invitation.InvitationToken,
+                    ExpiresAt = invitation.ExpiresAt.ToString("o"),
+                    InvitedByName = invitation.InvitedByName,
+                    CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
+                    Notes = invitation.Notes
+                };
+
+                await _serviceBusService.PublishEventAsync("invitation-created", emailMessage);
+                
+                _logger.LogInformation(
+                    "Resend invitation email queued via Service Bus for {Email}", 
+                    invitation.PrimaryContactEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, 
+                    "Failed to queue resend email via Service Bus for {Email}. Will try direct email.", 
+                    invitation.PrimaryContactEmail);
+            }
+        }
+
+        // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
         try
         {
-            var emailMessage = new
+            var baseUrl = _configuration["App:BaseUrl"] 
+                ?? (useLocalEmulators ? "http://localhost:3002" : "https://vendor-portal.company.com");
+            
+            var emailData = new InvitationEmailData
             {
                 InvitationId = invitation.Id.ToString(),
                 VendorName = invitation.VendorLegalName,
                 Email = invitation.PrimaryContactEmail,
                 Token = invitation.InvitationToken,
-                ExpiresAt = invitation.ExpiresAt.ToString("o"),
+                ExpiresAt = invitation.ExpiresAt,
                 InvitedByName = invitation.InvitedByName,
-                CompanyName = "Your Company",
-                Notes = invitation.Notes
+                CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
+                Notes = invitation.Notes,
+                BaseUrl = baseUrl
             };
 
-            await _serviceBusService.PublishEventAsync("invitation-created", emailMessage);
+            var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
+            
+            if (emailSent)
+            {
+                _logger.LogInformation(
+                    "✅ Resend invitation email sent successfully to {Email}", 
+                    invitation.PrimaryContactEmail);
+                Console.WriteLine($"✅ Resend invitation email sent to: {invitation.PrimaryContactEmail}");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "⚠️ Resend invitation email sending returned false for {Email}. Email details logged to console.", 
+                    invitation.PrimaryContactEmail);
+                Console.WriteLine($"⚠️ Resend invitation email logged (not sent) for: {invitation.PrimaryContactEmail}");
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to queue resend email for invitation {InvitationId}", invitationId);
+            _logger.LogError(ex, 
+                "Failed to send resend invitation email directly for {Email}. Invitation resent but email not sent.", 
+                invitation.PrimaryContactEmail);
+            // Don't fail the resend if email sending fails
         }
 
         _logger.LogInformation(

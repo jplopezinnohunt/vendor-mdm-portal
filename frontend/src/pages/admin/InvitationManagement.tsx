@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card } from '../../components/ui/Elements';
-import { Plus, RefreshCw, Mail, CheckCircle, Clock, XCircle, Ban } from 'lucide-react';
+import { Plus, RefreshCw, Mail, CheckCircle, Clock, XCircle, Ban, Send } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface Invitation {
@@ -38,6 +38,17 @@ export const InvitationManagement: React.FC = () => {
     useEffect(() => {
         loadInvitations();
     }, [filter]);
+
+    // Auto-refresh invitations every 30 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!loading) {
+                loadInvitations();
+            }
+        }, 30000); // Refresh every 30 seconds
+
+        return () => clearInterval(interval);
+    }, [loading]);
 
     const handleResend = async (id: string) => {
         if (!confirm('Are you sure you want to resend this invitation?')) {
@@ -111,6 +122,13 @@ export const InvitationManagement: React.FC = () => {
         return daysUntilExpiry > 0 && daysUntilExpiry <= 3;
     };
 
+    const canResend = (status: string): boolean => {
+        const normalizedStatus = status?.toLowerCase()?.trim();
+        return normalizedStatus === 'pending' || 
+               normalizedStatus === 'expired' || 
+               normalizedStatus === 'accepted';
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-7xl mx-auto">
@@ -151,14 +169,15 @@ export const InvitationManagement: React.FC = () => {
                                 <option value="Expired">Expired</option>
                             </select>
                         </div>
-                        <div className="flex items-end">
+                        <div className="flex items-end gap-2">
                             <Button
                                 onClick={loadInvitations}
                                 variant="secondary"
                                 className="flex items-center gap-2"
+                                disabled={loading}
                             >
-                                <RefreshCw className="h-4 w-4" />
-                                Refresh
+                                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                                {loading ? 'Loading...' : 'Refresh'}
                             </Button>
                         </div>
                     </div>
@@ -229,7 +248,21 @@ export const InvitationManagement: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                {getStatusBadge(invitation.status)}
+                                                <div className="flex items-center gap-2">
+                                                    {getStatusBadge(invitation.status)}
+                                                    {/* Resend button with icon */}
+                                                    {canResend(invitation.status) && (
+                                                        <button
+                                                            onClick={() => handleResend(invitation.id)}
+                                                            className="ml-2 p-1.5 text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-md transition-colors"
+                                                            title={invitation.status?.toLowerCase() === 'expired' 
+                                                                ? 'Reactivate invitation and send email' 
+                                                                : 'Resend invitation email'}
+                                                        >
+                                                            <Mail className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {invitation.invitedByName}
@@ -248,30 +281,30 @@ export const InvitationManagement: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                {invitation.status === 'Pending' && (
-                                                    <button
-                                                        onClick={() => handleResend(invitation.id)}
-                                                        className="text-brand-600 hover:text-brand-900"
-                                                    >
-                                                        Resend
-                                                    </button>
-                                                )}
-                                                {invitation.status === 'Expired' && (
-                                                    <button
-                                                        onClick={() => handleResend(invitation.id)}
-                                                        className="text-brand-600 hover:text-brand-900"
-                                                    >
-                                                        Reactivate
-                                                    </button>
-                                                )}
-                                                {invitation.vendorApplicationId && (
-                                                    <button
-                                                        onClick={() => navigate(`/approver/onboarding/${invitation.vendorApplicationId}`)}
-                                                        className="ml-3 text-blue-600 hover:text-blue-900"
-                                                    >
-                                                        View Application
-                                                    </button>
-                                                )}
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {/* Resend button with icon */}
+                                                    {canResend(invitation.status) && (
+                                                        <button
+                                                            onClick={() => handleResend(invitation.id)}
+                                                            className="p-2 text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-md transition-colors"
+                                                            title={invitation.status?.toLowerCase() === 'expired' 
+                                                                ? 'Reactivate invitation and send email' 
+                                                                : 'Resend invitation email'}
+                                                        >
+                                                            <Mail className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                    {/* View Application button */}
+                                                    {invitation.vendorApplicationId && (
+                                                        <button
+                                                            onClick={() => navigate(`/approver/onboarding/${invitation.vendorApplicationId}`)}
+                                                            className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
+                                                            title="View vendor application"
+                                                        >
+                                                            <CheckCircle className="h-4 w-4" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

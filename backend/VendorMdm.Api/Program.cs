@@ -18,7 +18,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "http://localhost:3000") // Vite default ports
+            policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://localhost:3002") // Vite default ports + alternative
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
@@ -69,7 +69,18 @@ builder.Services.AddAzureClients(clientBuilder =>
 
 // 2. SQL Database
 builder.Services.AddDbContext<SqlDbContext>(options =>
-    options.UseSqlServer(sqlConnection));
+{
+    if (sqlConnection.Contains("Data Source=") || sqlConnection.EndsWith(".db"))
+    {
+        // Use SQLite for local development on macOS
+        options.UseSqlite(sqlConnection);
+    }
+    else
+    {
+        // Use SQL Server for Azure or Windows
+        options.UseSqlServer(sqlConnection);
+    }
+});
 
 // 3. Cosmos DB
 builder.Services.AddSingleton<CosmosClient>(sp =>
@@ -94,10 +105,30 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 builder.Services.AddScoped<CosmosRepository>();
 builder.Services.AddScoped<ServiceBusService>();
 builder.Services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
+builder.Services.AddHttpClient(); // For EmailService HTTP client
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IInvitationService, InvitationService>();
 builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
+
+// Ensure database is created (for local development)
+if (useLocalEmulators)
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<SqlDbContext>();
+        try
+        {
+            dbContext.Database.EnsureCreated();
+            Console.WriteLine("✅ Database initialized successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Database initialization warning: {ex.Message}");
+        }
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -108,6 +139,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
 
