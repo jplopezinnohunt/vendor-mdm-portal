@@ -48,6 +48,7 @@ public class EmailService : IEmailService
             }
 
             // Try SMTP if configured
+            // Check both Key Vault and local configuration
             var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
             if (smtpEnabled)
             {
@@ -126,12 +127,26 @@ public class EmailService : IEmailService
     {
         try
         {
-            var smtpHost = _configuration["EmailService:Smtp:Host"];
+            // Read from Key Vault (production) or local configuration (development)
+            // Key Vault secrets use double underscore (__) instead of colon (:)
+            var smtpHost = _configuration["EmailService:Smtp:Host"] 
+                ?? _configuration["EmailService__Smtp__Host"];
             var smtpPort = _configuration.GetValue<int>("EmailService:Smtp:Port", 587);
-            var smtpUsername = _configuration["EmailService:Smtp:Username"];
-            var smtpPassword = _configuration["EmailService:Smtp:Password"];
-            var fromEmail = _configuration["EmailService:Smtp:FromEmail"] ?? smtpUsername;
-            var fromName = _configuration["EmailService:Smtp:FromName"] ?? "Vendor Management";
+            if (smtpPort == 587)
+            {
+                smtpPort = _configuration.GetValue<int>("EmailService__Smtp__Port", 587);
+            }
+            
+            var smtpUsername = _configuration["EmailService:Smtp:Username"] 
+                ?? _configuration["EmailService__Smtp__Username"];
+            var smtpPassword = _configuration["EmailService:Smtp:Password"] 
+                ?? _configuration["EmailService__Smtp__Password"];
+            var fromEmail = _configuration["EmailService:Smtp:FromEmail"] 
+                ?? _configuration["EmailService__Smtp__FromEmail"] 
+                ?? smtpUsername;
+            var fromName = _configuration["EmailService:Smtp:FromName"] 
+                ?? _configuration["EmailService__Smtp__FromName"] 
+                ?? "Vendor Management";
             var useSsl = _configuration.GetValue<bool>("EmailService:Smtp:UseSsl", true);
 
             if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword))

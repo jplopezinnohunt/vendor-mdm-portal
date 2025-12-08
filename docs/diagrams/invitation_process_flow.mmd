@@ -1,0 +1,63 @@
+graph TD
+    %% --- Estilos ---
+    classDef actor fill:#0078D4,color:white,stroke:none,rx:5,ry:5;
+    classDef frontend fill:#E6F2FB,stroke:#0078D4,stroke-width:2px;
+    classDef backend fill:#f0f0f0,stroke:#333,stroke-width:1px,stroke-dasharray: 5 5;
+    classDef db fill:#e1dfdd,stroke:#333,stroke-width:2px,rx:5,ry:5;
+    classDef event fill:#FFF4CE,stroke:#F9A825,stroke-width:2px;
+
+    %% --- Actores ---
+    Admin([👨‍💼 Admin/Approver]):::actor
+    Vendor([🏢 Vendor]):::actor
+
+    %% --- Frontend ---
+    subgraph Frontend ["🖥️ Frontend (React)"]
+        direction TB
+        CreateForm[📝 InviteVendorForm]:::frontend
+        VendorForm[📋 RegistrationForm]:::frontend
+    end
+
+    %% --- Backend API ---
+    subgraph Backend ["⚙️ Backend API (.NET 8)"]
+        direction TB
+        InvController[InvitationController]
+        InvService[InvitationService]
+        ValService[ValidationLogic]
+    end
+
+    %% --- Data & Events ---
+    subgraph DataLayer ["💾 Data & Events"]
+        direction TB
+        SQL[(Azure SQL\nVendorInvitations)]:::db
+        Cosmos[(Cosmos DB\nArtifacts)]:::db
+        ServiceBus{{"🚌 Service Bus\n(Email Queue)"}}:::event
+        Func[⚡ Azure Function\nSendEmail]
+    end
+
+    %% --- Flujo: Creación ---
+    Admin -->|1. Input Data| CreateForm
+    CreateForm -->|2. POST /create| InvController
+    InvController --> InvService
+    InvService -->|3. Generate Token| InvService
+    InvService -->|4. Store Pending| SQL
+    InvService -->|5. Store Audit| Cosmos
+    InvService -->|6. Publish Event| ServiceBus
+
+    %% --- Flujo: Notificación ---
+    ServiceBus -->|7. Trigger| Func
+    Func -.->|8. Send Email| Vendor
+
+    %% --- Flujo: Registro ---
+    Vendor -->|9. Click Link| VendorForm
+    VendorForm -->|10. GET /validate| InvController
+    InvController --> ValService
+    ValService -->|11. Check Token| SQL
+    ValService -->|12. Return Details| VendorForm
+    
+    VendorForm -->|13. Submit Data| InvController
+    InvController -->|14. Create App| SQL
+    InvController -->|15. Update Status| SQL
+    
+    %% --- Feedback ---
+    InvController --o|16. Success| Admin
+

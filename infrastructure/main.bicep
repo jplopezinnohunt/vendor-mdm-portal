@@ -38,6 +38,14 @@ module functionApp 'modules/functionapp.bicep' = {
   }
 }
 
+module keyVault 'modules/keyvault.bicep' = {
+  name: 'keyVaultDeploy'
+  params: {
+    environmentName: environmentName
+    location: location
+  }
+}
+
 // Role Assignments
 // Assign Function App Managed Identity access to Cosmos
 var cosmosAccountName = cosmos.outputs.cosmosAccountName
@@ -57,3 +65,5 @@ resource cosmosRoleAssignment 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssi
 }
 
 output functionAppName string = functionApp.outputs.functionAppName
+output keyVaultName string = keyVault.outputs.keyVaultName
+output keyVaultUri string = keyVault.outputs.keyVaultUri

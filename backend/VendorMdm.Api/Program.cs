@@ -1,4 +1,6 @@
+using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Azure;
@@ -6,6 +8,31 @@ using VendorMdm.Api.Data;
 using VendorMdm.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- AZURE KEY VAULT CONFIGURATION ---
+// Load secrets from Azure Key Vault if configured (for production/staging)
+var keyVaultUrl = builder.Configuration["KeyVault:VaultUrl"];
+if (!string.IsNullOrEmpty(keyVaultUrl) && !builder.Environment.IsDevelopment())
+{
+    try
+    {
+        var keyVaultClient = new SecretClient(
+            new Uri(keyVaultUrl),
+            new DefaultAzureCredential());
+        
+        builder.Configuration.AddAzureKeyVault(keyVaultClient, new KeyVaultSecretManager());
+        Console.WriteLine($"✅ Azure Key Vault configured: {keyVaultUrl}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ Failed to connect to Key Vault: {ex.Message}");
+        Console.WriteLine("💡 Falling back to local configuration.");
+    }
+}
+else if (builder.Environment.IsDevelopment())
+{
+    Console.WriteLine("🔧 Development mode: Using local configuration (appsettings.Development.json or User Secrets)");
+}
 
 // Add services to the container.
 builder.Services.AddControllers();

@@ -151,6 +151,18 @@ The application utilizes a **Hybrid Data Architecture**, combining **Azure SQL**
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build locally
 
+## 📚 Documentation
+
+Complete project documentation is available in the [`docs/`](./docs/) directory:
+
+- **[Getting Started](./docs/getting-started/README.md)** - Installation and local setup guides
+- **[Azure Documentation](./docs/azure/README.md)** - Deployment, infrastructure, and Key Vault configuration
+- **[Features](./docs/features/README.md)** - Feature-specific documentation
+- **[Architecture](./docs/architecture/README.md)** - Architectural principles and project structure
+- **[Troubleshooting](./docs/troubleshooting/README.md)** - Common issues and solutions
+
+👉 **Start here**: [Documentation Index](./docs/README.md)
+
 ## 🔗 Links
 
 - [Azure Static Web Apps Documentation](https://docs.microsoft.com/en-us/azure/static-web-apps/)
