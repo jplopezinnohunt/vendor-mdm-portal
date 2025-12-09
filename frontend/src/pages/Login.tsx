@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth, UserRole } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Building2, ArrowRight, ShieldCheck, UserCog, Sparkles, Database } from 'lucide-react';
+import { UserPlus, Building2, ArrowRight, ShieldCheck, UserCog, Sparkles, Database, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
 import { VersionInfo } from '../components/VersionInfo';
+import EmailServiceBanner from '../components/EmailServiceBanner';
 
 export const Login: React.FC = () => {
   const { login, isAuthenticated } = useAuth();
@@ -61,6 +62,11 @@ export const Login: React.FC = () => {
               <span className="text-xs text-gray-500">Backend: Offline</span>
             </div>
           </div>
+        </div>
+
+        {/* Email Service Status Banner */}
+        <div className="max-w-3xl w-full mx-auto mb-8">
+          <EmailServiceBanner />
         </div>
 
         {/* Main Cards Grid */}

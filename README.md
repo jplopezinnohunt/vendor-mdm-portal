@@ -38,13 +38,19 @@ A React-based vendor management portal built with TypeScript and Vite, designed 
    GEMINI_API_KEY=your_actual_api_key_here
    ```
 
-3. **Run the development server:**
+3. **Build the backend** (optional):
+   ```bash
+   cd backend
+   dotnet build VendorMdm.sln
+   ```
+
+4. **Run the development server:**
    ```bash
    npm run dev
    ```
    The app will be available at `http://localhost:3000`
 
-4. **Build for production:**
+5. **Build for production:**
    ```bash
    npm run build
    ```

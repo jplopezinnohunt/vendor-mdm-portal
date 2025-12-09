@@ -162,6 +162,8 @@ public class InvitationService : IInvitationService
 
         // D. SERVICE BUS: Queue email notification (async processing for production)
         var useLocalEmulators = _configuration.GetValue<bool>("UseLocalEmulators");
+        bool emailQueued = false;
+
         if (!useLocalEmulators)
         {
             try
@@ -179,6 +181,7 @@ public class InvitationService : IInvitationService
                 };
 
                 await _serviceBusService.PublishEventAsync("invitation-created", emailMessage);
+                emailQueued = true;
                 
                 _logger.LogInformation(
                     "Invitation email queued via Service Bus for {Email}", 
@@ -192,46 +195,49 @@ public class InvitationService : IInvitationService
             }
         }
 
-        // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
-        try
+        // E. DIRECT EMAIL: Send email immediately (ONLY for local dev or as fallback)
+        if (!emailQueued)
         {
-            var baseUrl = _configuration["App:BaseUrl"] 
-                ?? (useLocalEmulators ? "http://localhost:3002" : "https://vendor-portal.company.com");
-            
-            var emailData = new InvitationEmailData
+            try
             {
-                InvitationId = invitation.Id.ToString(),
-                VendorName = request.VendorLegalName,
-                Email = request.PrimaryContactEmail,
-                Token = token,
-                ExpiresAt = expiresAt,
-                InvitedByName = invitedByName,
-                CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
-                Notes = request.Notes,
-                BaseUrl = baseUrl
-            };
+                var baseUrl = _configuration["App:BaseUrl"] 
+                    ?? (useLocalEmulators ? "http://localhost:3002" : "https://vendor-portal.company.com");
+                
+                var emailData = new InvitationEmailData
+                {
+                    InvitationId = invitation.Id.ToString(),
+                    VendorName = request.VendorLegalName,
+                    Email = request.PrimaryContactEmail,
+                    Token = token,
+                    ExpiresAt = expiresAt,
+                    InvitedByName = invitedByName,
+                    CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
+                    Notes = request.Notes,
+                    BaseUrl = baseUrl
+                };
 
-            var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
-            
-            if (emailSent)
-            {
-                _logger.LogInformation(
-                    "Invitation email sent successfully to {Email}", 
-                    request.PrimaryContactEmail);
+                var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
+                
+                if (emailSent)
+                {
+                    _logger.LogInformation(
+                        "Invitation email sent directly/fallback to {Email}", 
+                        request.PrimaryContactEmail);
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "Invitation email sending returned false for {Email}. Email details logged.", 
+                        request.PrimaryContactEmail);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogWarning(
-                    "Invitation email sending returned false for {Email}. Email details logged.", 
+                _logger.LogError(ex, 
+                    "Failed to send invitation email directly for {Email}. Invitation created but email not sent.", 
                     request.PrimaryContactEmail);
+                // Don't fail the invitation creation if email sending fails
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, 
-                "Failed to send invitation email directly for {Email}. Invitation created but email not sent.", 
-                request.PrimaryContactEmail);
-            // Don't fail the invitation creation if email sending fails
         }
 
         var invitationLink = $"/invitation/register/{token}";
@@ -441,6 +447,8 @@ public class InvitationService : IInvitationService
 
         // D. SERVICE BUS: Queue email notification (async processing for production)
         var useLocalEmulators = _configuration.GetValue<bool>("UseLocalEmulators");
+        bool emailQueued = false;
+
         if (!useLocalEmulators)
         {
             try
@@ -458,6 +466,7 @@ public class InvitationService : IInvitationService
                 };
 
                 await _serviceBusService.PublishEventAsync("invitation-created", emailMessage);
+                emailQueued = true;
                 
                 _logger.LogInformation(
                     "Resend invitation email queued via Service Bus for {Email}", 
@@ -471,48 +480,51 @@ public class InvitationService : IInvitationService
             }
         }
 
-        // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
-        try
+        // E. DIRECT EMAIL: Send email immediately (ONLY for local dev or as fallback)
+        if (!emailQueued)
         {
-            var baseUrl = _configuration["App:BaseUrl"] 
-                ?? (useLocalEmulators ? "http://localhost:3002" : "https://vendor-portal.company.com");
-            
-            var emailData = new InvitationEmailData
+            try
             {
-                InvitationId = invitation.Id.ToString(),
-                VendorName = invitation.VendorLegalName,
-                Email = invitation.PrimaryContactEmail,
-                Token = invitation.InvitationToken,
-                ExpiresAt = invitation.ExpiresAt,
-                InvitedByName = invitation.InvitedByName,
-                CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
-                Notes = invitation.Notes,
-                BaseUrl = baseUrl
-            };
+                var baseUrl = _configuration["App:BaseUrl"] 
+                    ?? (useLocalEmulators ? "http://localhost:3002" : "https://vendor-portal.company.com");
+                
+                var emailData = new InvitationEmailData
+                {
+                    InvitationId = invitation.Id.ToString(),
+                    VendorName = invitation.VendorLegalName,
+                    Email = invitation.PrimaryContactEmail,
+                    Token = invitation.InvitationToken,
+                    ExpiresAt = invitation.ExpiresAt,
+                    InvitedByName = invitation.InvitedByName,
+                    CompanyName = _configuration["App:CompanyName"] ?? "Your Company",
+                    Notes = invitation.Notes,
+                    BaseUrl = baseUrl
+                };
 
-            var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
-            
-            if (emailSent)
-            {
-                _logger.LogInformation(
-                    "✅ Resend invitation email sent successfully to {Email}", 
-                    invitation.PrimaryContactEmail);
-                Console.WriteLine($"✅ Resend invitation email sent to: {invitation.PrimaryContactEmail}");
+                var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
+                
+                if (emailSent)
+                {
+                    _logger.LogInformation(
+                        "✅ Resend invitation email sent directly/fallback to {Email}", 
+                        invitation.PrimaryContactEmail);
+                    Console.WriteLine($"✅ Resend invitation email sent to: {invitation.PrimaryContactEmail}");
+                }
+                else
+                {
+                    _logger.LogWarning(
+                        "⚠️ Resend invitation email sending returned false for {Email}. Email details logged to console.", 
+                        invitation.PrimaryContactEmail);
+                    Console.WriteLine($"⚠️ Resend invitation email logged (not sent) for: {invitation.PrimaryContactEmail}");
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _logger.LogWarning(
-                    "⚠️ Resend invitation email sending returned false for {Email}. Email details logged to console.", 
+                _logger.LogError(ex, 
+                    "Failed to send resend invitation email directly for {Email}. Invitation resent but email not sent.", 
                     invitation.PrimaryContactEmail);
-                Console.WriteLine($"⚠️ Resend invitation email logged (not sent) for: {invitation.PrimaryContactEmail}");
+                // Don't fail the resend if email sending fails
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, 
-                "Failed to send resend invitation email directly for {Email}. Invitation resent but email not sent.", 
-                invitation.PrimaryContactEmail);
-            // Don't fail the resend if email sending fails
         }
 
         _logger.LogInformation(
