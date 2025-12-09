@@ -1,7 +1,7 @@
+
 using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
-using VendorMdm.Api.Models; // Cosmos entities
-using VendorMdm.Shared.Models; // SQL entities
+using VendorMdm.Shared.Models; // SQL and Cosmos entities
 
 namespace VendorMdm.Api.Services;
 
@@ -16,9 +16,9 @@ public class ChangeRequestRepository : IChangeRequestRepository
 {
     private readonly SqlDbContext _sqlContext;
     private readonly CosmosRepository _cosmosRepo;
-    private readonly ServiceBusService _serviceBus;
+    private readonly IServiceBusService _serviceBus;
 
-    public ChangeRequestRepository(SqlDbContext sqlContext, CosmosRepository cosmosRepo, ServiceBusService serviceBus)
+    public ChangeRequestRepository(SqlDbContext sqlContext, CosmosRepository cosmosRepo, IServiceBusService serviceBus)
     {
         _sqlContext = sqlContext;
         _cosmosRepo = cosmosRepo;
@@ -32,7 +32,7 @@ public class ChangeRequestRepository : IChangeRequestRepository
         await _sqlContext.SaveChangesAsync();
 
         // 2. Save Payload to Cosmos
-        var cosmosData = new VendorMdm.Api.Models.ChangeRequestData
+        var cosmosData = new ChangeRequestData
         {
             Id = request.Id.ToString(),
             RequestId = request.Id.ToString(),
@@ -68,7 +68,7 @@ public class ChangeRequestRepository : IChangeRequestRepository
         await _sqlContext.SaveChangesAsync();
 
         // 2. Log Domain Event
-        var domainEvent = new VendorMdm.Api.Models.DomainEvent
+        var domainEvent = new DomainEvent
         {
             EventType = "RequestApproved",
             EntityId = id.ToString(),

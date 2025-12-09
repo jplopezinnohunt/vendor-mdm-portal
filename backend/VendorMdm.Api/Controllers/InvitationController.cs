@@ -4,6 +4,7 @@ using VendorMdm.Api.Services;
 using VendorMdm.Api.Data;
 using VendorMdm.Shared.Models; // SQL entities
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace VendorMdm.Api.Controllers;
 
@@ -28,26 +29,27 @@ public class InvitationController : ControllerBase
     /// <summary>
     /// Create a new vendor invitation (Approver/Admin only)
     /// </summary>
+    [Authorize(Policy = "AdminOrApprover")]
     [HttpPost("create")]
     public async Task<IActionResult> CreateInvitation([FromBody] CreateInvitationRequest request)
     {
         try
         {
-            // TODO: Get authenticated user from claims
-            // For now, using mock data
+            // For now, using a dummy user until we parse the token properly
+            // In real impl: var userId = Guid.Parse(User.FindFirst("sub").Value);
             var invitedBy = Guid.NewGuid();
             var invitedByName = "System Admin"; // In production: User.Identity.Name
 
             var response = await _invitationService.CreateInvitationAsync(
-                request, 
-                invitedBy, 
+                request,
+                invitedBy,
                 invitedByName);
 
             return Ok(response);
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { error = ex.Message });
+            return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -108,6 +110,7 @@ public class InvitationController : ControllerBase
     /// <summary>
     /// Complete vendor registration via invitation
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("complete/{token}")]
     public async Task<IActionResult> CompleteInvitation(
         string token,
@@ -176,51 +179,4 @@ public class InvitationController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Get list of all invitations (Approver/Admin only)
-    /// </summary>
-    [HttpGet("list")]
-    public async Task<IActionResult> GetInvitations(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        [FromQuery] string? status = null)
-    {
-        try
-        {
-            var response = await _invitationService.GetInvitationsAsync(page, pageSize, status);
-            return Ok(response);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting invitations");
-            return StatusCode(500, new { error = "Failed to get invitations" });
-        }
-    }
-
-    /// <summary>
-    /// Resend an invitation (Approver/Admin only)
-    /// </summary>
-    [HttpPost("resend/{id}")]
-    public async Task<IActionResult> ResendInvitation(Guid id)
-    {
-        try
-        {
-            // TODO: Get authenticated user
-            var requestedBy = Guid.NewGuid();
-
-            var success = await _invitationService.ResendInvitationAsync(id, requestedBy);
-
-            if (!success)
-            {
-                return NotFound(new { error = "Invitation not found or already completed" });
-            }
-
-            return Ok(new { message = "Invitation has been resent successfully" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error resending invitation");
-            return StatusCode(500, new { error = "Failed to resend invitation" });
-        }
-    }
 }

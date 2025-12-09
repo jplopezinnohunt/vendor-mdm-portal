@@ -24,7 +24,7 @@ public class InvitationService : IInvitationService
 {
     private readonly SqlDbContext _context;
     private readonly ILogger<InvitationService> _logger;
-    private readonly ServiceBusService _serviceBusService;
+    private readonly IServiceBusService _serviceBusService;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
     private readonly Container _cosmosArtifactsContainer;
@@ -33,7 +33,7 @@ public class InvitationService : IInvitationService
     public InvitationService(
         SqlDbContext context, 
         ILogger<InvitationService> logger,
-        ServiceBusService serviceBusService,
+        IServiceBusService serviceBusService,
         IEmailService emailService,
         IConfiguration configuration,
         CosmosClient cosmosClient)

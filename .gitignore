@@ -44,3 +44,9 @@ local.settings.json
 
 # Auto-generated version file
 frontend/src/version.ts
+
+# Migration Staging
+_migration_staging/
+
+# Test Results
+TestResults/

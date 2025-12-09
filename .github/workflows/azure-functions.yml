@@ -42,8 +42,17 @@ jobs:
     - name: 'Resolve Project Dependencies Using Dotnet'
       shell: pwsh
       run: |
+        pushd './backend'
+        dotnet restore
+        dotnet build --configuration Release
+        dotnet test --no-build --configuration Release
+        popd
+
+    - name: 'Publish Artifacts'
+      shell: pwsh
+      run: |
         pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
-        dotnet build --configuration Release --output ./output
+        dotnet publish --configuration Release --output ./output
         popd
 
     - name: 'Run Azure Functions Action'

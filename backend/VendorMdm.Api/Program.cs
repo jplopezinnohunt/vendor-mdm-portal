@@ -6,6 +6,8 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Azure;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Identity.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +40,16 @@ else if (builder.Environment.IsDevelopment())
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Authentication & Authorization
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOrApprover", policy =>
+        policy.RequireRole("Admin", "Approver"));
+});
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -130,7 +142,7 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 
 // 4. Custom Services
 builder.Services.AddScoped<CosmosRepository>();
-builder.Services.AddScoped<ServiceBusService>();
+builder.Services.AddScoped<IServiceBusService, ServiceBusService>();
 builder.Services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
 builder.Services.AddHttpClient(); // For EmailService HTTP client
 builder.Services.AddScoped<IEmailService, EmailService>();
@@ -167,6 +179,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseRouting();
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

@@ -1,5 +1,5 @@
 using Microsoft.Azure.Cosmos;
-using VendorMdm.Api.Models;
+using VendorMdm.Shared.Models;
 
 namespace VendorMdm.Api.Services;
 

@@ -3,7 +3,13 @@ using Newtonsoft.Json;
 
 namespace VendorMdm.Api.Services;
 
-public class ServiceBusService
+public interface IServiceBusService
+{
+    Task PublishEventAsync(string eventType, object data, string? queueName = null);
+    ValueTask DisposeAsync();
+}
+
+public class ServiceBusService : IServiceBusService
 {
     private readonly ServiceBusClient _client;
     private readonly string _sapEnvironmentCode;
