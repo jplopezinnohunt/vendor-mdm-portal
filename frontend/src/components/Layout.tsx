@@ -14,7 +14,8 @@ import {
   Settings,
   ShieldAlert,
   Mail,
-  UserPlus
+  UserPlus,
+  Activity
 } from 'lucide-react';
 
 const VENDOR_NAV = [
@@ -32,6 +33,7 @@ const APPROVER_NAV = [
 
 const ADMIN_NAV = [
   { name: 'System Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+  { name: 'System Status', href: '/admin/system-status', icon: Activity },
   { name: 'Workflow Rules', href: '/admin/rules', icon: Settings },
   { name: 'Audit Logs', href: '/admin/audit', icon: ShieldAlert },
   { name: 'Invite Vendor', href: '/admin/invite-vendor', icon: UserPlus },

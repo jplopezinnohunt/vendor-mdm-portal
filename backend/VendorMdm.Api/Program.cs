@@ -8,6 +8,7 @@ using VendorMdm.Api.Data;
 using VendorMdm.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
+using VendorMdm.Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,19 +37,60 @@ else if (builder.Environment.IsDevelopment())
     Console.WriteLine("🔧 Development mode: Using local configuration (appsettings.Development.json or User Secrets)");
 }
 
+// --- DATA SOURCE MODE DETECTION ---
+var dataSourceModeString = builder.Configuration["DataSourceMode"];
+DataSourceMode dataSourceMode = DataSourceMode.Auto;
+
+if (!string.IsNullOrEmpty(dataSourceModeString) && 
+    Enum.TryParse<DataSourceMode>(dataSourceModeString, true, out var parsedMode))
+{
+    dataSourceMode = parsedMode;
+}
+
+Console.WriteLine("");
+Console.WriteLine("═══════════════════════════════════════════════════════════");
+Console.WriteLine("🔌 DATA SOURCE MODE CONFIGURATION");
+Console.WriteLine("═══════════════════════════════════════════════════════════");
+Console.WriteLine($"Configured Mode: {dataSourceMode}");
+
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Authentication & Authorization
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+// Only enable Azure AD authentication if ClientId is configured
+var azureAdClientId = builder.Configuration["AzureAd:ClientId"];
+if (!string.IsNullOrEmpty(azureAdClientId))
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
+    
+    Console.WriteLine("✅ Azure AD Authentication enabled");
+}
+else
+{
+    Console.WriteLine("⚠️  Authentication DISABLED (Azure AD not configured)");
+    Console.WriteLine("   For local development only - configure AzureAd:ClientId for production");
+}
 
+// Always configure authorization policies (needed even without authentication for local dev)
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOrApprover", policy =>
-        policy.RequireRole("Admin", "Approver"));
+    {
+        if (!string.IsNullOrEmpty(azureAdClientId))
+        {
+            // Production: require roles
+            policy.RequireRole("Admin", "Approver");
+        }
+        else
+        {
+            // Local dev without auth: allow all requests
+            policy.RequireAssertion(context => true);
+        }
+    });
 });
 
 // Add CORS
@@ -63,35 +105,81 @@ builder.Services.AddCors(options =>
         });
 });
 
+
 // --- CONNECTION STRING LOGIC ---
 var useLocalEmulators = builder.Configuration.GetValue<bool>("UseLocalEmulators");
 var sqlConnection = builder.Configuration.GetConnectionString("Sql");
 var cosmosConnection = builder.Configuration.GetConnectionString("Cosmos");
 var serviceBusConnection = builder.Configuration.GetConnectionString("ServiceBus");
 
-// Auto-fallback: If Azure connection strings are still placeholders, use local emulators
-if (!useLocalEmulators && (sqlConnection?.Contains("YOUR_") == true || 
-    sqlConnection?.Contains("YOUR_SERVER_NAME") == true || 
-    cosmosConnection?.Contains("YOUR_") == true ||
-    serviceBusConnection?.Contains("YOUR_") == true ||
-    string.IsNullOrEmpty(sqlConnection)))
+// Determine actual mode based on configuration and connection strings
+if (dataSourceMode == DataSourceMode.Auto)
 {
-    Console.WriteLine("⚠️ Azure connection strings contain placeholders. Falling back to Local Emulators.");
-    Console.WriteLine("💡 To use Azure resources, update appsettings.Development.json or use User Secrets.");
+    // Auto-fallback: If Azure connection strings are still placeholders, use local emulators
+    if (!useLocalEmulators && (sqlConnection?.Contains("YOUR_") == true || 
+        sqlConnection?.Contains("YOUR_SERVER_NAME") == true || 
+        cosmosConnection?.Contains("YOUR_") == true ||
+        serviceBusConnection?.Contains("YOUR_") == true ||
+        string.IsNullOrEmpty(sqlConnection)))
+    {
+        Console.WriteLine("⚠️  Azure connection strings contain placeholders.");
+        Console.WriteLine("💡 Auto-detecting mode: Falling back to Local");
+        dataSourceMode = DataSourceMode.Local;
+        useLocalEmulators = true;
+    }
+    else if (!string.IsNullOrEmpty(sqlConnection) && !sqlConnection.Contains("YOUR_"))
+    {
+        Console.WriteLine("☁️  Azure connection strings detected.");
+        Console.WriteLine("💡 Auto-detecting mode: Using Connected");
+        dataSourceMode = DataSourceMode.Connected;
+        useLocalEmulators = false;
+    }
+    else
+    {
+        Console.WriteLine("🔧 No Azure resources configured.");
+        Console.WriteLine("💡 Auto-detecting mode: Using Local");
+        dataSourceMode = DataSourceMode.Local;
+        useLocalEmulators = true;
+    }
+}
+else if (dataSourceMode == DataSourceMode.Local)
+{
     useLocalEmulators = true;
 }
+else if (dataSourceMode == DataSourceMode.Connected)
+{
+    useLocalEmulators = false;
+}
+else if (dataSourceMode == DataSourceMode.Mock)
+{
+    useLocalEmulators = true; // Use local for mock mode
+    Console.WriteLine("🧪 Mock mode enabled - services will return mock data");
+}
 
-if (useLocalEmulators)
+Console.WriteLine($"Active Mode: {dataSourceMode}");
+Console.WriteLine("═══════════════════════════════════════════════════════════");
+Console.WriteLine("");
+
+if (useLocalEmulators || dataSourceMode == DataSourceMode.Local)
 {
     Console.WriteLine("🔧 Using Local Emulators for development.");
     sqlConnection = builder.Configuration.GetSection("LocalConnectionStrings")["Sql"];
     cosmosConnection = builder.Configuration.GetSection("LocalConnectionStrings")["Cosmos"];
     serviceBusConnection = builder.Configuration.GetSection("LocalConnectionStrings")["ServiceBus"];
+    
+    Console.WriteLine($"   Database: SQLite");
+    Console.WriteLine($"   Cosmos: Local Emulator");
+    Console.WriteLine($"   Service Bus: Local Emulator");
 }
 else
 {
-    Console.WriteLine("☁️ Using Azure Resources.");
+    Console.WriteLine("☁️  Using Azure Resources.");
+    Console.WriteLine($"   Database: SQL Server");
+    Console.WriteLine($"   Cosmos: {cosmosConnection?.Split('/')[2] ?? "Not configured"}");
+    Console.WriteLine($"   Service Bus: {serviceBusConnection?.Split('.')[0] ?? "Not configured"}");
 }
+Console.WriteLine("");
+
 
 // 1. Azure Clients
 builder.Services.AddAzureClients(clientBuilder =>
@@ -151,21 +239,19 @@ builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
 
-// Ensure database is created (for local development)
-if (useLocalEmulators)
+// Ensure database is created (for all environments)
+// This will create the schema if it doesn't exist
+using (var scope = app.Services.CreateScope())
 {
-    using (var scope = app.Services.CreateScope())
+    var dbContext = scope.ServiceProvider.GetRequiredService<SqlDbContext>();
+    try
     {
-        var dbContext = scope.ServiceProvider.GetRequiredService<SqlDbContext>();
-        try
-        {
-            dbContext.Database.EnsureCreated();
-            Console.WriteLine("✅ Database initialized successfully.");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"⚠️ Database initialization warning: {ex.Message}");
-        }
+        dbContext.Database.EnsureCreated();
+        Console.WriteLine("✅ Database initialized successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠️ Database initialization warning: {ex.Message}");
     }
 }
 
@@ -179,7 +265,13 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseRouting();
-app.UseAuthentication();
+
+// Only use authentication if it was configured
+if (!string.IsNullOrEmpty(azureAdClientId))
+{
+    app.UseAuthentication();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 

@@ -24,11 +24,11 @@ export const ServiceStatusPanel: React.FC = () => {
     useEffect(() => {
         // Run checks sequentially – can be parallel if desired
         const runChecks = async () => {
-            const v = await checkEndpoint('http://localhost:7001/api/vendor/100450');
+            const v = await checkEndpoint('http://localhost:5001/api/vendor/100450');
             setVendorStatus(v);
-            const r = await checkEndpoint('http://localhost:7001/api/changerequest/vendor/100450');
+            const r = await checkEndpoint('http://localhost:5001/api/changerequest/vendor/100450');
             setRequestsStatus(r);
-            const o = await checkEndpoint('http://localhost:7001/api/onboarding');
+            const o = await checkEndpoint('http://localhost:5001/api/onboarding');
             setOnboardingStatus(o);
         };
         runChecks();

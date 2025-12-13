@@ -59,6 +59,73 @@ public class InvitationController : ControllerBase
     }
 
     /// <summary>
+    /// Get all invitations with optional status filter (Approver/Admin only)
+    /// </summary>
+    [Authorize(Policy = "AdminOrApprover")]
+    [HttpGet("list")]
+    public async Task<IActionResult> ListInvitations([FromQuery] string? status = null)
+    {
+        try
+        {
+            var query = _context.VendorInvitations.AsQueryable();
+
+            // Filter by status if provided
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(i => i.Status == status);
+            }
+
+            var invitations = await query
+                .OrderByDescending(i => i.CreatedAt)
+                .Select(i => new
+                {
+                    id = i.Id,
+                    vendorLegalName = i.VendorLegalName,
+                    primaryContactEmail = i.PrimaryContactEmail,
+                    status = i.Status,
+                    invitedByName = i.InvitedByName,
+                    createdAt = i.CreatedAt,
+                    expiresAt = i.ExpiresAt,
+                    vendorApplicationId = i.VendorApplicationId
+                })
+                .ToListAsync();
+
+            return Ok(new { invitations });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing invitations");
+            return StatusCode(500, new { error = "Failed to list invitations" });
+        }
+    }
+
+    /// <summary>
+    /// Resend an invitation email (Approver/Admin only)
+    /// </summary>
+    [Authorize(Policy = "AdminOrApprover")]
+    [HttpPost("resend/{id}")]
+    public async Task<IActionResult> ResendInvitation(Guid id)
+    {
+        try
+        {
+            var requestedBy = Guid.NewGuid(); // In production: parse from token
+            var success = await _invitationService.ResendInvitationAsync(id, requestedBy);
+
+            if (!success)
+            {
+                return NotFound(new { error = "Invitation not found or already completed" });
+            }
+
+            return Ok(new { message = "Invitation resent successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resending invitation {Id}", id);
+            return StatusCode(500, new { error = "Failed to resend invitation" });
+        }
+    }
+
+    /// <summary>
     /// Validate an invitation token
     /// </summary>
     [HttpGet("validate/{token}")]
