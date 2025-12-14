@@ -9,6 +9,7 @@ using VendorMdm.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 using VendorMdm.Shared.Models;
+using VendorMdm.Shared.Mapping;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -236,6 +237,11 @@ builder.Services.AddHttpClient(); // For EmailService HTTP client
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IInvitationService, InvitationService>();
 builder.Services.AddApplicationInsightsTelemetry();
+
+// Canonical Model Services - External System Integration
+builder.Services.AddScoped<IExternalSystemMappingService, ExternalSystemMappingService>();
+builder.Services.AddScoped<ISapIdMappingService, SapIdMappingService>();
+builder.Services.AddScoped<IVendorSapMapper, VendorSapMapper>();
 
 var app = builder.Build();
 
