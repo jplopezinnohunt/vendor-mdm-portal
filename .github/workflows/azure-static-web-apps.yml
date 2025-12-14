@@ -10,7 +10,6 @@ on:
       - main
 
 jobs:
-jobs:
   build_and_deploy_job:
     # Azure Static Web Apps deploy via GitHub Actions (by design)
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
