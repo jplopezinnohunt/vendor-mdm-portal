@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using VendorMdm.Shared.Models;
 
@@ -6,78 +5,14 @@ namespace VendorMdm.Shared.Mapping;
 
 /// <summary>
 /// SAP ID mapping service implementation.
-/// Manages mappings between canonical entity IDs and SAP system IDs.
+/// NOTE: This is an interface-only version. Actual implementation should be in the API project
+/// where DbContext is available.
 /// </summary>
-public class SapIdMappingService : ISapIdMappingService
+public interface ISapIdMappingRepository
 {
-    private readonly DbContext _context; // Your DbContext
-    private readonly ILogger<SapIdMappingService> _logger;
-    
-    public SapIdMappingService(DbContext context, ILogger<SapIdMappingService> logger)
-    {
-        _context = context;
-        _logger = logger;
-    }
-    
-    public async Task<string> GetOrCreateSapIdAsync(Guid canonicalId, string entityType, string sapEnvironment = "D01")
-    {
-        var existing = await GetSapIdAsync(canonicalId, entityType, sapEnvironment);
-        if (existing != null)
-            return existing;
-        
-        // Generate new SAP ID (in real implementation, call SAP to create)
-        var sapId = await GenerateNewSapIdAsync(entityType);
-        
-        await CreateMappingAsync(canonicalId, entityType, sapId, sapEnvironment);
-        
-        return sapId;
-    }
-    
-    public async Task<string?> GetSapIdAsync(Guid canonicalId, string entityType, string sapEnvironment = "D01")
-    {
-        var mapping = await _context.Set<SapIdMapping>()
-            .FirstOrDefaultAsync(m => 
-                m.CanonicalEntityId == canonicalId &&
-                m.EntityType == entityType &&
-                m.SapEnvironment == sapEnvironment);
-        
-        return mapping?.SapId;
-    }
-    
-    public async Task<Guid?> GetCanonicalIdAsync(string sapId, string entityType, string sapEnvironment = "D01")
-    {
-        var mapping = await _context.Set<SapIdMapping>()
-            .FirstOrDefaultAsync(m => 
-                m.SapId == sapId &&
-                m.EntityType == entityType &&
-                m.SapEnvironment == sapEnvironment);
-        
-        return mapping?.CanonicalEntityId;
-    }
-    
-    public async Task CreateMappingAsync(Guid canonicalId, string entityType, string sapId, string sapEnvironment = "D01")
-    {
-        var mapping = new SapIdMapping
-        {
-            CanonicalEntityId = canonicalId,
-            EntityType = entityType,
-            SapId = sapId,
-            SapEnvironment = sapEnvironment
-        };
-        
-        _context.Set<SapIdMapping>().Add(mapping);
-        await _context.SaveChangesAsync();
-        
-        _logger.LogInformation("Created SAP mapping: {EntityType} {CanonicalId} → {SapId}", 
-            entityType, canonicalId, sapId);
-    }
-    
-    private async Task<string> GenerateNewSapIdAsync(string entityType)
-    {
-        // In a real implementation, this would call SAP to create a new partner
-        // For now, generate a placeholder
-        return $"SAP_{entityType}_{Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper()}";
-    }
+    Task<SapIdMapping?> GetMappingAsync(Guid canonicalId, string entityType, string sapEnvironment);
+    Task<SapIdMapping?> GetMappingBySapIdAsync(string sapId, string entityType, string sapEnvironment);
+    Task CreateMappingAsync(SapIdMapping mapping);
 }
 
 /// <summary>
@@ -86,12 +21,10 @@ public class SapIdMappingService : ISapIdMappingService
 public class VendorSapMapper : IVendorSapMapper
 {
     private readonly ISapIdMappingService _sapIdService;
-    private readonly ILogger<VendorSapMapper> _logger;
     
-    public VendorSapMapper(ISapIdMappingService sapIdService, ILogger<VendorSapMapper> logger)
+    public VendorSapMapper(ISapIdMappingService sapIdService)
     {
         _sapIdService = sapIdService;
-        _logger = logger;
     }
     
     public async Task<SapBusinessPartner> ToSapAsync(Vendor vendor)
