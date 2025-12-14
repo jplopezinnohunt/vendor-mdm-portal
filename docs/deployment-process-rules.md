@@ -4,19 +4,21 @@
 
 **MANDATORY**: All Azure resources are deployed using **Azure CLI**, NOT GitHub Actions.
 
+**EXCEPTION**: Azure Static Web Apps deploy via GitHub Actions (this is Azure's designed deployment method).
+
 ### Why This Rule Exists
 - ✅ Consistent deployment methodology
 - ✅ Direct control over Azure resources
-- ✅ No dependency on GitHub Actions secrets
+- ✅ No dependency on GitHub Actions secrets (except SWA)
 - ✅ Simpler debugging and troubleshooting
-- ✅ Works from any environment (local, CI/CD, Azure Portal)
+- ✅ Works from any environment
 
 ### What This Means
-- ❌ No GitHub Actions for Azure resource deployment
-- ❌ No automated CI/CD deployments to Azure
-- ✅ Use `az` CLI commands for all Azure operations
+- ❌ No GitHub Actions for Azure Functions, App Service, etc.
+- ✅ Azure Static Web Apps: GitHub Actions is the correct method
+- ✅ Use `az` CLI for infrastructure and backend
 - ✅ Use `func` CLI for Azure Functions
-- ✅ Manual, controlled deployments
+- ✅ Manual, controlled deployments (except SWA)
 
 ---
 
@@ -57,19 +59,21 @@ az containerapp update \
 ```
 
 ### 3. Static Web App (Frontend)
-**Method**: Azure CLI (Static Web Apps CLI)
+**Method**: GitHub Actions (Azure's designed deployment method)
 
+**Workflow**: `.github/workflows/azure-static-web-apps.yml` ✅ **ENABLED**
+
+```yaml
+# Deploys automatically on push to main
+# Requires AZURE_STATIC_WEB_APPS_API_TOKEN secret in GitHub
+```
+
+**Manual alternative** (if workflow fails):
 ```bash
 cd frontend
 npm run build
-
-# Deploy using Static Web Apps CLI
-swa deploy ./dist \
-  --app-name <swa-name> \
-  --resource-group <resource-group>
+swa deploy ./dist --app-name <swa-name> --resource-group <resource-group>
 ```
-
-**Note**: GitHub Actions workflow (`.github/workflows/azure-static-web-apps.yml`) is **disabled** - not used.
 
 ### 4. Azure SQL Database
 **Method**: Azure Portal SQL Query Editor OR Azure CLI
@@ -115,7 +119,7 @@ az deployment group create \
 |-----------|-------------------|-----------------|
 | **Azure Functions** | `func publish` | ❌ Disabled |
 | **API Backend** | `az webapp deployment` | ❌ Not used |
-| **Frontend (SWA)** | `swa deploy` OR Azure CLI | ❌ Disabled |
+| **Frontend (SWA)** | GitHub Actions | ✅ **ENABLED** |
 | **Database** | Azure Portal OR `az sql db query` | ❌ Not applicable |
 | **Infrastructure** | `az deployment group create` | ❌ Not used |
 
