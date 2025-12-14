@@ -3,14 +3,32 @@
 ## Core Principle
 **All code pushed to `main` must result in passing CI/CD pipelines.**
 
+## Critical Deployment Rule: Azure Functions
+
+**Azure Functions are deployed via Azure CLI, NOT GitHub Actions.**
+
+### Deployment Process:
+```bash
+# Azure Functions deployment
+cd backend/VendorMdm.Artifacts  # or relevant function project
+func azure functionapp publish <function-app-name>
+```
+
+**GitHub Workflow**: `.github/workflows/azure-functions.yml` is **DISABLED** - not used for deployment.
+
+---
+
 ## The Problem
-GitHub workflows are failing because they require Azure infrastructure that isn't deployed yet:
-- ❌ Deploy Backend Artifacts
-- ❌ Azure Static Web Apps CI/CD
+GitHub workflows were failing because:
+- ❌ `azure-functions.yml` tried to deploy Functions (wrong - use Azure CLI instead)
+- ❌ `azure-static-web-apps.yml` requires Azure Static Web App (not deployed yet)
 
-## Immediate Fix: Disable Workflows Until Ready
+## Fix Applied
+✅ Both workflows **disabled** until needed  
+✅ Azure Functions deployment: Use Azure CLI manually  
+✅ Frontend deployment: Will configure when Azure Static Web App is ready
 
-Workflows are disabled until Azure infrastructure is properly configured.
+---
 
 ## Rule for Future Development
 

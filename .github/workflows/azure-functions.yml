@@ -16,8 +16,9 @@ env:
 
 jobs:
   build-and-deploy:
-    # DISABLED: Waiting for Azure infrastructure deployment and secrets configuration
-    # TODO: Enable after configuring AZURE_CREDENTIALS and AZURE_RESOURCE_GROUP secrets
+    # DISABLED: Azure Functions are deployed via Azure CLI, NOT GitHub Actions
+    # Deployment command: func azure functionapp publish <function-app-name>
+    # This workflow is not used and remains disabled
     if: false
     runs-on: windows-latest
     steps:
