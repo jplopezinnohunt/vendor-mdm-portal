@@ -100,7 +100,23 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://localhost:3002") // Vite default ports + alternative
+            var allowedOrigins = new List<string> 
+            { 
+                "http://localhost:5173", 
+                "http://localhost:3000", 
+                "http://localhost:3002",
+                "https://swa-vendor-mdm-dev.azurestaticapps.net",
+                "https://thankful-field-0258f8110.3.azurestaticapps.net"
+            };
+            
+            var configuredUrl = builder.Configuration["App:BaseUrl"];
+            if (!string.IsNullOrEmpty(configuredUrl))
+            {
+                allowedOrigins.Add(configuredUrl);
+            }
+
+            policy.WithOrigins(allowedOrigins.Distinct().ToArray())
+
                   .AllowAnyHeader()
                   .AllowAnyMethod();
         });
