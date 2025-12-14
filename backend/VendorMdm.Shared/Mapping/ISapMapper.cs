@@ -1,33 +1,37 @@
 namespace VendorMdm.Shared.Mapping;
 
 /// <summary>
-/// Interface for SAP ID mapping service.
-/// Anti-corruption layer: translates between canonical IDs and SAP IDs.
+/// Interface for external system ID mapping service.
+/// Anti-corruption layer: translates between canonical IDs and external system IDs.
+/// Supports SAP, Salesforce, SuccessFactors, Workday, and other integrations.
 /// </summary>
-public interface ISapIdMappingService
+public interface IExternalSystemMappingService
 {
     /// <summary>
-    /// Get SAP ID for a canonical entity, or create new mapping if doesn't exist.
+    /// Get external system ID for a canonical entity, or create new mapping if doesn't exist.
     /// </summary>
-    Task<string> GetOrCreateSapIdAsync(Guid canonicalId, string entityType, string sapEnvironment = "D01");
+    Task<string> GetOrCreateExternalIdAsync(Guid canonicalId, string entityType, string systemName, string systemEnvironment = "Production");
     
     /// <summary>
-    /// Get existing SAP ID for a canonical entity.
+    /// Get existing external system ID for a canonical entity.
     /// Returns null if no mapping exists.
     /// </summary>
-    Task<string?> GetSapIdAsync(Guid canonicalId, string entityType, string sapEnvironment = "D01");
+    Task<string?> GetExternalIdAsync(Guid canonicalId, string entityType, string systemName, string systemEnvironment = "Production");
     
     /// <summary>
-    /// Get canonical ID from SAP ID.
+    /// Get canonical ID from external system ID.
     /// Returns null if no mapping exists.
     /// </summary>
-    Task<Guid?> GetCanonicalIdAsync(string sapId, string entityType, string sapEnvironment = "D01");
+    Task<Guid?> GetCanonicalIdAsync(string externalId, string entityType, string systemName, string systemEnvironment = "Production");
     
     /// <summary>
-    /// Create explicit mapping between canonical and SAP IDs.
+    /// Create explicit mapping between canonical and external system IDs.
     /// </summary>
-    Task CreateMappingAsync(Guid canonicalId, string entityType, string sapId, string sapEnvironment = "D01");
+    Task CreateMappingAsync(Guid canonicalId, string entityType, string externalId, string systemName, string systemEnvironment = "Production");
 }
+
+// Backward compatibility alias
+public interface ISapIdMappingService : IExternalSystemMappingService { }
 
 /// <summary>
 /// SAP mapper interface for canonical Vendor entity.

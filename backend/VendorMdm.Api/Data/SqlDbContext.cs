@@ -21,7 +21,7 @@ public class SqlDbContext : DbContext
     public DbSet<Vendor> Vendors { get; set; }
     public DbSet<VendorInvitationCanonical> VendorInvitationsCanonical { get; set; }
     public DbSet<ChangeRequestCanonical> ChangeRequestsCanonical { get; set; }
-    public DbSet<SapIdMapping> SapIdMappings { get; set; }
+    public DbSet<ExternalSystemMapping> ExternalSystemMappings { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -149,17 +149,19 @@ public class SqlDbContext : DbContext
                 .HasDefaultValue("{}");
         });
 
-        // SapIdMapping - Anti-corruption layer
-        modelBuilder.Entity<SapIdMapping>(entity =>
+        // ExternalSystemMapping - Anti-corruption layer for multi-system integration
+        modelBuilder.Entity<ExternalSystemMapping>(entity =>
         {
             entity.HasKey(e => e.Id);
             
-            // Unique constraint: one SAP ID per canonical entity per environment
-            entity.HasIndex(e => new { e.EntityType, e.SapId, e.SapEnvironment })
-                .IsUnique();
+            // Unique constraint: one external system ID per canonical entity per system+environment
+            entity.HasIndex(e => new { e.EntityType, e.ExternalSystemId, e.SystemName, e.SystemEnvironment })
+                .IsUnique()
+                .HasDatabaseName("IX_ExternalSystemMapping_Unique");
             
             // Index for canonical ID lookups
-            entity.HasIndex(e => new { e.CanonicalEntityId, e.EntityType });
+            entity.HasIndex(e => new { e.CanonicalEntityId, e.EntityType, e.SystemName })
+                .HasDatabaseName("IX_ExternalSystemMapping_Canonical");
         });
     }
 }

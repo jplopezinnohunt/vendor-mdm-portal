@@ -4,23 +4,23 @@ using VendorMdm.Shared.Models;
 namespace VendorMdm.Shared.Mapping;
 
 /// <summary>
-/// SAP ID mapping service implementation.
-/// NOTE: This is an interface-only version. Actual implementation should be in the API project
-/// where DbContext is available.
+/// External system ID mapping repository interface.
+/// NOTE: Actual implementation should be in the API project where DbContext is available.
 /// </summary>
-public interface ISapIdMappingRepository
+public interface IExternalSystemMappingRepository
 {
-    Task<SapIdMapping?> GetMappingAsync(Guid canonicalId, string entityType, string sapEnvironment);
-    Task<SapIdMapping?> GetMappingBySapIdAsync(string sapId, string entityType, string sapEnvironment);
-    Task CreateMappingAsync(SapIdMapping mapping);
+    Task<ExternalSystemMapping?> GetMappingAsync(Guid canonicalId, string entityType, string systemName, string systemEnvironment);
+    Task<ExternalSystemMapping?> GetMappingByExternalIdAsync(string externalId, string entityType, string systemName, string systemEnvironment);
+    Task CreateMappingAsync(ExternalSystemMapping mapping);
 }
 
 /// <summary>
 /// Vendor SAP mapper implementation.
+/// Maps canonical Vendor entity to/from SAP Business Partner.
 /// </summary>
 public class VendorSapMapper : IVendorSapMapper
 {
-    private readonly ISapIdMappingService _sapIdService;
+    private readonly ISapIdMappingService _sapIdService; // Uses IExternalSystemMappingService via inheritance
     
     public VendorSapMapper(ISapIdMappingService sapIdService)
     {
@@ -29,8 +29,13 @@ public class VendorSapMapper : IVendorSapMapper
     
     public async Task<SapBusinessPartner> ToSapAsync(Vendor vendor)
     {
-        // Get or create SAP ID for this vendor
-        var sapId = await _sapIdService.GetOrCreateSapIdAsync(vendor.Id, nameof(Vendor));
+        // Get or create SAP ID for this vendor (systemName: "SAP")
+        var sapId = await _sapIdService.GetOrCreateExternalIdAsync(
+            vendor.Id, 
+            nameof(Vendor), 
+            "SAP",  // System name
+            "D01"   // SAP environment
+        );
         
         // Parse vendor Data JSON for additional fields
         var vendorData = string.IsNullOrWhiteSpace(vendor.Data) 
@@ -50,7 +55,12 @@ public class VendorSapMapper : IVendorSapMapper
     public async Task<Vendor> FromSapAsync(SapBusinessPartner sapBp)
     {
         // Get canonical ID for this SAP partner
-        var canonicalId = await _sapIdService.GetCanonicalIdAsync(sapBp.PartnerNumber, nameof(Vendor));
+        var canonicalId = await _sapIdService.GetCanonicalIdAsync(
+            sapBp.PartnerNumber, 
+            nameof(Vendor),
+            "SAP",  // System name
+            "D01"   // SAP environment
+        );
         
         var vendorData = new
         {

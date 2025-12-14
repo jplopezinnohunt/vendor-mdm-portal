@@ -134,17 +134,17 @@ public class ChangeRequestCanonical : CanonicalEntityBase
 }
 
 /// <summary>
-/// SAP ID mapping table - anti-corruption layer.
-/// Maps canonical entity IDs to SAP system IDs.
-/// NO SAP fields should exist in canonical entities!
+/// External System ID mapping table - anti-corruption layer.
+/// Maps canonical entity IDs to external system IDs (SAP, Salesforce, SuccessFactors, etc.).
+/// Supports multi-system integration strategy.
 /// </summary>
-public class SapIdMapping
+public class ExternalSystemMapping
 {
     [Key]
     public Guid Id { get; set; } = Guid.NewGuid();
     
     /// <summary>
-    /// Canonical entity ID (e.g., Vendor.Id)
+    /// Canonical entity ID (e.g., Vendor.Id, Employee.Id)
     /// </summary>
     [Required]
     public Guid CanonicalEntityId { get; set; }
@@ -157,18 +157,26 @@ public class SapIdMapping
     public string EntityType { get; set; } = string.Empty;
     
     /// <summary>
-    /// SAP ID (e.g., LIFNR for vendors, KUNNR for customers)
+    /// External system ID (e.g., SAP LIFNR, Salesforce Account ID, SuccessFactors Person ID)
+    /// </summary>
+    [Required]
+    [MaxLength(100)]
+    public string ExternalSystemId { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// External system name (e.g., "SAP", "Salesforce", "SuccessFactors", "Workday")
     /// </summary>
     [Required]
     [MaxLength(50)]
-    public string SapId { get; set; } = string.Empty;
+    public string SystemName { get; set; } = string.Empty;
     
     /// <summary>
-    /// SAP environment (D01, Q01, P01)
+    /// System environment or instance (e.g., "D01", "Production", "Sandbox")
     /// </summary>
     [Required]
-    [MaxLength(10)]
-    public string SapEnvironment { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string SystemEnvironment { get; set; } = string.Empty;
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
 }
