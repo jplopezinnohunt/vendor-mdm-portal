@@ -120,14 +120,21 @@ The application utilizes a **Hybrid Data Architecture**, combining **Azure SQL**
 ### 1. Relational Domain Entities (Azure SQL)
 *Managed via Entity Framework Core*
 
-| Entity | Description | Key Properties |
-| :--- | :--- | :--- |
-| **ChangeRequest** | Central entity for vendor modification or onboarding requests. | `Id` (PK), `Status`, `SapVendorId`, `RequesterId` |
-| **VendorApplication** | Initial data for new vendor onboarding requests. | `Id` (PK), `CompanyName`, `ContactEmail`, `Status` |
-| **Attachment** | Metadata for uploaded files (e.g., tax docs). | `Id` (PK), `LinkedEntityId`, `BlobUrl` |
-| **UserRole** | Manages user permissions and roles. | `Id` (PK), `Username`, `Role` (Admin, Requester, Approver) |
-| **WorkflowState** | Reference data for valid request states. | `StateName` (PK), `Description` |
-| **SapEnvironment** | Reference data for target SAP environments. | `EnvironmentCode` (PK), `Description` |
+All SQL entities follow the **Hybrid Relational-Document Model**, combining structured columns with a JSON `Attributes` column for flexible schema evolution.
+
+| Entity | Description | Key Properties | Attributes (JSON) |
+| :--- | :--- | :--- | :--- |
+| **ChangeRequest** | Central entity for vendor modification or onboarding requests. | `Id` (PK), `Status`, `SapVendorId`, `RequesterId` | Approval history, rejection reasons, impact assessment |
+| **VendorApplication** | Initial data for new vendor onboarding requests. | `Id` (PK), `CompanyName`, `ContactEmail`, `Status` | Industry metadata, certifications, additional contacts |
+| **VendorInvitation** | Invitation-based onboarding tracking. | `Id` (PK), `Token`, `Status`, `ExpiresAt` | Notes, custom fields, invitation metadata |
+| **Attachment** | Metadata for uploaded files (e.g., tax docs). | `Id` (PK), `LinkedEntityId`, `BlobUrl` | File metadata, MIME type, virus scan results |
+| **UserRole** | Manages user permissions and roles. | `Id` (PK), `Username`, `Role` | Profile, UI preferences, notification settings |
+| **WorkflowState** | Reference data for valid request states. | `StateName` (PK), `Description` | Display order, color codes, allowed transitions |
+| **SapEnvironment** | Reference data for target SAP environments. | `EnvironmentCode` (PK), `Description` | N/A (simple lookup) |
+
+> [!TIP]
+> **Decision Matrix**: Use SQL columns for relations, indexes, and ACID. Use JSON `Attributes` for volatile, context-specific, or presentation data.
+> See [Schema Compliance Workflow](./.agent/workflows/schema-compliance-check.md) for detailed guidelines.
 
 ### 2. Document Domain Entities (Azure Cosmos DB)
 *Managed via Cosmos SDK*

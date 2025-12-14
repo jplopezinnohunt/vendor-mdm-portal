@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text.Json;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
@@ -51,7 +52,7 @@ public class MetadataFunction
     {
         _logger.LogInformation("Upserting reference data.");
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        var item = JsonConvert.DeserializeObject<VendorMdm.Shared.Models.ReferenceDataItem>(requestBody);
+        var item = JsonSerializer.Deserialize<VendorMdm.Shared.Models.ReferenceDataItem>(requestBody);
 
         if (item == null || string.IsNullOrEmpty(item.Category))
         {
@@ -90,7 +91,7 @@ public class MetadataFunction
     {
         _logger.LogInformation("Upserting validation rule.");
         string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-        var rule = JsonConvert.DeserializeObject<VendorMdm.Shared.Models.ValidationRule>(requestBody);
+        var rule = JsonSerializer.Deserialize<VendorMdm.Shared.Models.ValidationRule>(requestBody);
 
         if (rule == null || string.IsNullOrEmpty(rule.EntityType))
         {

@@ -14,14 +14,15 @@ All features MUST follow the Hybrid Database Architecture pattern for:
 
 ## 📐 THE PATTERN (MANDATORY)
 
-### **SQL Database** (Transactional State)
-**Purpose:** Metadata, State Management, Relationships
+### **SQL Database** (Transactional State + Semi-Structured Attributes)
+**Purpose:** Metadata, State Management, Relationships, and Flexible Attributes
 
 **Use for:**
 - Entity status (Pending, Approved, Completed)
 - Foreign key relationships
 - Indexed queries for fast lookups
 - Transactional consistency
+- **Semi-structured data via JSON Attributes column** (new)
 
 **Examples:**
 ```csharp
@@ -29,12 +30,24 @@ All features MUST follow the Hybrid Database Architecture pattern for:
 - Id, Status, CreatedAt (metadata)
 - CompanyName, ContactEmail (searchable fields)
 - InvitationId (FK relationship)
+- Attributes (nvarchar(max) JSON - industry, certifications, custom fields)
 
 // VendorInvitation (SQL)
 - Id, Status, ExpiresAt (metadata)
 - Token (indexed for validation)  
 - VendorApplicationId (FK relationship)
+- Attributes (nvarchar(max) JSON - notes, metadata, UI preferences)
 ```
+
+**Hybrid Relational-Document Model:**
+All SQL entities now include an `Attributes` JSON column (nvarchar(max)) for:
+- Semi-structured data that changes frequently
+- Context-specific fields (only some records have them)
+- Presentation-layer data (UI preferences, custom metadata)
+- Dynamic nested structures not worth normalizing
+
+> [!NOTE]
+> See [Schema Compliance Workflow](../../.agent/workflows/schema-compliance-check.md) for decision matrix on SQL Columns vs JSON Attributes
 
 ### **Cosmos DB - Artifacts Container** (Payload Storage)
 **Purpose:** Complete request payloads, flexible schema

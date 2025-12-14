@@ -77,7 +77,8 @@ CREATE TABLE VendorInvitations (
     Status NVARCHAR(20) NOT NULL DEFAULT 'Pending',
     CompletedAt DATETIME2 NULL,
     VendorApplicationId UNIQUEIDENTIFIER NULL,
-    Notes NVARCHAR(1000) NULL,
+    Notes NVARCHAR(1000) NULL, -- DEPRECATED: Use Attributes instead
+    Attributes NVARCHAR(MAX) NOT NULL DEFAULT '{}', -- JSON: notes, customFields, metadata
     
     CONSTRAINT FK_VendorInvitations_VendorApplications 
         FOREIGN KEY (VendorApplicationId) 
@@ -90,6 +91,11 @@ CREATE INDEX IX_VendorInvitations_Status ON VendorInvitations(Status);
 CREATE INDEX IX_VendorInvitations_ExpiresAt ON VendorInvitations(ExpiresAt);
 ```
 
+**Hybrid Model Implementation:**
+- **Structured Columns**: Identity (Id), indexed fields (Token, Email, Status), relationships (VendorApplicationId)
+- **JSON Attributes Column**: Semi-structured data (notes, custom fields, invitation metadata, UI preferences)
+- **Pattern**: Per [Hybrid Relational-Document Model](../architecture/principles.md#hybrid-database-architecture)
+
 #### Updated Table: VendorApplications
 ```sql
 ALTER TABLE VendorApplications
@@ -97,13 +103,21 @@ ADD TaxId NVARCHAR(100) NULL,
     ContactName NVARCHAR(200) NULL,
     RegistrationType NVARCHAR(20) NOT NULL DEFAULT 'SelfRegistration',
     InvitationId UNIQUEIDENTIFIER NULL,
-    UpdatedAt DATETIME2 NULL;
+    UpdatedAt DATETIME2 NULL,
+    Attributes NVARCHAR(MAX) NOT NULL DEFAULT '{}'; -- JSON: industry, certifications, contacts
 
 ALTER TABLE VendorApplications
 ADD CONSTRAINT FK_VendorApplications_Invitations
     FOREIGN KEY (InvitationId)
     REFERENCES VendorInvitations(Id);
 ```
+
+**Attributes Column Stores**:
+- Industry metadata and codes
+- Certifications list
+- Additional contact persons
+- Custom fields per vendor type
+- Application notes and comments
 
 **Configuration:**
 - SKU: Standard S1 or higher

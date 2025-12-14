@@ -19,6 +19,13 @@ public class ChangeRequest
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+
+    /// <summary>
+    /// Semi-structured attributes for flexible data storage.
+    /// Stores: approvalHistory, rejectionReason, changeImpactAssessment, notificationsSent
+    /// </summary>
+    [Column(TypeName = "nvarchar(max)")]
+    public string Attributes { get; set; } = "{}";
 }
 
 public class VendorApplication
@@ -50,6 +57,13 @@ public class VendorApplication
     
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+
+    /// <summary>
+    /// Semi-structured attributes for flexible data storage.
+    /// Stores: industryMetadata, certifications, additionalContacts, customFields
+    /// </summary>
+    [Column(TypeName = "nvarchar(max)")]
+    public string Attributes { get; set; } = "{}";
 }
 
 public class WorkflowState
@@ -59,6 +73,13 @@ public class WorkflowState
     public string StateName { get; set; } = string.Empty;
 
     public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Semi-structured attributes for flexible data storage.
+    /// Stores: displayOrder, colorCode, iconName, transitionsAllowed
+    /// </summary>
+    [Column(TypeName = "nvarchar(max)")]
+    public string Attributes { get; set; } = "{}";
 }
 
 public class SapEnvironment
@@ -76,6 +97,13 @@ public class UserRole
     public Guid Id { get; set; }
     public string Username { get; set; } = string.Empty;
     public string Role { get; set; } = "User"; // Admin, Requester, Approver
+
+    /// <summary>
+    /// Semi-structured attributes for flexible data storage.
+    /// Stores: fullName, email, phoneNumber, department, uiPreferences, notificationSettings
+    /// </summary>
+    [Column(TypeName = "nvarchar(max)")]
+    public string Attributes { get; set; } = "{}";
 }
 
 public class Attachment
@@ -86,6 +114,13 @@ public class Attachment
     public string FileName { get; set; } = string.Empty;
     public string BlobUrl { get; set; } = string.Empty;
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Semi-structured attributes for flexible data storage.
+    /// Stores: fileSizeBytes, mimeType, uploadedByName, virusScanResult, thumbnailUrl
+    /// </summary>
+    [Column(TypeName = "nvarchar(max)")]
+    public string Attributes { get; set; } = "{}";
 }
 
 public class VendorInvitation
@@ -127,7 +162,15 @@ public class VendorInvitation
     public Guid? VendorApplicationId { get; set; }
 
     [MaxLength(1000)]
+    [Obsolete("Use Attributes JSON column instead. Will be removed in next major version.")]
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// Semi-structured attributes for flexible data storage.
+    /// Stores: notes, customFields, invitationMetadata, uiPreferences
+    /// </summary>
+    [Column(TypeName = "nvarchar(max)")]
+    public string Attributes { get; set; } = "{}";
 }
 
 public static class InvitationStatus
