@@ -11,8 +11,8 @@ using VendorMdm.Api.Data;
 namespace VendorMdm.Api.Migrations
 {
     [DbContext(typeof(SqlDbContext))]
-    [Migration("20251214093847_AddCanonicalEntities")]
-    partial class AddCanonicalEntities
+    [Migration("20251214131539_InitialCanonicalModel")]
+    partial class InitialCanonicalModel
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -138,6 +138,53 @@ namespace VendorMdm.Api.Migrations
                     b.ToTable("ChangeRequestsCanonical");
                 });
 
+            modelBuilder.Entity("VendorMdm.Shared.Models.ExternalSystemMapping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CanonicalEntityId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalSystemId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SystemEnvironment")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SystemName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CanonicalEntityId", "EntityType", "SystemName")
+                        .HasDatabaseName("IX_ExternalSystemMapping_Canonical");
+
+                    b.HasIndex("EntityType", "ExternalSystemId", "SystemName", "SystemEnvironment")
+                        .IsUnique()
+                        .HasDatabaseName("IX_ExternalSystemMapping_Unique");
+
+                    b.ToTable("ExternalSystemMappings");
+                });
+
             modelBuilder.Entity("VendorMdm.Shared.Models.SapEnvironment", b =>
                 {
                     b.Property<string>("EnvironmentCode")
@@ -168,43 +215,6 @@ namespace VendorMdm.Api.Migrations
                             EnvironmentCode = "P01",
                             Description = "Production"
                         });
-                });
-
-            modelBuilder.Entity("VendorMdm.Shared.Models.SapIdMapping", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("CanonicalEntityId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("EntityType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SapEnvironment")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("SapId")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CanonicalEntityId", "EntityType");
-
-                    b.HasIndex("EntityType", "SapId", "SapEnvironment")
-                        .IsUnique();
-
-                    b.ToTable("SapIdMappings");
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.UserRole", b =>

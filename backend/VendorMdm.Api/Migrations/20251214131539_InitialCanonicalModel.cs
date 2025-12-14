@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace VendorMdm.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCanonicalEntities : Migration
+    public partial class InitialCanonicalModel : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -67,6 +67,24 @@ namespace VendorMdm.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ExternalSystemMappings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    CanonicalEntityId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    EntityType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    ExternalSystemId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    SystemName = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    SystemEnvironment = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ExternalSystemMappings", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SapEnvironments",
                 columns: table => new
                 {
@@ -76,22 +94,6 @@ namespace VendorMdm.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_SapEnvironments", x => x.EnvironmentCode);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SapIdMappings",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    CanonicalEntityId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    EntityType = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    SapId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    SapEnvironment = table.Column<string>(type: "TEXT", maxLength: 10, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SapIdMappings", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -249,14 +251,14 @@ namespace VendorMdm.Api.Migrations
                 column: "VendorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SapIdMappings_CanonicalEntityId_EntityType",
-                table: "SapIdMappings",
-                columns: new[] { "CanonicalEntityId", "EntityType" });
+                name: "IX_ExternalSystemMapping_Canonical",
+                table: "ExternalSystemMappings",
+                columns: new[] { "CanonicalEntityId", "EntityType", "SystemName" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_SapIdMappings_EntityType_SapId_SapEnvironment",
-                table: "SapIdMappings",
-                columns: new[] { "EntityType", "SapId", "SapEnvironment" },
+                name: "IX_ExternalSystemMapping_Unique",
+                table: "ExternalSystemMappings",
+                columns: new[] { "EntityType", "ExternalSystemId", "SystemName", "SystemEnvironment" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -314,10 +316,10 @@ namespace VendorMdm.Api.Migrations
                 name: "ChangeRequestsCanonical");
 
             migrationBuilder.DropTable(
-                name: "SapEnvironments");
+                name: "ExternalSystemMappings");
 
             migrationBuilder.DropTable(
-                name: "SapIdMappings");
+                name: "SapEnvironments");
 
             migrationBuilder.DropTable(
                 name: "UsersAndRoles");
