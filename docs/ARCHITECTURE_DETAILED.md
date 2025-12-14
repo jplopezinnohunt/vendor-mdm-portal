@@ -293,7 +293,7 @@ sequenceDiagram
 
 **SQL Database Connection:**
 ```
-Server=tcp:sql-vendor-mdm-dev-fmkijlt6yfyeq.database.windows.net,1433;
+Server=tcp:sql-vendor-mdm-dev.database.windows.net,1433;
 Initial Catalog=VendorMdmDb;
 Authentication=Active Directory Managed Identity;
 Encrypt=True;
@@ -303,13 +303,13 @@ TrustServerCertificate=False;
 
 **Cosmos DB Connection:**
 ```
-https://cosmos-vendor-mdm-dev-fmkijlt6yfyeq.documents.azure.com:443/
+https://cosmos-vendor-mdm-dev.documents.azure.com:443/
 ```
 ✅ **No access key** - uses Managed Identity via DefaultAzureCredential
 
 **Service Bus Connection:**
 ```
-Endpoint=sb://sb-vendor-mdm-dev-fmkijlt6yfyeq.servicebus.windows.net/;
+Endpoint=sb://sb-vendor-mdm-dev.servicebus.windows.net/;
 SharedAccessKeyName=RootManageSharedAccessKey;
 SharedAccessKey=[from Key Vault or App Settings]
 ```

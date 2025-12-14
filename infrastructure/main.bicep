@@ -25,20 +25,19 @@ param azureAdClientId string
 @description('Your company name for email templates')
 param companyName string = 'Your Company'
 
-// Naming convention
+// Naming convention - clean and readable
 var prefix = 'vendor-mdm'
 var suffix = environment
-var uniqueSuffix = uniqueString(resourceGroup().id)
 
-// Resource names
-var sqlServerName = 'sql-${prefix}-${suffix}-${uniqueSuffix}'
+// Resource names (no hash suffix for clarity)
+var sqlServerName = 'sql-${prefix}-${suffix}'
 var sqlDatabaseName = 'VendorMdmDb'
-var cosmosAccountName = 'cosmos-${prefix}-${suffix}-${uniqueSuffix}'
-var serviceBusNamespaceName = 'sb-${prefix}-${suffix}-${uniqueSuffix}'
-var keyVaultName = 'kv-${prefix}-${take(uniqueSuffix, 8)}'
+var cosmosAccountName = 'cosmos-${prefix}-${suffix}'
+var serviceBusNamespaceName = 'sb-${prefix}-${suffix}'
+var keyVaultName = 'kv-${prefix}-${suffix}'
 var appServicePlanName = 'asp-${prefix}-${suffix}'
-var appServiceName = 'app-${prefix}-api-${suffix}-${uniqueSuffix}'
-var staticWebAppName = 'swa-${prefix}-${suffix}-${uniqueSuffix}'
+var appServiceName = 'app-${prefix}-api-${suffix}'
+var staticWebAppName = 'swa-${prefix}-${suffix}'
 var appInsightsName = 'ai-${prefix}-${suffix}'
 
 // ============================================================================
@@ -306,7 +305,7 @@ resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-
 // ============================================================================
 resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
   name: staticWebAppName
-  location: 'eastus2' // Static Web Apps have limited regions
+  location: location // Consolidate to Central US with other resources
   sku: {
     name: 'Free'
     tier: 'Free'

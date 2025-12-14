@@ -10,7 +10,7 @@ Azure AD authentication was temporarily disabled by removing these app settings:
 - `AzureAd__ClientId`: `2f2020ec-264d-4de5-bea4-f4dfc545c5d8`
 - `AzureAd__TenantId`: `a93513e2-d327-4301-80ed-d703eb03f6cb`
 
-**Resource:** `app-vendor-mdm-api-dev-fmkijlt6yfyeq`  
+**Resource:** `app-vendor-mdm-api-dev`  
 **Resource Group:** `rg-vendor-mdm-dev-v3`
 
 ## Security Impact
@@ -30,7 +30,7 @@ Affected endpoints:
 ```bash
 az webapp config appsettings set \
   --resource-group rg-vendor-mdm-dev-v3 \
-  --name app-vendor-mdm-api-dev-fmkijlt6yfyeq \
+  --name app-vendor-mdm-api-dev \
   --settings \
     AzureAd__ClientId="2f2020ec-264d-4de5-bea4-f4dfc545c5d8" \
     AzureAd__TenantId="a93513e2-d327-4301-80ed-d703eb03f6cb" \
