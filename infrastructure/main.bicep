@@ -16,11 +16,14 @@ param sqlAdminUsername string
 @secure()
 param sqlAdminPassword string
 
-@description('Azure AD Tenant ID')
-param azureAdTenantId string
+// Azure AD Authentication Parameters
+// Currently DISABLED for API testing (see PENDING-AUTH-REENABLE.md)
+// Uncomment lines below when re-enabling authentication
+@description('Azure AD Tenant ID - Required for authentication')
+param azureAdTenantId string = ''
 
-@description('Azure AD Client ID (Application ID)')
-param azureAdClientId string
+@description('Azure AD Client ID (Application ID) - Required for authentication')
+param azureAdClientId string = ''
 
 @description('Your company name for email templates')
 param companyName string = 'Your Company'
@@ -254,18 +257,20 @@ resource appService 'Microsoft.Web/sites@2023-01-01' = {
           name: 'KeyVault__VaultUrl'
           value: keyVault.properties.vaultUri
         }
-        {
-          name: 'AzureAd__ClientId'
-          value: azureAdClientId
-        }
-        {
-          name: 'AzureAd__TenantId'
-          value: azureAdTenantId
-        }
-        {
-          name: 'AzureAd__Domain'
-          value: '${azureAdTenantId}.onmicrosoft.com'
-        }
+        // REMOVED: Azure AD configuration - authentication disabled for testing
+        // Uncomment when re-enabling auth (see PENDING-AUTH-REENABLE.md)
+        // {
+        //   name: 'AzureAd__ClientId'
+        //   value: azureAdClientId
+        // }
+        // {
+        //   name: 'AzureAd__TenantId'
+        //   value: azureAdTenantId
+        // }
+        // {
+        //   name: 'AzureAd__Domain'
+        //   value: '${azureAdTenantId}.onmicrosoft.com'
+        // }
         {
           name: 'App__CompanyName'
           value: companyName

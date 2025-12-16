@@ -22,11 +22,11 @@ SUBSCRIPTION=$(az account show --query name -o tsv)
 echo "📋 Subscription: $SUBSCRIPTION"
 echo ""
 
-# Resource names (from appsettings.json)
-SQL_SERVER="mdmportal-sql-12031241-dev"
-SQL_DB="mdmportal-sqldb-dev"
-COSMOS_ACCOUNT="mdmportal-cosmos-dev"
-SERVICE_BUS="mdmportal-sb-dev"
+# Resource names (from current Azure deployment)
+SQL_SERVER="sql-vendor-mdm-dev"
+SQL_DB="VendorMdmDb"
+COSMOS_ACCOUNT="cosmos-vendor-mdm-dev"
+SERVICE_BUS="sb-vendor-mdm-dev"
 
 # Get resource group (try to find it)
 echo "🔍 Finding resource group..."
