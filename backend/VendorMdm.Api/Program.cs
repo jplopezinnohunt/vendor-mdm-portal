@@ -92,6 +92,20 @@ builder.Services.AddAuthorization(options =>
             policy.RequireAssertion(context => true);
         }
     });
+
+    options.AddPolicy("ApproverOnly", policy =>
+    {
+        if (!string.IsNullOrEmpty(azureAdClientId))
+        {
+            // Production: require Approver role strictly
+            policy.RequireRole("Approver");
+        }
+        else
+        {
+            // Local dev without auth: allow all requests
+            policy.RequireAssertion(context => true);
+        }
+    });
 });
 
 // Add CORS

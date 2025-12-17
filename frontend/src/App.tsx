@@ -99,10 +99,24 @@ const App: React.FC = () => {
               <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <RequestReview />
               </ProtectedRoute>
+            <Route path="approver/requests/:id" element={
+              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+                <RequestReview />
+              </ProtectedRoute>
             } />
             <Route path="approver/onboarding/:id" element={
               <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <OnboardingReview />
+              </ProtectedRoute>
+            } />
+            <Route path="approver/invite-vendor" element={
+              <ProtectedRoute allowedRoles={['Approver']}>
+                <InviteVendorForm />
+              </ProtectedRoute>
+            } />
+            <Route path="approver/invitations" element={
+              <ProtectedRoute allowedRoles={['Approver']}>
+                <InvitationManagement />
               </ProtectedRoute>
             } />
 
@@ -115,16 +129,6 @@ const App: React.FC = () => {
             <Route path="admin/rules" element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="admin/invite-vendor" element={
-              <ProtectedRoute allowedRoles={['Admin', 'Approver']}>
-                <InviteVendorForm />
-              </ProtectedRoute>
-            } />
-            <Route path="admin/invitations" element={
-              <ProtectedRoute allowedRoles={['Admin', 'Approver']}>
-                <InvitationManagement />
               </ProtectedRoute>
             } />
             <Route path="admin/system-status" element={

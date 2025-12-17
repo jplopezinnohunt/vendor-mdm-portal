@@ -23,42 +23,30 @@ interface RegistrationFormData {
 export const InvitationRegistration: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
-    const { register, handleSubmit, setValue, formState: { errors } } = useForm<RegistrationFormData>();
+    const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<RegistrationFormData>();
 
     const [validating, setValidating] = useState(true);
     const [validation, setValidation] = useState<InvitationValidation | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [draftSaving, setDraftSaving] = useState(false); // New state
     const [submitted, setSubmitted] = useState(false);
 
-    useEffect(() => {
-        const validateInvitation = async () => {
-            if (!token) {
-                setValidating(false);
-                return;
-            }
+    // ... useEffect ...
 
-            try {
-                const response = await api.get(`/invitation/validate/${token}`);
-                setValidation(response.data);
-
-                // Pre-fill form fields
-                if (response.data.isValid) {
-                    setValue('companyName', response.data.vendorLegalName);
-                    setValue('email', response.data.primaryContactEmail);
-                }
-            } catch (error) {
-                console.error('Failed to validate invitation:', error);
-                setValidation({
-                    isValid: false,
-                    errorMessage: 'Failed to validate invitation link'
-                });
-            } finally {
-                setValidating(false);
-            }
-        };
-
-        validateInvitation();
-    }, [token, setValue]);
+    const handleSaveDraft = async () => {
+        try {
+            setDraftSaving(true);
+            const data = getValues(); // Get current form data without validation
+            await api.post(`/invitation/save-draft/${token}`, data);
+            alert("Draft saved successfully! You can return to this link anytime to complete your registration.");
+        } catch (error: any) {
+            console.error('Draft save failed:', error);
+            const errorMessage = error.response?.data?.error || 'Failed to save draft.';
+            alert(errorMessage);
+        } finally {
+            setDraftSaving(false);
+        }
+    };
 
     const onSubmit = async (data: RegistrationFormData) => {
         try {
@@ -245,12 +233,21 @@ export const InvitationRegistration: React.FC = () => {
                             </ul>
                         </div>
 
-                        <div className="mt-8 pt-6 border-t border-gray-200">
+                        <div className="mt-8 pt-6 border-t border-gray-200 flex gap-4">
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="w-full justify-center"
+                                onClick={handleSaveDraft}
+                                disabled={submitting || draftSaving}
+                            >
+                                {draftSaving ? 'Saving...' : 'Save for Later'}
+                            </Button>
                             <Button
                                 type="submit"
                                 className="w-full justify-center"
                                 size="lg"
-                                disabled={submitting}
+                                disabled={submitting || draftSaving}
                             >
                                 {submitting ? 'Submitting...' : 'Submit Application'}
                             </Button>

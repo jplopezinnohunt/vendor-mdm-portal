@@ -106,6 +106,17 @@ We follow the conventional commits specification:
 *   `test`: Add or correct tests
 *   `chore`: Maintenance, dependencies
 
+### Commit Message Best Practice
+**Do not just write a title.** Future pushes must include a detailed description:
+```text
+feat: add new vendor onboarding form
+
+- Added form validation with Zod
+- Integrated API endpoint /api/vendors
+- Updated UI buttons to match brand colors
+- Rationale: Required for VEN-123 user story
+```
+
 ---
 
 ## 7. FAQ

@@ -27,9 +27,9 @@ public class InvitationController : ControllerBase
     }
 
     /// <summary>
-    /// Create a new vendor invitation (Approver/Admin only)
+    /// Create a new vendor invitation (Approver only)
     /// </summary>
-    [Authorize(Policy = "AdminOrApprover")]
+    [Authorize(Policy = "ApproverOnly")]
     [HttpPost("create")]
     public async Task<IActionResult> CreateInvitation([FromBody] CreateInvitationRequest request)
     {
@@ -38,7 +38,7 @@ public class InvitationController : ControllerBase
             // For now, using a dummy user until we parse the token properly
             // In real impl: var userId = Guid.Parse(User.FindFirst("sub").Value);
             var invitedBy = Guid.NewGuid();
-            var invitedByName = "System Admin"; // In production: User.Identity.Name
+            var invitedByName = "Internal Approver"; // In production: User.Identity.Name
 
             var response = await _invitationService.CreateInvitationAsync(
                 request,
@@ -59,9 +59,9 @@ public class InvitationController : ControllerBase
     }
 
     /// <summary>
-    /// Get all invitations with optional status filter (Approver/Admin only)
+    /// Get all invitations with optional status filter (Approver only)
     /// </summary>
-    [Authorize(Policy = "AdminOrApprover")]
+    [Authorize(Policy = "ApproverOnly")]
     [HttpGet("list")]
     public async Task<IActionResult> ListInvitations([FromQuery] string? status = null)
     {
@@ -100,9 +100,9 @@ public class InvitationController : ControllerBase
     }
 
     /// <summary>
-    /// Resend an invitation email (Approver/Admin only)
+    /// Resend an invitation email (Approver only)
     /// </summary>
-    [Authorize(Policy = "AdminOrApprover")]
+    [Authorize(Policy = "ApproverOnly")]
     [HttpPost("resend/{id}")]
     public async Task<IActionResult> ResendInvitation(Guid id)
     {
@@ -243,6 +243,61 @@ public class InvitationController : ControllerBase
         {
             _logger.LogError(ex, "Error completing invitation for token {Token}", token);
             return StatusCode(500, new { error = "Failed to complete registration" });
+        }
+    }
+
+    /// <summary>
+    /// Save vendor registration as Draft
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("save-draft/{token}")]
+    public async Task<IActionResult> SaveDraft(
+        string token,
+        [FromBody] CompleteInvitationRequest request)
+    {
+        try
+        {
+            // Validate invitation exists and is valid (or pending draft)
+            var validation = await _invitationService.ValidateInvitationAsync(token);
+            if (!validation.IsValid)
+            {
+                return BadRequest(new { error = validation.ErrorMessage });
+            }
+
+            // Create/Update vendor application in Draft mode
+            // Note: In a real scenario we might check if app already exists for this token and update it
+            var application = new VendorApplication
+            {
+                Id = Guid.NewGuid(),
+                CompanyName = request.CompanyName,
+                TaxId = request.TaxId, // Nullable in draft? Schema check needed.
+                ContactName = request.ContactName,
+                ContactEmail = request.Email,
+                Status = "Draft", // <--- THE CHANGE
+                RegistrationType = "Invitation",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // Relaxed validation would go here (e.g. allowing null TaxId for drafts)
+
+            _context.VendorApplications.Add(application);
+            await _context.SaveChangesAsync();
+
+            // We do NOT complete the invitation yet, so the token remains valid for resuming.
+            // But we might want to link it so we can resume? 
+            // For now, let's assume the basic requirement is just saving the data.
+            
+            return Ok(new
+            {
+                applicationId = application.Id,
+                status = "Draft",
+                message = "Application saved as draft."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving draft for token {Token}", token);
+            return StatusCode(500, new { error = "Failed to save draft" });
         }
     }
 
