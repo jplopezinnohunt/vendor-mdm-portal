@@ -79,7 +79,7 @@ Understanding who is responsible for what is crucial for this lifecycle.
 5.  **Release PROD**: Merge `release` -> `main`. Deploy to PROD same time SAP moves to P01.
 
 ### Emergency Hotfix
-1.  **Start**: `git checkout -b hotfix/sap-error main`.
+1.  **Start**: `git checkout -b hotfix/VEN-404-sap-error main`.
 2.  **Fix**: `git commit -m 'fix: adjust payload for SAP'`.
 3.  **Deploy**: Merge `hotfix` -> `main` (Urgent deploy to Azure PROD).
 4.  **Sync**: Merge `hotfix` -> `develop` (Replicate fix to development).

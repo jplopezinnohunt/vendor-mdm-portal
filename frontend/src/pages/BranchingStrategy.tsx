@@ -241,6 +241,11 @@ const strategyData = {
                 desc: "Alert! Blocking bug in Production prevents creating purchase orders. Immediate action required."
             },
             {
+                step: "1. Create Hotfix",
+                cmd: "git checkout -b hotfix/VEN-404-urgent-fix main",
+                desc: "Branch directly from 'main'. Use 'VEN' prefix for traceability."
+            },
+            {
                 step: 2,
                 title: "Hotfix Branch",
                 role: "Tech Lead",
@@ -278,7 +283,11 @@ const strategyData = {
         {
             title: "Feature Development",
             steps: [
-                { title: "Create Branch", cmd: "git checkout -b feature/VEN-123-sap-sync develop", desc: "From develop (connected to D01)." },
+                {
+                    title: "Create Branch",
+                    cmd: "git checkout -b feature/VEN-123-functionality develop",
+                    desc: "Every feature starts from 'develop'. Use the 'VEN' prefix for Vendor Portal tasks."
+                },
                 { title: "Develop", cmd: "git commit -m 'feat(sap): consume BAPI_VENDOR_GET'", desc: "Implement logic against SAP D01." },
                 { title: "Pull Request", cmd: "GH UI: Compare feature -> develop", desc: "Validate it breaks no integrations." },
                 { title: "Merge", cmd: "Squash & Merge", desc: "Auto deploy to Azure DEV." }
@@ -391,9 +400,17 @@ const FeatureStoryBoard = () => {
             <div className="p-8 border-b border-slate-100 bg-slate-50/50">
                 <div className="text-center max-w-3xl mx-auto mb-8">
                     <h3 className="text-2xl font-bold text-slate-800 mb-2">End-to-End Story</h3>
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 mb-6">
                         Choose a scenario to see how code travels through our environments.
                     </p>
+
+                    {/* NAMING CONVENTION ALERT */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-700 font-mono mb-6">
+                        <Terminal className="w-4 h-4 text-slate-500" />
+                        <span>Naming Convention:</span>
+                        <span className="font-bold text-blue-600">type/VEN-ID-description</span>
+                        <span className="text-xs text-slate-400 ml-2">(e.g., feature/VEN-200-add-button)</span>
+                    </div>
                 </div>
 
                 {/* SELECTION TABS */}
@@ -745,7 +762,7 @@ const WorkflowSection = () => {
     );
 };
 
-const FAQItem = ({ q, a }: { q: string, a: string }) => {
+const FAQItem: React.FC<{ q: string; a: string }> = ({ q, a }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
