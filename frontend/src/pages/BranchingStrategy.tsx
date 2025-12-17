@@ -241,6 +241,11 @@ const strategyData = {
                 desc: "Alert! Blocking bug in Production prevents creating purchase orders. Immediate action required."
             },
             {
+                step: "1. Create Hotfix",
+                cmd: "git checkout -b hotfix/VEN-404-urgent-fix main",
+                desc: "Branch directly from 'main'. Use 'VEN' prefix for traceability."
+            },
+            {
                 step: 2,
                 title: "Hotfix Branch",
                 role: "Tech Lead",
@@ -278,7 +283,11 @@ const strategyData = {
         {
             title: "Feature Development",
             steps: [
-                { title: "Create Branch", cmd: "git checkout -b feature/VEN-123-sap-sync develop", desc: "From develop (connected to D01)." },
+                {
+                    title: "Create Branch",
+                    cmd: "git checkout -b feature/VEN-123-functionality develop",
+                    desc: "Every feature starts from 'develop'. Use the 'VEN' prefix for Vendor Portal tasks."
+                },
                 { title: "Develop", cmd: "git commit -m 'feat(sap): consume BAPI_VENDOR_GET'", desc: "Implement logic against SAP D01." },
                 { title: "Pull Request", cmd: "GH UI: Compare feature -> develop", desc: "Validate it breaks no integrations." },
                 { title: "Merge", cmd: "Squash & Merge", desc: "Auto deploy to Azure DEV." }
@@ -745,7 +754,7 @@ const WorkflowSection = () => {
     );
 };
 
-const FAQItem = ({ q, a }: { q: string, a: string }) => {
+const FAQItem: React.FC<{ q: string; a: string }> = ({ q, a }) => {
     const [isOpen, setIsOpen] = useState(false);
     return (
         <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
