@@ -99,10 +99,6 @@ const App: React.FC = () => {
               <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <RequestReview />
               </ProtectedRoute>
-            <Route path="approver/requests/:id" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
-                <RequestReview />
-              </ProtectedRoute>
             } />
             <Route path="approver/onboarding/:id" element={
               <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
