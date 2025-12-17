@@ -171,6 +171,7 @@ Complete project documentation is available in the [`docs/`](./docs/) directory:
 - **[Getting Started](./docs/getting-started/README.md)** - Installation and local setup guides
 - **[Azure Documentation](./docs/azure/README.md)** - Deployment, infrastructure, and Key Vault configuration
 - **[Features](./docs/features/README.md)** - Feature-specific documentation
+- **[Branching Strategy (New)](./docs/development/branching-strategy.md)** - Visual Guide to Azure-Git-SAP Alignment
 - **[Architecture](./docs/architecture/README.md)** - Architectural principles and project structure
 - **[Troubleshooting](./docs/troubleshooting/README.md)** - Common issues and solutions
 
