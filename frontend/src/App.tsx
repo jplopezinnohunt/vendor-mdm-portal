@@ -16,6 +16,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { InviteVendorForm } from './pages/admin/InviteVendorForm';
 import { InvitationManagement } from './pages/admin/InvitationManagement';
 import { SystemStatus } from './pages/admin/SystemStatus';
+import BranchingStrategy from './pages/BranchingStrategy';
 
 // Protected Route Guard
 const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode, allowedRoles?: UserRole[] }) => {
@@ -129,6 +130,11 @@ const App: React.FC = () => {
             <Route path="admin/system-status" element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <SystemStatus />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/strategy" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Approver', 'Vendor']}>
+                <BranchingStrategy />
               </ProtectedRoute>
             } />
           </Route>

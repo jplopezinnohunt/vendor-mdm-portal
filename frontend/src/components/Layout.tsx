@@ -15,7 +15,8 @@ import {
   ShieldAlert,
   Mail,
   UserPlus,
-  Activity
+  Activity,
+  GitBranch
 } from 'lucide-react';
 
 const VENDOR_NAV = [
@@ -38,6 +39,7 @@ const ADMIN_NAV = [
   { name: 'Audit Logs', href: '/admin/audit', icon: ShieldAlert },
   { name: 'Invite Vendor', href: '/admin/invite-vendor', icon: UserPlus },
   { name: 'Manage Invitations', href: '/admin/invitations', icon: Mail },
+  { name: 'Branching Strategy', href: '/admin/strategy', icon: GitBranch },
 ];
 
 export const MainLayout: React.FC = () => {
