@@ -400,9 +400,17 @@ const FeatureStoryBoard = () => {
             <div className="p-8 border-b border-slate-100 bg-slate-50/50">
                 <div className="text-center max-w-3xl mx-auto mb-8">
                     <h3 className="text-2xl font-bold text-slate-800 mb-2">End-to-End Story</h3>
-                    <p className="text-slate-500">
+                    <p className="text-slate-500 mb-6">
                         Choose a scenario to see how code travels through our environments.
                     </p>
+
+                    {/* NAMING CONVENTION ALERT */}
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-700 font-mono mb-6">
+                        <Terminal className="w-4 h-4 text-slate-500" />
+                        <span>Naming Convention:</span>
+                        <span className="font-bold text-blue-600">type/VEN-ID-description</span>
+                        <span className="text-xs text-slate-400 ml-2">(e.g., feature/VEN-200-add-button)</span>
+                    </div>
                 </div>
 
                 {/* SELECTION TABS */}
