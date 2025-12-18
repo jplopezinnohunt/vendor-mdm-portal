@@ -85,9 +85,13 @@ jobs:
         if [ "$TARGET_ENV" == "dev" ]; then
           SQL_SERVER="sql-vendor-mdm-dev"
           DATABASE="VendorMdmDb"
-        else
+        elif [ "$TARGET_ENV" == "prod" ]; then
           SQL_SERVER="sql-vendor-mdm-prod"
           DATABASE="VendorMdmDb"
+        else
+          echo "❌ Error: Invalid or missing target environment: '$TARGET_ENV'"
+          echo "Allowed values: 'dev', 'prod'"
+          exit 1
         fi
         
         echo "Applying migrations to $SQL_SERVER (Database: $DATABASE)..."
