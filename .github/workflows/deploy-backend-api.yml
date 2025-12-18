@@ -1,0 +1,44 @@
+name: Deploy Backend API to Azure
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/VendorMdm.Api/**'
+      - 'backend/VendorMdm.Shared/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: |
+        cd backend/VendorMdm.Api
+        dotnet restore
+    
+    - name: Build
+      run: |
+        cd backend/VendorMdm.Api
+        dotnet build --configuration Release --no-restore
+    
+    - name: Publish
+      run: |
+        cd backend/VendorMdm.Api
+        dotnet publish --configuration Release --no-build --output ./publish
+    
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'app-vendor-mdm-api-dev'
+        publish-profile: ${{ secrets.AZURE_APP_SERVICE_PUBLISH_PROFILE }}
+        package: ./backend/VendorMdm.Api/publish

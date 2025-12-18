@@ -1,0 +1,80 @@
+name: Deploy Azure Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+      bicep_file:
+        description: 'Bicep file to deploy (default: main.bicep)'
+        required: false
+        default: 'main.bicep'
+        type: string
+
+jobs:
+  deploy-infra:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Validate Bicep Template
+      run: |
+        az bicep build --file infrastructure/${{ inputs.bicep_file }}
+        echo "✅ Bicep template validation passed"
+    
+    - name: Deploy Infrastructure
+      id: deploy
+      run: |
+        if [ "${{ inputs.environment }}" == "dev" ]; then
+          RESOURCE_GROUP="rg-vendor-mdm-dev-v3"
+          ENV_NAME="dev"
+        else
+          RESOURCE_GROUP="rg-vendor-mdm-prod"
+          ENV_NAME="prod"
+        fi
+        
+        echo "Deploying to: $RESOURCE_GROUP (environment: $ENV_NAME)"
+        
+        az deployment group create \
+          --resource-group $RESOURCE_GROUP \
+          --template-file ./infrastructure/${{ inputs.bicep_file }} \
+          --parameters environmentName=$ENV_NAME \
+          --mode Incremental \
+          --verbose
+    
+    - name: Show Deployment Outputs
+      run: |
+        if [ "${{ inputs.environment }}" == "dev" ]; then
+          RESOURCE_GROUP="rg-vendor-mdm-dev-v3"
+        else
+          RESOURCE_GROUP="rg-vendor-mdm-prod"
+        fi
+        
+        echo "=== Deployment Outputs ==="
+        az deployment group show \
+          --resource-group $RESOURCE_GROUP \
+          --name $(az deployment group list --resource-group $RESOURCE_GROUP --query "[0].name" -o tsv) \
+          --query properties.outputs
+    
+    - name: Verify Resources
+      run: |
+        if [ "${{ inputs.environment }}" == "dev" ]; then
+          RESOURCE_GROUP="rg-vendor-mdm-dev-v3"
+        else
+          RESOURCE_GROUP="rg-vendor-mdm-prod"
+        fi
+        
+        echo "=== Resources in $RESOURCE_GROUP ==="
+        az resource list --resource-group $RESOURCE_GROUP --output table

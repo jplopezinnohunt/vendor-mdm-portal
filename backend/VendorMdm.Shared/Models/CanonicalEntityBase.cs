@@ -62,7 +62,6 @@ public abstract class CanonicalEntityBase
     /// - Nested structures
     /// - UI preferences
     /// </summary>
-    [Column(TypeName = "nvarchar(max)")]
     [Required]
     public string Data { get; set; } = "{}";
     
@@ -129,8 +128,55 @@ public static class SourceSystems
     public const string Api = "API";
     public const string Migration = "Migration";
     public const string Batch = "Batch";
-    
-    public static readonly string[] All = { Portal, Sap, Api, Migration, Batch };
+    public const string HR = "HR"; // Workday/SuccessFactors
+    public const string Finance = "Finance"; // SAP FM
+    public const string Projects = "Projects"; // SAP PS
+
+    public static readonly string[] All = { Portal, Sap, Api, Migration, Batch, HR, Finance, Projects };
+
+    /// <summary>
+    /// Defines the default Authority (Source System) for each Entity Type in this App.
+    /// </summary>
+    private static readonly Dictionary<Type, string> EntityDefaults = new()
+    {
+        { typeof(Vendor), Sap },               // Mastered in SAP
+        { typeof(Employee), HR },              // Mastered in HR
+        { typeof(Project), Projects },         // Mastered in Project System
+        { typeof(Fund), Finance },             // Mastered in Finance
+        { typeof(Customer), Sap },             // Mastered in SAP
+        { typeof(VendorInvitationCanonical), Portal }, // Local
+        { typeof(ChangeRequestCanonical), Portal },    // Local
+        { typeof(User), Portal }               // Local
+    };
+
+    public static string GetDefaultSource(Type entityType)
+    {
+        return EntityDefaults.TryGetValue(entityType, out var source) ? source : Portal;
+    }
     
     public static bool IsValid(string sourceSystem) => All.Contains(sourceSystem);
+}
+
+/// <summary>
+/// Extensions for checking entity origin.
+/// </summary>
+public static class EntityOriginExtensions 
+{
+    private static readonly string[] NativeSystems = { SourceSystems.Portal, SourceSystems.Api };
+
+    /// <summary>
+    /// Returns true if the entity is natively mastered in this platform.
+    /// </summary>
+    public static bool IsNative(this CanonicalEntityBase entity) 
+    {
+        return NativeSystems.Contains(entity.SourceSystem); 
+    }
+
+    /// <summary>
+    /// Returns true if the entity is consumed from an external system.
+    /// </summary>
+    public static bool IsExternal(this CanonicalEntityBase entity)
+    {
+        return !IsNative(entity);
+    }
 }
