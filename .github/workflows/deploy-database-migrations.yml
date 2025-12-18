@@ -58,27 +58,38 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
-    - name: Install Azure SQL Extension
-      run: az extension add --name db-up --yes
-    
-    - name: Apply Migration to Azure SQL
+    - name: Parse Azure Credentials
+      id: creds
       run: |
+        echo "clientId=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .clientId)" >> $GITHUB_OUTPUT
+        echo "clientSecret=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .clientSecret)" >> $GITHUB_OUTPUT
+        echo "tenantId=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .tenantId)" >> $GITHUB_OUTPUT
+
+    - name: Apply Migrations (dotnet ef)
+      env:
+        DataSourceMode: Connected
+      run: |
+        # Set environment variables based on input
         if [ "${{ inputs.environment }}" == "dev" ]; then
-          RESOURCE_GROUP="rg-vendor-mdm-dev-v3"
           SQL_SERVER="sql-vendor-mdm-dev"
           DATABASE="VendorMdmDb"
         else
-          RESOURCE_GROUP="rg-vendor-mdm-prod"
           SQL_SERVER="sql-vendor-mdm-prod"
           DATABASE="VendorMdmDb"
         fi
         
-        az sql db query \
-          --resource-group $RESOURCE_GROUP \
-          --server $SQL_SERVER \
-          --database $DATABASE \
-          --auth-mode ActiveDirectoryIntegrated \
-          --query-file migration-script.sql
+        echo "Applying migrations to $SQL_SERVER (Database: $DATABASE)..."
+        
+        cd backend/VendorMdm.Api
+        
+        # Construct connection string with Service Principal
+        CONN_STRING="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Initial Catalog=${DATABASE};User ID=${{ steps.creds.outputs.clientId }};Password=${{ steps.creds.outputs.clientSecret }};Authentication=Active Directory Service Principal;Encrypt=True;TrustServerCertificate=False;"
+        
+        # Run update
+        # We set the connection string env var to override appsettings
+        export ConnectionStrings__Sql="$CONN_STRING"
+        
+        dotnet ef database update --context SqlDbContext
     
     - name: Verify Migration
       run: |
