@@ -34,11 +34,14 @@ jobs:
     - name: Generate Migration Script
       run: |
         cd backend/VendorMdm.Api
+        # Force SQL Server provider by setting connection string
+        export ConnectionStrings__Sql="Server=tcp:placeholder.database.windows.net,1433;Initial Catalog=VendorMdmDb;Authentication=Active Directory Managed Identity;"
         dotnet ef migrations script \
           --project . \
           --context SqlDbContext \
           --idempotent \
-          --output ../../migration-script.sql
+          --output ../../migration-script.sql \
+          --no-build
     
     - name: Patch for SQL Server (replace TEXT with nvarchar)
       run: |
