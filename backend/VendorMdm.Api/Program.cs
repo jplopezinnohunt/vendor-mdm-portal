@@ -273,6 +273,14 @@ builder.Services.AddScoped<IExternalSystemMappingService, ExternalSystemMappingS
 builder.Services.AddScoped<ISapIdMappingService, SapIdMappingService>();
 builder.Services.AddScoped<IVendorSapMapper, VendorSapMapper>();
 
+// Canonical Model Services - New Entities
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<IFundService, FundService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<IVendorService, VendorService>();
+
 var app = builder.Build();
 
 // Ensure database is created (for all environments)

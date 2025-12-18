@@ -180,3 +180,114 @@ public class ExternalSystemMapping
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
 }
+
+/// <summary>
+/// Canonical Employee entity.
+/// Represents internal staff members.
+/// </summary>
+public class Employee : CanonicalEntityBase
+{
+    [Required]
+    [MaxLength(100)]
+    public string GivenName { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(100)]
+    public string Surname { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(255)]
+    public string Email { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Business-facing Employee ID (e.g., from HR system).
+    /// NOT the database primary key.
+    /// </summary>
+    [MaxLength(50)]
+    public string? EmployeeId { get; set; }
+
+    // Inherits Attributes for: Department, Title, ManagerId, etc.
+}
+
+/// <summary>
+/// Canonical Project entity.
+/// Represents a strict business project / WBS element.
+/// </summary>
+public class Project : CanonicalEntityBase
+{
+    [Required]
+    [MaxLength(50)]
+    public string ProjectCode { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    public DateTime? StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+
+    // Inherits Attributes for: Type, Status, Budget, ManagerId
+}
+
+/// <summary>
+/// Canonical Fund entity.
+/// Represents a financial funding source or cost center group.
+/// </summary>
+public class Fund : CanonicalEntityBase
+{
+    [Required]
+    [MaxLength(50)]
+    public string FundCode { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(4)]
+    public string? FiscalYear { get; set; }
+
+    // Inherits Attributes for: Type, Description, Currency
+}
+
+/// <summary>
+/// Canonical Customer entity.
+/// Represents a client or customer organization.
+/// </summary>
+public class Customer : CanonicalEntityBase
+{
+    [Required]
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [MaxLength(100)]
+    public string? TaxId { get; set; }
+
+    [EmailAddress]
+    [MaxLength(255)]
+    public string? PrimaryContactEmail { get; set; }
+
+    // Inherits Attributes for: Address, Industry, Segment
+}
+
+/// <summary>
+/// Canonical User entity.
+/// Represents a platform user (migrated from UserRole).
+/// </summary>
+public class User : CanonicalEntityBase
+{
+    [Required]
+    [MaxLength(100)]
+    public string Username { get; set; } = string.Empty;
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(255)]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(50)]
+    public string Role { get; set; } = "Viewer"; // Admin, Requester, Approver, Viewer
+
+    // Inherits Attributes for: FullName, Department, UiPreferences, NotificationSettings
+}

@@ -72,7 +72,8 @@ public class ChangeRequestRepository : IChangeRequestRepository
         {
             EventType = "RequestApproved",
             EntityId = id.ToString(),
-            Data = new { RequestId = id, Status = "Approved" }
+            Data = new { RequestId = id, Status = "Approved" },
+            SchemaVersion = "v1.0.0"
         };
         await _cosmosRepo.LogDomainEventAsync(domainEvent);
 
