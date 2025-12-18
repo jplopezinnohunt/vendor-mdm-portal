@@ -76,7 +76,13 @@ jobs:
         DataSourceMode: Connected
       run: |
         # Set environment variables based on input
-        if [ "${{ inputs.environment }}" == "dev" ]; then
+        # Set environment variables based on input (Default to 'dev' if empty/push trigger)
+        TARGET_ENV="${{ inputs.environment }}"
+        if [ -z "$TARGET_ENV" ]; then
+          TARGET_ENV="dev"
+        fi
+
+        if [ "$TARGET_ENV" == "dev" ]; then
           SQL_SERVER="sql-vendor-mdm-dev"
           DATABASE="VendorMdmDb"
         else
