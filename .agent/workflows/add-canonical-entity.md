@@ -1,393 +1,154 @@
 ---
-description: Workflow for adding new canonical entities (Employee, Funds, WBS Project, etc.)
+description: Workflow for adding new canonical entities (Hexagonal/Serverless Pattern)
 ---
 
 # Add New Canonical Entity Workflow
 
-This workflow guides you through adding a new canonical entity to the platform following mandatory canonical model principles.
+This workflow guides you through adding a new canonical entity to the platform following the **Hexagonal Architecture** and **Hybrid Relational-Document** principles.
 
 ## Prerequisites
-
-- [ ] Entity requirements documented
-- [ ] Entity lifecycle states defined
-- [ ] SAP mapping requirements (if applicable) identified
-
----
-
-## Step 1: Define Entity Model
-
-Create entity class in `backend/VendorMdm.Shared/Models/CanonicalEntities.cs`:
-
-```csharp
-/// <summary>
-/// Canonical [EntityName] entity
-/// [Brief description of purpose]
-/// </summary>
-public class [EntityName] : CanonicalEntityBase
-{
-    // Structured columns (for indexing/querying)
-    
-    [Required]
-    [MaxLength(200)]
-    public string [KeyField] { get; set; } = string.Empty;
-    
-    // Additional indexed fields...
-    
-    // Inherited from CanonicalEntityBase:
-    // - Id, EntityVersion, Status, SourceSystem
-    // - Data (JSON), CreatedAt, UpdatedAt, SchemaVersion
-}
-```
-
-**Decision Matrix for Fields:**
-- **SQL Column**: Foreign keys, indexed fields, universal fields
-- **Data JSON**: Volatile fields, context-specific, nested structures
+- [ ] Entity business requirements defined
+- [ ] Key structured fields identified (for SQL columns)
+- [ ] Schema attributes defined (for JSONB)
 
 ---
 
-## Step 2: Define Status Enum and State Machine
+## Step 10: Mandatory Verification (Deployment Gate)
 
-Add status constants and validation:
+**STOP**: You cannot mark this task as complete until you have verified:
 
-```csharp
-public static class [EntityName]Status
-{
-    public const string [Status1] = "[Status1]";
-    public const string [Status2] = "[Status2]";
-    // ... more statuses
-    
-    private static readonly Dictionary<string, HashSet<string>> ValidTransitions = new()
-    {
-        [Status1] = new() { Status2, ... },
-        [Status2] = new() { ... }
-    };
-    
-    public static bool IsValidTransition(string from, string to)
-    {
-        return ValidTransitions.ContainsKey(from) && 
-               ValidTransitions[from].Contains(to);
-    }
-}
-```
+1.  **Build Success**: `dotnet build` returns 0 errors.
+2.  **Runtime Verification**:
+    -   Run API: `dotnet run --project backend/VendorMdm.Api`
+    -   Open Swagger: `http://localhost:5001/swagger`
+    -   Execute `POST /api/[EntityName]` -> 201 Created
+    -   Execute `GET /api/[EntityName]/{id}` -> 200 OK
+3.  **Schema Compliance**:
+    -   Verify the `Data` column in SQL contains valid JSON corresponding to your schema.
 
 ---
 
-## Step 3: Create JSON Schema
+## Step 11: Document Entity
 
-Create `backend/VendorMdm.Shared/Schemas/[entity-name]-v1.0.0.json`:
+Create a new schema file in `backend/VendorMdm.Shared/Schemas/[entity-name]-v1.0.0.json`.
 
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://platform.vendor.com/schemas/[entity-name]/v1.0.0",
-  "title": "[EntityName] Canonical Entity",
+  "$id": "https://platform.vendor.com/schemas/[entity]/v1.0.0",
+  "title": "[Entity] Canonical Entity",
   "type": "object",
-  "required": ["field1", "field2"],
+  "additionalProperties": false,
+  "required": ["keyField1", "email"],
   "properties": {
-    "field1": { "type": "string", "maxLength": 200 },
-    "field2": { "type": "number" },
-    "nestedObject": {
-      "type": "object",
-      "properties": {
-        "subField": { "type": "string" }
-      }
-    }
+    "keyField1": { "type": "string", "maxLength": 100 },
+    "email": { "type": "string", "format": "email" },
+    "attributes": { "type": "object" }
   }
 }
 ```
 
 ---
 
-## Step 4: Add to DbContext
+## Step 2: Create Canonical Model (Core Domain)
 
-Update `backend/VendorMdm.Api/Data/SqlDbContext.cs`:
-
-```csharp
-public DbSet<[EntityName]> [EntityNames] { get; set; }
-```
-
-Add configuration in `OnModelCreating`:
+Edit `backend/VendorMdm.Shared/Models/CanonicalEntities.cs`. Add the class inheriting from `CanonicalEntityBase`.
 
 ```csharp
-// Configure indexes
-modelBuilder.Entity<[EntityName]>()
-    .HasIndex(e => e.[KeyField]);
-
-modelBuilder.Entity<[EntityName]>()
-    .HasIndex(e => e.Status);
-
-// Configure constraints
-modelBuilder.Entity<[EntityName]>()
-    .Property(e => e.Data)
-    .HasColumnType("nvarchar(max)");
-```
-
----
-
-## Step 5: Create Migration
-
-// turbo
-```bash
-cd backend/VendorMdm.Api
-dotnet ef migrations add Add[EntityName]CanonicalEntity --context SqlDbContext
-```
-
-Review migration file, then apply:
-
-// turbo
-```bash
-dotnet ef database update
-```
-
----
-
-## Step 6: Create Service Layer
-
-Create `backend/VendorMdm.Api/Services/[EntityName]Service.cs`:
-
-```csharp
-public interface I[EntityName]Service
+/// <summary>
+/// Canonical [Entity] entity.
+/// </summary>
+public class [EntityName] : CanonicalEntityBase
 {
-    Task<[EntityName]> CreateAsync(Create[EntityName]Request request);
-    Task<[EntityName]> UpdateAsync(Guid id, Update[EntityName]Request request);
-    Task<[EntityName]> GetByIdAsync(Guid id);
-}
+    // Structured Columns (Indexed/Identity)
+    [Required]
+    [MaxLength(100)]
+    public string [KeyField] { get; set; } = string.Empty;
 
-public class [EntityName]Service : I[EntityName]Service
-{
-    private readonly SqlDbContext _context;
-    private readonly ILogger<[EntityName]Service> _logger;
-    private readonly Container _cosmosEventsContainer;
-    private readonly Container _cosmosArtifactsContainer;
-    
-    public async Task<[EntityName]> CreateAsync(Create[EntityName]Request request)
-    {
-        // STEP A: SQL - Create canonical entity
-        var entity = new [EntityName]
-        {
-            [KeyField] = request.[KeyField],
-            Status = [EntityName]Status.[InitialStatus],
-            SourceSystem = SourceSystems.Portal,
-            EntityVersion = 1,
-            SchemaVersion = "v1.0.0",
-            Data = JsonConvert.SerializeObject(new { /* data payload */ })
-        };
-        
-        // Validate canonical fields
-        entity.ValidateCanonicalFields();
-        
-        _context.[EntityNames].Add(entity);
-        await _context.SaveChangesAsync();
-        
-        _logger.LogInformation("[EntityName] created: {Id}", entity.Id);
-        
-        // STEP B: Cosmos - Store artifact (non-blocking)
-        try
-        {
-            await SaveArtifactAsync(entity.Id.ToString(), new
-            {
-                entityId = entity.Id,
-                fullPayload = request,
-                createdAt = DateTime.UtcNow
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to store artifact for {Id}", entity.Id);
-        }
-        
-        // STEP C: Cosmos - Emit event (non-blocking)
-        try
-        {
-            await EmitDomainEventAsync("[EntityName]Created", entity.Id.ToString(), new
-            {
-                entityId = entity.Id,
-                entityVersion = entity.EntityVersion,
-                // ... event data
-            });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to emit event for {Id}", entity.Id);
-        }
-        
-        return entity;
-    }
-    
-    private async Task EmitDomainEventAsync(string eventType, string entityId, object data)
-    {
-        var evt = new EnhancedDomainEvent
-        {
-            EventType = eventType,
-            EntityId = entityId,
-            CorrelationId = GetCorrelationId(),
-            Actor = GetCurrentUserId(),
-            Channel = EventChannels.Portal,
-            Data = data
-        };
-        
-        await _cosmosEventsContainer.CreateItemAsync(evt, new PartitionKey(eventType));
-    }
+    // Inherits 'Data' (JSONB) for all other properties
 }
 ```
 
 ---
 
-## Step 7: Add SAP Mapping (if applicable)
+## Step 3: Update Persistence Layer (Port Implementation)
 
-If entity maps to SAP, create mapper in `backend/VendorMdm.Shared/Mapping/`:
+1. Edit `backend/VendorMdm.Api/Data/SqlDbContext.cs`:
+   - Add `public DbSet<[EntityName]> [EntityPlural] { get; set; }`
+   - In `OnModelCreating`, add configuration:
+     ```csharp
+     modelBuilder.Entity<[EntityName]>(entity =>
+     {
+         entity.HasKey(e => e.Id);
+         entity.HasIndex(e => e.[KeyField]); // Index critical fields
+         entity.Property(e => e.Data).HasColumnType("nvarchar(max)").IsRequired().HasDefaultValue("{}");
+     });
+     ```
+
+2. Create Migration:
+   // turbo
+   ```bash
+   dotnet dotnet-ef migrations add Add[EntityName]CanonicalEntity --context SqlDbContext --project backend/VendorMdm.Api --startup-project backend/VendorMdm.Api
+   ```
+
+3. Apply Migration:
+   // turbo
+   ```bash
+   dotnet dotnet-ef database update --context SqlDbContext --project backend/VendorMdm.Api --startup-project backend/VendorMdm.Api
+   ```
+
+---
+
+## Step 4: Create Service Layer (Inbound/Outbound Logic)
+
+1. Create Interface `backend/VendorMdm.Api/Services/I[EntityName]Service.cs`.
+2. Create Implementation `backend/VendorMdm.Api/Services/[EntityName]Service.cs`.
+
+**Pattern:**
+1. **Validate**: Check constraints.
+2. **SQL Persistence**: Save state to SQL.
+3. **Functional Log**: Save artifact to Cosmos DB (`SaveArtifactAsync`).
+4. **Event Bus**: Emit domain event to Cosmos DB (`LogDomainEventAsync`).
 
 ```csharp
-public interface I[EntityName]SapMapper
+public async Task<[EntityName]> CreateAsync([EntityName] entity)
 {
-    Task<Sap[EntityName]> ToSapAsync([EntityName] entity);
-    Task<[EntityName]> FromSapAsync(Sap[EntityName] sapEntity);
-}
+    // 1. SQL
+    _context.[EntityPlural].Add(entity);
+    await _context.SaveChangesAsync();
 
-public class [EntityName]SapMapper : I[EntityName]SapMapper
-{
-    private readonly ISapIdMappingService _sapIdService;
-    
-    public async Task<Sap[EntityName]> ToSapAsync([EntityName] entity)
-    {
-        // Map canonical entity → SAP structure
-        var sapId = await _sapIdService.GetOrCreateSapIdAsync(
-            entity.Id, 
-            nameof([EntityName])
-        );
-        
-        return new Sap[EntityName]
-        {
-            SapId = sapId,
-            // ... map fields
-        };
-    }
+    // 2. Artifact
+    await _cosmosRepository.SaveArtifactAsync(entity.Id.ToString(), entity);
+
+    // 3. Event
+    await _cosmosRepository.LogDomainEventAsync(new DomainEvent { ... });
+
+    return entity;
 }
 ```
 
-Add mapping record:
-```csharp
-await _context.SapIdMappings.AddAsync(new SapIdMapping
-{
-    CanonicalEntityId = entity.Id,
-    EntityType = nameof([EntityName]),
-    SapId = sapId,
-    SapEnvironment = "D01"
-});
-```
+3. Register in `Program.cs`:
+   ```csharp
+   builder.Services.AddScoped<I[EntityName]Service, [EntityName]Service>();
+   ```
 
 ---
 
-## Step 8: Create API Controller
+## Step 5: Create- [ ] API controller created with correct Error Handling (try/catch -> 500)(Inbound Port)
 
-Create `backend/VendorMdm.Api/Controllers/[EntityName]Controller.cs`:
+Create `backend/VendorMdm.Api/Controllers/[EntityName]Controller.cs`.
 
-```csharp
-[ApiController]
-[Route("api/[controller]")]
-public class [EntityName]Controller : ControllerBase
-{
-    private readonly I[EntityName]Service _service;
-    
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] Create[EntityName]Request request)
-    {
-        var entity = await _service.CreateAsync(request);
-        return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
-    }
-    
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(Guid id)
-    {
-        var entity = await _service.GetByIdAsync(id);
-        return Ok(entity);
-    }
-}
-```
+- Use `[ApiController]` and `[Route("api/[controller]")]`.
+- Inject `I[EntityName]Service` (NEVER `SqlDbContext`).
+- Endpoint checks `ModelState`, calls Service, returns `ActionResult`.
 
 ---
 
-## Step 9: Add Tests
+## Step 6: Verify
 
-Create `backend/VendorMdm.Api.Tests/[EntityName]ServiceTests.cs`:
-
-```csharp
-[TestClass]
-public class [EntityName]ServiceTests
-{
-    [TestMethod]
-    public async Task Create_Should_SetCanonicalFields()
-    {
-        var entity = await _service.CreateAsync(new Create[EntityName]Request { ... });
-        
-        Assert.IsNotNull(entity.Id);
-        Assert.AreEqual(1, entity.EntityVersion);
-        Assert.AreEqual(SourceSystems.Portal, entity.SourceSystem);
-        Assert.AreEqual("v1.0.0", entity.SchemaVersion);
-    }
-    
-    [TestMethod]
-    public async Task Update_Should_IncrementVersion()
-    {
-        var entity = await _service.UpdateAsync(id, request);
-        Assert.AreEqual(2, entity.EntityVersion);
-    }
-}
-```
-
----
-
-## Step 10: Document Entity
-
-Update `docs/DATABASE_SCHEMA.md`:
-
-```markdown
-### [EntityName]
-
-**Purpose**: [Description]
-
-#### Structured Columns
-| Column | Type | Purpose |
-|--------|------|---------|
-| Id | UNIQUEIDENTIFIER | Canonical ID |
-| [KeyField] | NVARCHAR(200) | [Description] |
-| Status | NVARCHAR(50) | Lifecycle state |
-
-#### Data JSON Schema
-\```typescript
-interface [EntityName]Data {
-  field1: string;
-  nestedObject?: {
-    subField: string;
-  };
-}
-\```
-```
-
----
-
-## Checklist
-
-Before marking entity as complete:
-
-- [ ] Entity inherits `CanonicalEntityBase`
-- [ ] Status enum and state machine defined
-- [ ] JSON Schema created and validated
-- [ ] DbContext updated with DbSet and indexes
-- [ ] EF Migration created and applied
-- [ ] Service layer implements A→B→C→D pattern (SQL→Artifact→Event→Bus)
-- [ ] SAP mapper created (if SAP integration needed)
-- [ ] No SAP fields in entity model
-- [ ] API controller created
-- [ ] Unit tests passing
-- [ ] Documentation updated
-- [ ] Code review approved
-
----
-
-## Examples
-
-See existing canonical entities:
-- `Vendor` - file:///Users/jplopez/projects/vendor-mdm-portal/backend/VendorMdm.Shared/Models/CanonicalEntities.cs
-- `VendorInvitationCanonical`
-- `ChangeRequestCanonical`
+1. Build project:
+   // turbo
+   ```bash
+   dotnet build backend/VendorMdm.Api
+   ```
+2. Test creation via Swagger or Integration Test.

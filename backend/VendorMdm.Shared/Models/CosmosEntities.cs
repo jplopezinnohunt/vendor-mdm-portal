@@ -36,4 +36,10 @@ public class DomainEvent
 
     [JsonProperty("data")]
     public object Data { get; set; } = new object();
+
+    [JsonProperty("source")]
+    public string Source { get; set; } = string.Empty;
+
+    [JsonProperty("schemaVersion")]
+    public string SchemaVersion { get; set; } = "v1.0.0";
 }

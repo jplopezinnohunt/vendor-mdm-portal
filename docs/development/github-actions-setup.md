@@ -1,0 +1,266 @@
+# Complete GitHub Actions Deployment Guide
+
+## Overview
+
+All deployment types are now automated via GitHub Actions with **manual triggers** for critical operations.
+
+---
+
+## Workflows Summary
+
+| Workflow | Type | Trigger | Status |
+|----------|------|---------|--------|
+| `deploy-backend-api.yml` | Backend API | Auto (push to main) | ✅ Active |
+| `azure-static-web-apps.yml` | Frontend | Auto (push to main) | ✅ Active |
+| `deploy-database-migrations.yml` | Database | Manual | ✅ Active |
+| `deploy-infrastructure.yml` | Infrastructure | Manual | ✅ Active |
+| `azure-functions.yml` | Azure Functions | Manual | ✅ Active |
+
+---
+
+## Required GitHub Secrets
+
+Add these at: https://github.com/jplopezinnohunt/vendor-mdm-portal/settings/secrets/actions
+
+### 1. `AZURE_CREDENTIALS` (for all Azure deployments)
+```bash
+# Create service principal
+az ad sp create-for-rbac \
+  --name "github-actions-vendor-mdm" \
+  --role contributor \
+  --scopes /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-vendor-mdm-dev-v3 \
+  --sdk-auth
+
+# Copy the JSON output and add as secret
+```
+
+### 2. `AZURE_APP_SERVICE_PUBLISH_PROFILE` (for Backend API)
+```bash
+az webapp deployment list-publishing-profiles \
+  --resource-group rg-vendor-mdm-dev-v3 \
+  --name app-vendor-mdm-api-dev \
+  --xml
+```
+
+### 3. `AZURE_STATIC_WEB_APPS_API_TOKEN` (for Frontend)
+- Get from Azure Portal → Static Web Apps → Configuration → Deployment token
+
+---
+
+## Usage Instructions
+
+### 1. Backend API (Automatic)
+**File**: `deploy-backend-api.yml`  
+**Trigger**: Push to `main` with backend code changes
+
+```bash
+# Just commit and push - deployment is automatic
+git add backend/
+git commit -m "feat: add new feature"
+git push origin main
+
+# Monitor at: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+```
+
+---
+
+### 2. Frontend (Automatic)
+**File**: `azure-static-web-apps.yml`  
+**Trigger**: Push to `main` with frontend code changes
+
+```bash
+# Just commit and push - deployment is automatic
+git add frontend/
+git commit -m "feat: update UI"
+git push origin main
+
+# Monitor at: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+```
+
+---
+
+### 3. Database Migrations (Manual Trigger)
+**File**: `deploy-database-migrations.yml`  
+**Trigger**: Manual via GitHub Actions UI
+
+**Steps**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click "Deploy Database Migrations"
+3. Click "Run workflow"
+4. Select environment (dev/prod)
+5. Click "Run workflow" button
+
+**What it does**:
+- Generates migration script from EF Core
+- Patches for SQL Server (`TEXT` → `nvarchar(max)`)
+- Applies to Azure SQL Database
+- Shows preview before applying
+
+---
+
+### 4. Infrastructure (Manual Trigger)
+**File**: `deploy-infrastructure.yml`  
+**Trigger**: Manual via GitHub Actions UI
+
+**Steps**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click "Deploy Azure Infrastructure"
+3. Click "Run workflow"
+4. Select environment (dev/prod)
+5. Optionally specify Bicep file (default: main.bicep)
+6. Click "Run workflow" button
+
+**What it does**:
+- Validates Bicep template
+- Deploys to Azure Resource Group
+- Shows deployment outputs
+- Lists all resources created/updated
+
+---
+
+### 5. Azure Functions (Manual Trigger)
+**File**: `azure-functions.yml`  
+**Trigger**: Manual via GitHub Actions UI
+
+**Steps**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click "Deploy Backend Artifacts"
+3. Click "Run workflow"
+4. Enter Function App name (e.g., `mdmportal-func-dev`)
+5. Select environment (dev/prod)
+6. Click "Run workflow" button
+
+**What it does**:
+- Builds Azure Functions project
+- Publishes to specified Function App
+- Deploys artifacts
+
+---
+
+## Quick Commands Reference
+
+### Get Azure Credentials (One-time Setup)
+```bash
+# 1. Get your subscription ID
+az account show --query id -o tsv
+
+# 2. Create service principal
+az ad sp create-for-rbac \
+  --name "github-actions-vendor-mdm" \
+  --role contributor \
+  --scopes /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-vendor-mdm-dev-v3 \
+  --sdk-auth
+
+# 3. Copy JSON output → GitHub Secret: AZURE_CREDENTIALS
+```
+
+### Get App Service Publish Profile
+```bash
+az webapp deployment list-publishing-profiles \
+  --resource-group rg-vendor-mdm-dev-v3 \
+  --name app-vendor-mdm-api-dev \
+  --xml
+
+# Copy XML output → GitHub Secret: AZURE_APP_SERVICE_PUBLISH_PROFILE
+```
+
+### View Workflow Runs
+```bash
+# Open in browser
+open https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+
+# Or use GitHub CLI
+gh run list --limit 10
+gh run view <run-id>
+```
+
+---
+
+## Deployment Decision Tree
+
+```
+┌─ Code Change?
+│
+├─ Backend Code → Push to main → Auto-deploys
+│
+├─ Frontend Code → Push to main → Auto-deploys
+│
+├─ Database Schema → Manual workflow → Trigger "Deploy Database Migrations"
+│
+├─ Infrastructure (Bicep) → Manual workflow → Trigger "Deploy Azure Infrastructure"
+│
+└─ Azure Functions → Manual workflow → Trigger "Deploy Backend Artifacts"
+```
+
+---
+
+## Safety Features
+
+### All Workflows:
+- ✅ Use Azure service principal (least privilege)
+- ✅ Require GitHub secrets (encrypted)
+- ✅ Show deployment logs
+- ✅ Support rollback (revert commit)
+
+### Manual Workflows (DB/Infra/Functions):
+- ✅ Require explicit trigger (no auto-deploy)
+- ✅ Environment selection (dev/prod)
+- ✅ Validation before deployment
+- ✅ Deployment preview/verification
+
+---
+
+## Monitoring
+
+### View All Deployments
+https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+
+### Workflow Status
+- ✅ Green = Success
+- ❌ Red = Failed
+- 🟡 Yellow = In progress
+- ⚪ Gray = Queued
+
+### Get Email Notifications
+GitHub → Settings → Notifications → Actions → Enable notifications for failed workflows
+
+---
+
+## Rollback Procedures
+
+### Backend/Frontend Code
+```bash
+# Revert the commit
+git revert <commit-sha>
+git push origin main
+
+# GitHub Actions will auto-deploy the reverted version
+```
+
+### Database Migration
+```bash
+# Manually rollback via Azure Portal SQL Query Editor
+# Or trigger workflow with previous migration
+```
+
+### Infrastructure
+```bash
+# Revert Bicep changes
+git revert <commit-sha>
+
+# Manually trigger "Deploy Azure Infrastructure" workflow
+```
+
+---
+
+## Next Steps
+
+1. ✅ Add all required secrets to GitHub
+2. ✅ Test Backend API deployment (push small change)
+3. ✅ Test Frontend deployment (push small change)
+4. ✅ Test manual workflows (Database/Infra/Functions)
+5. ✅ Enable branch protection rules (require CI to pass)
+
+---
+
+**All workflows created! Ready for automated deployments.** 🚀

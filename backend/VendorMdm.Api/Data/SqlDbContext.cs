@@ -21,6 +21,11 @@ public class SqlDbContext : DbContext
     public DbSet<Vendor> Vendors { get; set; }
     public DbSet<VendorInvitationCanonical> VendorInvitationsCanonical { get; set; }
     public DbSet<ChangeRequestCanonical> ChangeRequestsCanonical { get; set; }
+    public DbSet<Employee> Employees { get; set; }
+    public DbSet<Project> Projects { get; set; }
+    public DbSet<Fund> Funds { get; set; }
+    public DbSet<Customer> Customers { get; set; }
+    public DbSet<User> Users { get; set; } /* Canonical User entity */
     public DbSet<ExternalSystemMapping> ExternalSystemMappings { get; set; }
 
 
@@ -59,42 +64,42 @@ public class SqlDbContext : DbContext
         // VendorInvitation JSON configuration
         modelBuilder.Entity<VendorInvitation>()
             .Property(e => e.Attributes)
-            .HasColumnType("nvarchar(max)")
+            
             .IsRequired()
             .HasDefaultValue("{}");
 
         // VendorApplication JSON configuration
         modelBuilder.Entity<VendorApplication>()
             .Property(e => e.Attributes)
-            .HasColumnType("nvarchar(max)")
+            
             .IsRequired()
             .HasDefaultValue("{}");
 
         // ChangeRequest JSON configuration
         modelBuilder.Entity<ChangeRequest>()
             .Property(e => e.Attributes)
-            .HasColumnType("nvarchar(max)")
+            
             .IsRequired()
             .HasDefaultValue("{}");
 
         // Attachment JSON configuration
         modelBuilder.Entity<Attachment>()
             .Property(e => e.Attributes)
-            .HasColumnType("nvarchar(max)")
+            
             .IsRequired()
             .HasDefaultValue("{}");
 
         // UserRole JSON configuration
         modelBuilder.Entity<UserRole>()
             .Property(e => e.Attributes)
-            .HasColumnType("nvarchar(max)")
+            
             .IsRequired()
             .HasDefaultValue("{}");
 
         // WorkflowState JSON configuration
         modelBuilder.Entity<WorkflowState>()
             .Property(e => e.Attributes)
-            .HasColumnType("nvarchar(max)")
+            
             .IsRequired()
             .HasDefaultValue("{}");
     }
@@ -115,7 +120,7 @@ public class SqlDbContext : DbContext
             entity.HasIndex(e => e.SourceSystem);
             
             entity.Property(e => e.Data)
-                .HasColumnType("nvarchar(max)")
+                
                 .IsRequired()
                 .HasDefaultValue("{}");
         });
@@ -130,7 +135,7 @@ public class SqlDbContext : DbContext
             entity.HasIndex(e => e.ExpiresAt);
             
             entity.Property(e => e.Data)
-                .HasColumnType("nvarchar(max)")
+                
                 .IsRequired()
                 .HasDefaultValue("{}");
         });
@@ -144,7 +149,7 @@ public class SqlDbContext : DbContext
             entity.HasIndex(e => e.RequesterId);
             
             entity.Property(e => e.Data)
-                .HasColumnType("nvarchar(max)")
+                
                 .IsRequired()
                 .HasDefaultValue("{}");
         });
@@ -162,6 +167,49 @@ public class SqlDbContext : DbContext
             // Index for canonical ID lookups
             entity.HasIndex(e => new { e.CanonicalEntityId, e.EntityType, e.SystemName })
                 .HasDatabaseName("IX_ExternalSystemMapping_Canonical");
+        });
+
+        // Employee
+        modelBuilder.Entity<Employee>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.EmployeeId);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        // Project
+        modelBuilder.Entity<Project>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProjectCode);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        // Fund
+        modelBuilder.Entity<Fund>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.FundCode);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        // Customer
+        modelBuilder.Entity<Customer>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.TaxId);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        // User
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Username);
+            entity.HasIndex(e => e.Email);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
         });
     }
 }

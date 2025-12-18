@@ -1,140 +1,247 @@
-# Deployment Processes - MANDATORY RULES
+# Deployment Processes - MANDATORY RULES (Updated 2024-12-18)
 
-## PRIMARY RULE: All Azure Resources Deploy via Azure CLI
+## PRIMARY RULE: Hybrid GitHub Actions + Azure CLI Strategy
 
-**MANDATORY**: All Azure resources are deployed using **Azure CLI**, NOT GitHub Actions.
-
-**EXCEPTION**: Azure Static Web Apps deploy via GitHub Actions (this is Azure's designed deployment method).
-
-### Why This Rule Exists
-- ✅ Consistent deployment methodology
-- ✅ Direct control over Azure resources
-- ✅ No dependency on GitHub Actions secrets (except SWA)
-- ✅ Simpler debugging and troubleshooting
-- ✅ Works from any environment
-
-### What This Means
-- ❌ No GitHub Actions for Azure Functions, App Service, etc.
-- ✅ Azure Static Web Apps: GitHub Actions is the correct method
-- ✅ Use `az` CLI for infrastructure and backend
-- ✅ Use `func` CLI for Azure Functions
-- ✅ Manual, controlled deployments (except SWA)
+**New Strategy**: Use GitHub Actions for code deployments (automated), Azure CLI for critical operations (manual).
 
 ---
 
-## Deployment Methods by Resource Type
+## Deployment Methods by Component
 
-### 1. Azure Functions
-**Method**: Azure Functions Core Tools CLI
+| Component | Method | Trigger | Rationale |
+|-----------|--------|---------|-----------|
+| **Backend API Code** | GitHub Actions | Auto (push to main) | Code changes benefit from automation |
+| **Frontend (SWA)** | GitHub Actions | Auto (push to main) | Azure's designed deployment method |
+| **Database Migrations** | GitHub Actions | Manual workflow | Schema changes require verification |
+| **Infrastructure (Bicep)** | GitHub Actions | Manual workflow | Critical changes require approval |
+| **Azure Functions** | GitHub Actions | Manual workflow | Deployment on-demand |
 
-```bash
-cd backend/VendorMdm.Artifacts  # or other function project
-dotnet build --configuration Release
-func azure functionapp publish <function-app-name>
+---
 
-# Example:
-# func azure functionapp publish mdmportal-func-dev
-```
+## GitHub Actions Workflows
 
+### 1. Backend API Deployment (Automatic)
+**File**: `.github/workflows/deploy-backend-api.yml`  
+**Status**: ✅ **ACTIVE**  
+**Trigger**: Push to `main` with changes in `backend/VendorMdm.Api/**` or `backend/VendorMdm.Shared/**`
 
-### 2. API Backend (App Service / Container Apps)
-**Method**: Azure CLI
+**What it does**:
+1. Builds .NET application (Release)
+2. Publishes to `./publish`
+3. Deploys to Azure App Service using publish profile
 
-```bash
-# Build and publish
-cd backend/VendorMdm.Api
-dotnet publish -c Release -o ./publish
-
-# Deploy to Azure App Service
-az webapp deployment source config-zip \
-  --resource-group <resource-group> \
-  --name <app-service-name> \
-  --src ./publish.zip
-
-# OR deploy to Azure Container Apps (if using containers)
-az containerapp update \
-  --name <container-app-name> \
-  --resource-group <resource-group> \
-  --image <your-image>
-```
-
-### 3. Static Web App (Frontend)
-**Method**: GitHub Actions (Azure's designed deployment method)
-
-**Workflow**: `.github/workflows/azure-static-web-apps.yml` ✅ **ENABLED**
-
-```yaml
-# Deploys automatically on push to main
-# Requires AZURE_STATIC_WEB_APPS_API_TOKEN secret in GitHub
-```
-
-**Manual alternative** (if workflow fails):
-```bash
-cd frontend
-npm run build
-swa deploy ./dist --app-name <swa-name> --resource-group <resource-group>
-```
-
-### 4. Azure SQL Database
-**Method**: Azure Portal SQL Query Editor OR Azure CLI
+**Secret required**: `AZURE_APP_SERVICE_PUBLISH_PROFILE`
 
 ```bash
-# Apply migration script
-az sql db query \
-  --server <server-name> \
-  --database <database-name> \
-  --auth-mode ActiveDirectoryIntegrated \
-  --input-file ./docs/azure-sql-safe-migration.sql
-```
-
-**OR** use Azure Portal Query Editor (easier for SQL scripts).
-
-### 5. Infrastructure (Bicep/ARM)
-**Method**: Azure CLI
-
-```bash
-# Deploy infrastructure templates
-az deployment group create \
-  --resource-group <resource-group> \
-  --template-file ./infrastructure/main.bicep \
-  --parameters environmentName=dev
+# Get secret value:
+az webapp deployment list-publishing-profiles \
+  --resource-group rg-vendor-mdm-dev-v3 \
+  --name app-vendor-mdm-api-dev \
+  --xml
 ```
 
 ---
 
-## GitHub Actions: What They're Used For
+### 2. Frontend (Static Web App) Deployment (Automatic)
+**File**: `.github/workflows/azure-static-web-apps.yml`  
+**Status**: ✅ **ACTIVE**  
+**Trigger**: Push to `main` with changes in `frontend/**`
 
-**NOT for Azure deployment** - Only for:
-- ✅ Code quality checks (future)
-- ✅ Running tests (future)
-- ✅ Linting (future)
+**What it does**:
+1. Builds React/Vite application
+2. Deploys to Azure Static Web Apps
 
-**Currently**: All GitHub Actions workflows for Azure deployment are **disabled**.
+**Secret required**: `AZURE_STATIC_WEB_APPS_API_TOKEN`
+
+---
+
+### 3. Database Migrations (Manual Trigger)
+**File**: `.github/workflows/deploy-database-migrations.yml`  
+**Status**: ✅ **ACTIVE**  
+**Trigger**: Manual via GitHub Actions UI
+
+**What it does**:
+1. Generates migration script from EF Core
+2. Patches for SQL Server (`TEXT` → `nvarchar(max)`)
+3. Applies to Azure SQL Database
+
+**Secret required**: `AZURE_CREDENTIALS`
+
+**How to trigger**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click "Deploy Database Migrations"
+3. Click "Run workflow" → Select environment (dev/prod)
+
+---
+
+### 4. Infrastructure Deployment (Manual Trigger)
+**File**: `.github/workflows/deploy-infrastructure.yml`  
+**Status**: ✅ **ACTIVE**  
+**Trigger**: Manual via GitHub Actions UI
+
+**What it does**:
+1. Validates Bicep templates
+2. Deploys to Azure Resource Group
+3. Shows deployment outputs
+
+**Secret required**: `AZURE_CREDENTIALS`
+
+**How to trigger**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click "Deploy Azure Infrastructure"
+3. Click "Run workflow" → Select environment + Bicep file
+
+---
+
+### 5. Azure Functions Deployment (Manual Trigger)
+**File**: `.github/workflows/azure-functions.yml`  
+**Status**: ✅ **ACTIVE**  
+**Trigger**: Manual via GitHub Actions UI
+
+**What it does**:
+1. Builds Azure Functions project
+2. Deploys to specified Function App
+
+**Secret required**: `AZURE_CREDENTIALS`
+
+**How to trigger**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click "Deploy Backend Artifacts"
+3. Click "Run workflow" → Enter Function App name + environment
+
+---
+
+## Required GitHub Secrets
+
+Add at: https://github.com/jplopezinnohunt/vendor-mdm-portal/settings/secrets/actions
+
+### `AZURE_CREDENTIALS`
+**Used by**: Database migrations, Infrastructure, Azure Functions
+
+```bash
+az ad sp create-for-rbac \
+  --name "github-actions-vendor-mdm" \
+  --role contributor \
+  --scopes /subscriptions/<SUBSCRIPTION_ID>/resourceGroups/rg-vendor-mdm-dev-v3 \
+  --sdk-auth
+```
+
+### `AZURE_APP_SERVICE_PUBLISH_PROFILE`
+**Used by**: Backend API deployment
+
+```bash
+az webapp deployment list-publishing-profiles \
+  --resource-group rg-vendor-mdm-dev-v3 \
+  --name app-vendor-mdm-api-dev \
+  --xml
+```
+
+### `AZURE_STATIC_WEB_APPS_API_TOKEN`
+**Used by**: Frontend deployment
+
+Get from: Azure Portal → Static Web Apps → Configuration → Deployment token
+
+---
+
+## Deployment Workflow
+
+### For Code Changes (Automatic)
+```bash
+# 1. Make changes
+git add backend/VendorMdm.Api  # or frontend/
+
+# 2. Commit
+git commit -m "feat: your feature"
+
+# 3. Push to main
+git push origin main
+
+# 4. GitHub Actions auto-deploys
+# Monitor: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+```
+
+### For Database Migrations (Manual)
+1. Ensure code with migrations is pushed to `main`
+2. Go to GitHub Actions UI
+3. Trigger "Deploy Database Migrations" workflow
+4. Select environment (dev/prod)
+5. Monitor execution
+6. Verify in Azure Portal SQL Query Editor
+
+### For Infrastructure Changes (Manual)
+1. Update Bicep files and push to `main`
+2. Go to GitHub Actions UI
+3. Trigger "Deploy Azure Infrastructure" workflow
+4. Select environment and Bicep file
+5. Monitor execution
+6. Verify resources in Azure Portal
 
 ---
 
 ## Summary Table
 
-| Component | Deployment Method | GitHub Actions? |
-|-----------|-------------------|-----------------|
-| **Azure Functions** | `func publish` | ❌ Disabled |
-| **API Backend** | `az webapp deployment` | ❌ Not used |
-| **Frontend (SWA)** | GitHub Actions | ✅ **ENABLED** |
-| **Database** | Azure Portal OR `az sql db query` | ❌ Not applicable |
-| **Infrastructure** | `az deployment group create` | ❌ Not used |
+| Component | Deployment Method | GitHub Actions? | Manual Approval? |
+|-----------|-------------------|-----------------|------------------|
+| **Backend Code** | GitHub Actions | ✅ Auto | ❌ No |
+| **Frontend Code** | GitHub Actions | ✅ Auto | ❌ No |
+| **Database Schema** | GitHub Actions | ✅ Manual trigger | ✅ Yes |
+| **Infrastructure** | GitHub Actions | ✅ Manual trigger | ✅ Yes |
+| **Azure Functions** | GitHub Actions | ✅ Manual trigger | ✅ Yes |
 
 ---
 
 ## Enforcement
 
-**Before ANY Azure Deployment**:
+**Before ANY Deployment**:
 1. ✅ Code pushed to GitHub (`main` branch)
 2. ✅ Local build passes (0 errors)
-3. ✅ Use Azure CLI commands (per table above)
-4. ✅ Verify in Azure Portal after deployment
+3. ✅ All required GitHub secrets configured
+4. ✅ For manual workflows: Trigger via GitHub Actions UI
+5. ✅ Monitor workflow execution
+6. ✅ Verify in Azure Portal after deployment
+
+**After Deployment**:
+1. ✅ Workflow shows green checkmark
+2. ✅ Verify resources in Azure Portal
+3. ✅ Run validation tests
+4. ✅ Check Application Insights for errors
 
 **Never**:
-- ❌ Deploy via GitHub Actions
-- ❌ Rely on CI/CD for Azure resources
-- ❌ Deploy without local build verification
+- ❌ Deploy manually via Azure CLI for code (use GitHub Actions)
+- ❌ Skip workflow monitoring
+- ❌ Deploy to production without testing in dev first
+- ❌ Ignore failed workflows
 
+---
+
+## Rollback Procedures
+
+### Code Deployments (Backend/Frontend)
+```bash
+# Revert commit
+git revert <commit-sha>
+git push origin main
+
+# GitHub Actions auto-deploys reverted version
+```
+
+### Database Migrations
+```bash
+# Option 1: Trigger workflow with previous migration
+# Option 2: Manual rollback via Azure Portal SQL Query Editor
+```
+
+### Infrastructure
+```bash
+# Revert Bicep changes
+git revert <commit-sha>
+
+# Manually trigger "Deploy Azure Infrastructure" workflow
+```
+
+---
+
+**Updated**: 2024-12-18  
+**Reason**: Implemented comprehensive GitHub Actions strategy for all deployment types  
+**Old Method**: Fully manual Azure CLI  
+**New Method**: Hybrid (GitHub Actions for automation, manual triggers for critical operations)

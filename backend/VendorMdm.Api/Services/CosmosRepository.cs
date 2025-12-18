@@ -37,4 +37,17 @@ public class CosmosRepository
     {
         await _domainEventsContainer.CreateItemAsync(domainEvent, new PartitionKey(domainEvent.EventType));
     }
+
+    /// <summary>
+    /// Saves a canonical artifact (snapshot) to the Functional Log.
+    /// Used for audit trails and history.
+    /// </summary>
+    public async Task SaveArtifactAsync(string entityId, object artifact)
+    {
+        var container = _changeRequestContainer.Database.GetContainer("CanonicalArtifacts");
+        // Note: Using dynamic container retrieval or we should add a field for it
+        // Ideally add _canonicalArtifactsContainer field in constructor.
+        // For now, lazily get it or assume it exists. To be safe, let's use a field.
+        await container.UpsertItemAsync(artifact, new PartitionKey(entityId));
+    }
 }

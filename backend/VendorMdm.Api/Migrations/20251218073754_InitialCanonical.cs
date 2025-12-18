@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace VendorMdm.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCanonicalModel : Migration
+    public partial class InitialCanonical : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -22,7 +22,7 @@ namespace VendorMdm.Api.Migrations
                     FileName = table.Column<string>(type: "TEXT", nullable: false),
                     BlobUrl = table.Column<string>(type: "TEXT", nullable: false),
                     UploadedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Attributes = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}")
+                    Attributes = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}")
                 },
                 constraints: table =>
                 {
@@ -39,7 +39,7 @@ namespace VendorMdm.Api.Migrations
                     RequesterId = table.Column<Guid>(type: "TEXT", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    Attributes = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}")
+                    Attributes = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}")
                 },
                 constraints: table =>
                 {
@@ -56,7 +56,7 @@ namespace VendorMdm.Api.Migrations
                     EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    Data = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}"),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
@@ -64,6 +64,49 @@ namespace VendorMdm.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ChangeRequestsCanonical", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Customers",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    TaxId = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    PrimaryContactEmail = table.Column<string>(type: "TEXT", maxLength: 255, nullable: true),
+                    EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Customers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Employees",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    GivenName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Surname = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    EmployeeId = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Employees", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -85,6 +128,49 @@ namespace VendorMdm.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Funds",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    FundCode = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    FiscalYear = table.Column<string>(type: "TEXT", maxLength: 4, nullable: true),
+                    EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Funds", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Projects",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    ProjectCode = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    StartDate = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    EndDate = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Projects", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SapEnvironments",
                 columns: table => new
                 {
@@ -97,13 +183,34 @@ namespace VendorMdm.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Users",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
+                    Username = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Email = table.Column<string>(type: "TEXT", maxLength: 255, nullable: false),
+                    Role = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Users", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "UsersAndRoles",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Username = table.Column<string>(type: "TEXT", nullable: false),
                     Role = table.Column<string>(type: "TEXT", nullable: false),
-                    Attributes = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}")
+                    Attributes = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}")
                 },
                 constraints: table =>
                 {
@@ -124,7 +231,7 @@ namespace VendorMdm.Api.Migrations
                     InvitationId = table.Column<Guid>(type: "TEXT", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
-                    Attributes = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}")
+                    Attributes = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}")
                 },
                 constraints: table =>
                 {
@@ -147,7 +254,7 @@ namespace VendorMdm.Api.Migrations
                     CompletedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
                     VendorApplicationId = table.Column<Guid>(type: "TEXT", nullable: true),
                     Notes = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
-                    Attributes = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}")
+                    Attributes = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}")
                 },
                 constraints: table =>
                 {
@@ -170,7 +277,7 @@ namespace VendorMdm.Api.Migrations
                     EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    Data = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}"),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
@@ -191,7 +298,7 @@ namespace VendorMdm.Api.Migrations
                     EntityVersion = table.Column<int>(type: "INTEGER", nullable: false),
                     Status = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
                     SourceSystem = table.Column<string>(type: "TEXT", maxLength: 50, nullable: false),
-                    Data = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}"),
+                    Data = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}"),
                     CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
                     SchemaVersion = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false)
@@ -207,7 +314,7 @@ namespace VendorMdm.Api.Migrations
                 {
                     StateName = table.Column<string>(type: "TEXT", maxLength: 20, nullable: false),
                     Description = table.Column<string>(type: "TEXT", nullable: false),
-                    Attributes = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "{}")
+                    Attributes = table.Column<string>(type: "TEXT", nullable: false, defaultValue: "{}")
                 },
                 constraints: table =>
                 {
@@ -251,6 +358,26 @@ namespace VendorMdm.Api.Migrations
                 column: "VendorId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Customers_Name",
+                table: "Customers",
+                column: "Name");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Customers_TaxId",
+                table: "Customers",
+                column: "TaxId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Employees_Email",
+                table: "Employees",
+                column: "Email");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Employees_EmployeeId",
+                table: "Employees",
+                column: "EmployeeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ExternalSystemMapping_Canonical",
                 table: "ExternalSystemMappings",
                 columns: new[] { "CanonicalEntityId", "EntityType", "SystemName" });
@@ -260,6 +387,26 @@ namespace VendorMdm.Api.Migrations
                 table: "ExternalSystemMappings",
                 columns: new[] { "EntityType", "ExternalSystemId", "SystemName", "SystemEnvironment" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Funds_FundCode",
+                table: "Funds",
+                column: "FundCode");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Projects_ProjectCode",
+                table: "Projects",
+                column: "ProjectCode");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Email",
+                table: "Users",
+                column: "Email");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_Username",
+                table: "Users",
+                column: "Username");
 
             migrationBuilder.CreateIndex(
                 name: "IX_VendorInvitationsCanonical_ExpiresAt",
@@ -316,10 +463,25 @@ namespace VendorMdm.Api.Migrations
                 name: "ChangeRequestsCanonical");
 
             migrationBuilder.DropTable(
+                name: "Customers");
+
+            migrationBuilder.DropTable(
+                name: "Employees");
+
+            migrationBuilder.DropTable(
                 name: "ExternalSystemMappings");
 
             migrationBuilder.DropTable(
+                name: "Funds");
+
+            migrationBuilder.DropTable(
+                name: "Projects");
+
+            migrationBuilder.DropTable(
                 name: "SapEnvironments");
+
+            migrationBuilder.DropTable(
+                name: "Users");
 
             migrationBuilder.DropTable(
                 name: "UsersAndRoles");

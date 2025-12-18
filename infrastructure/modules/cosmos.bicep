@@ -130,6 +130,24 @@ resource containerInvitationArtifacts 'Microsoft.DocumentDB/databaseAccounts/sql
       throughput: 400
     }
   }
+// Container for Canonical Data Model Artifacts (Functional Log)
+resource containerCanonicalArtifacts 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'CanonicalArtifacts'
+  properties: {
+    resource: {
+      id: 'CanonicalArtifacts'
+      partitionKey: {
+        paths: [
+          '/entityId'
+        ]
+        kind: 'Hash'
+      }
+    }
+    options: {
+      throughput: 400
+    }
+  }
 }
 
 output cosmosAccountName string = cosmosAccount.name

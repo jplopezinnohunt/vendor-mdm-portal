@@ -1,0 +1,81 @@
+name: Deploy Database Migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      migration_name:
+        description: 'Migration to apply (e.g., InitialCanonical) or leave empty for latest'
+        required: false
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Install EF Core CLI
+      run: dotnet tool install --global dotnet-ef
+    
+    - name: Generate Migration Script
+      run: |
+        cd backend/VendorMdm.Api
+        dotnet ef migrations script \
+          --project . \
+          --context SqlDbContext \
+          --idempotent \
+          --output ../../migration-script.sql
+    
+    - name: Patch for SQL Server (replace TEXT with nvarchar)
+      run: |
+        sed -i 's/"TEXT"/"nvarchar(max)"/g' migration-script.sql
+        echo "Migration script patched for SQL Server compatibility"
+    
+    - name: Show Migration Preview
+      run: |
+        echo "=== MIGRATION SCRIPT PREVIEW ==="
+        head -n 50 migration-script.sql
+        echo "=== (showing first 50 lines) ==="
+    
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+    
+    - name: Apply Migration to Azure SQL
+      run: |
+        if [ "${{ inputs.environment }}" == "dev" ]; then
+          RESOURCE_GROUP="rg-vendor-mdm-dev-v3"
+          SQL_SERVER="sql-vendor-mdm-dev"
+          DATABASE="VendorMdmDb"
+        else
+          RESOURCE_GROUP="rg-vendor-mdm-prod"
+          SQL_SERVER="sql-vendor-mdm-prod"
+          DATABASE="VendorMdmDb"
+        fi
+        
+        az sql db query \
+          --resource-group $RESOURCE_GROUP \
+          --server $SQL_SERVER \
+          --database $DATABASE \
+          --auth-mode ActiveDirectoryIntegrated \
+          --query-file migration-script.sql
+    
+    - name: Verify Migration
+      run: |
+        echo "Migration applied successfully to ${{ inputs.environment }}"
+        echo "Verify tables in Azure Portal SQL Query Editor"

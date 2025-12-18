@@ -575,7 +575,8 @@ public class InvitationService : IInvitationService
             EventType = eventType, // Partition key
             EntityId = entityId,
             Timestamp = DateTime.UtcNow,
-            Data = data
+            Data = data,
+            SchemaVersion = "v1.0.0"
         };
 
         await _cosmosEventsContainer.CreateItemAsync(
