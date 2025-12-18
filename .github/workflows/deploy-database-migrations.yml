@@ -58,6 +58,9 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
     
+    - name: Install Azure SQL Extension
+      run: az extension add --name db-up --yes
+    
     - name: Apply Migration to Azure SQL
       run: |
         if [ "${{ inputs.environment }}" == "dev" ]; then
