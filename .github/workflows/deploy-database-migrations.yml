@@ -1,6 +1,12 @@
 name: Deploy Database Migrations
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/VendorMdm.Api/Migrations/**'
+      - 'backend/VendorMdm.Api/Data/**'
+      - '.github/workflows/deploy-database-migrations.yml'
   workflow_dispatch:
     inputs:
       migration_name:
