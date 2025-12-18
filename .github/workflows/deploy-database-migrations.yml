@@ -32,16 +32,15 @@ jobs:
       run: dotnet tool install --global dotnet-ef
     
     - name: Generate Migration Script
+      env:
+        DataSourceMode: Connected  # Force SQL Server provider instead of SQLite
       run: |
         cd backend/VendorMdm.Api
-        # Force SQL Server provider by setting connection string
-        export ConnectionStrings__Sql="Server=tcp:placeholder.database.windows.net,1433;Initial Catalog=VendorMdmDb;Authentication=Active Directory Managed Identity;"
         dotnet ef migrations script \
           --project . \
           --context SqlDbContext \
           --idempotent \
-          --output ../../migration-script.sql \
-          --no-build
+          --output ../../migration-script.sql
     
     - name: Patch for SQL Server (replace TEXT with nvarchar)
       run: |
