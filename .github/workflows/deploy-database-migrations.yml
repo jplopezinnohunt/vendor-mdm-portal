@@ -28,8 +28,8 @@ jobs:
       with:
         dotnet-version: '8.0.x'
     
-    - name: Install EF Core CLI
-      run: dotnet tool install --global dotnet-ef
+    - name: Restore .NET Tools
+      run: dotnet tool restore
     
     - name: Generate Migration Script
       env:
