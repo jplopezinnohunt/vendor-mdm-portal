@@ -3,7 +3,7 @@
 
 @description('Environment name (dev, test, prod)')
 @allowed(['dev', 'test', 'prod'])
-param environment string = 'dev'
+param environmentName string = 'dev'
 
 @description('Primary Azure region for resources')
 param location string = resourceGroup().location
@@ -30,7 +30,7 @@ param companyName string = 'Your Company'
 
 // Naming convention - clean and readable
 var prefix = 'vendor-mdm'
-var suffix = environment
+var suffix = environmentName
 
 // Resource names (no hash suffix for clarity)
 var sqlServerName = 'sql-${prefix}-${suffix}'
