@@ -130,6 +130,8 @@ resource containerInvitationArtifacts 'Microsoft.DocumentDB/databaseAccounts/sql
       throughput: 400
     }
   }
+}
+
 // Container for Canonical Data Model Artifacts (Functional Log)
 resource containerCanonicalArtifacts 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
   parent: cosmosDb
@@ -140,6 +142,66 @@ resource containerCanonicalArtifacts 'Microsoft.DocumentDB/databaseAccounts/sqlD
       partitionKey: {
         paths: [
           '/entityId'
+        ]
+        kind: 'Hash'
+      }
+    }
+    options: {
+      throughput: 400
+    }
+  }
+}
+
+// Audit Logs Container
+resource containerAuditLogs 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'AuditLogs'
+  properties: {
+    resource: {
+      id: 'AuditLogs'
+      partitionKey: {
+        paths: [
+          '/partitionKey'
+        ]
+        kind: 'Hash'
+      }
+    }
+    options: {
+      throughput: 400
+    }
+  }
+}
+
+// Integration Events Container
+resource containerIntegrationEvents 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'IntegrationEvents'
+  properties: {
+    resource: {
+      id: 'IntegrationEvents'
+      partitionKey: {
+        paths: [
+          '/partitionKey'
+        ]
+        kind: 'Hash'
+      }
+    }
+    options: {
+      throughput: 400
+    }
+  }
+}
+
+// Configuration Container
+resource containerConfiguration 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-04-15' = {
+  parent: cosmosDb
+  name: 'Configuration'
+  properties: {
+    resource: {
+      id: 'Configuration'
+      partitionKey: {
+        paths: [
+          '/configKey'
         ]
         kind: 'Hash'
       }

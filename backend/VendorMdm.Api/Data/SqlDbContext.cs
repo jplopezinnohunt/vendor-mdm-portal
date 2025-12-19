@@ -28,6 +28,13 @@ public class SqlDbContext : DbContext
     public DbSet<User> Users { get; set; } /* Canonical User entity */
     public DbSet<ExternalSystemMapping> ExternalSystemMappings { get; set; }
 
+    // Workflow Canonical Model
+    public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
+    public DbSet<WorkflowStep> WorkflowSteps { get; set; }
+    public DbSet<WorkflowAction> WorkflowActions { get; set; }
+    public DbSet<WorkflowRoleBinding> WorkflowRoleBindings { get; set; }
+    public DbSet<WorkflowFieldDefinition> WorkflowFieldDefinitions { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,6 +45,9 @@ public class SqlDbContext : DbContext
 
         // Configure Canonical Entities
         ConfigureCanonicalEntities(modelBuilder);
+        
+        // Configure Workflow Canonical Entities
+        ConfigureWorkflowEntities(modelBuilder);
 
         // Seed Workflow States
         modelBuilder.Entity<WorkflowState>().HasData(
@@ -209,6 +219,45 @@ public class SqlDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Username);
             entity.HasIndex(e => e.Email);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+    }
+    /// <summary>
+    /// Configure Workflow Canonical Entities (Descriptive Model).
+    /// </summary>
+    private void ConfigureWorkflowEntities(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<WorkflowDefinition>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasMany(e => e.Steps).WithOne().HasForeignKey(s => s.WorkflowDefinitionId);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        modelBuilder.Entity<WorkflowStep>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasMany(e => e.AllowedActions).WithOne().HasForeignKey(a => a.WorkflowStepId);
+            entity.HasMany(e => e.RoleBindings).WithOne().HasForeignKey(r => r.WorkflowStepId);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        modelBuilder.Entity<WorkflowAction>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        modelBuilder.Entity<WorkflowRoleBinding>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+
+        modelBuilder.Entity<WorkflowFieldDefinition>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.WorkflowStepId);
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
         });
     }

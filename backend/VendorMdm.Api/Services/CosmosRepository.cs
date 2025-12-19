@@ -7,14 +7,21 @@ public class CosmosRepository
 {
     private readonly Container _changeRequestContainer;
     private readonly Container _domainEventsContainer;
+    private readonly Container _auditLogsContainer;
+    private readonly Container _integrationEventsContainer;
+    private readonly Container _configurationContainer;
 
     public CosmosRepository(CosmosClient cosmosClient)
     {
         var database = cosmosClient.GetDatabase("MdmCore");
         _changeRequestContainer = database.GetContainer("ChangeRequestData");
         _domainEventsContainer = database.GetContainer("DomainEvents");
+        _auditLogsContainer = database.GetContainer("AuditLogs");
+        _integrationEventsContainer = database.GetContainer("IntegrationEvents");
+        _configurationContainer = database.GetContainer("Configuration");
     }
 
+    // --- Change Requests ---
     public async Task SaveChangeRequestDataAsync(ChangeRequestData data)
     {
         await _changeRequestContainer.UpsertItemAsync(data, new PartitionKey(data.RequestId));
@@ -33,9 +40,22 @@ public class CosmosRepository
         }
     }
 
+    // --- Domain Events ---
     public async Task LogDomainEventAsync(DomainEvent domainEvent)
     {
         await _domainEventsContainer.CreateItemAsync(domainEvent, new PartitionKey(domainEvent.EventType));
+    }
+
+    // --- Audit Logs ---
+    public async Task LogAuditAsync(object auditEntry, string partitionKey)
+    {
+        await _auditLogsContainer.CreateItemAsync(auditEntry, new PartitionKey(partitionKey));
+    }
+
+    // --- Integration Events ---
+    public async Task LogIntegrationEventAsync(object integrationEvent, string partitionKey)
+    {
+        await _integrationEventsContainer.CreateItemAsync(integrationEvent, new PartitionKey(partitionKey));
     }
 
     /// <summary>
@@ -45,9 +65,6 @@ public class CosmosRepository
     public async Task SaveArtifactAsync(string entityId, object artifact)
     {
         var container = _changeRequestContainer.Database.GetContainer("CanonicalArtifacts");
-        // Note: Using dynamic container retrieval or we should add a field for it
-        // Ideally add _canonicalArtifactsContainer field in constructor.
-        // For now, lazily get it or assume it exists. To be safe, let's use a field.
         await container.UpsertItemAsync(artifact, new PartitionKey(entityId));
     }
 }

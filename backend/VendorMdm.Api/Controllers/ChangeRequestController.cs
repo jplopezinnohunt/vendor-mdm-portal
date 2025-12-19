@@ -5,7 +5,7 @@ using VendorMdm.Shared.Models;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/vendor")] // Changed from [Route("api/[controller]")]
 public class ChangeRequestController : ControllerBase
 {
     private readonly IChangeRequestRepository _repository;
@@ -15,7 +15,11 @@ public class ChangeRequestController : ControllerBase
         _repository = repository;
     }
 
-    [HttpPost]
+    /// <summary>
+    /// Modification API: Accepts flexible CDM JSON payloads.
+    /// Route: POST /api/vendor/changerequest
+    /// </summary>
+    [HttpPost("changerequest")]
     public async Task<IActionResult> CreateChangeRequest([FromBody] CreateChangeRequestDto dto)
     {
         var request = new ChangeRequest
@@ -27,10 +31,15 @@ public class ChangeRequestController : ControllerBase
         };
 
         var createdRequest = await _repository.CreateRequestAsync(request, dto.Payload);
-        return CreatedAtAction(nameof(GetChangeRequest), new { id = createdRequest.Id }, createdRequest);
+        // Note: Redirects to the Effective State view
+        return CreatedAtAction(nameof(GetEffectiveVendorState), new { id = dto.SapVendorId ?? createdRequest.Id.ToString() }, createdRequest);
     }
 
-    [HttpGet("{id}")]
+    /// <summary>
+    /// Internal/Debug: Direct access to Change Request entity.
+    /// Route: GET /api/vendor/changerequest/{id}
+    /// </summary>
+    [HttpGet("changerequest/{id}")]
     public async Task<IActionResult> GetChangeRequest(Guid id)
     {
         var request = await _repository.GetRequestAsync(id);
@@ -38,7 +47,7 @@ public class ChangeRequestController : ControllerBase
         return Ok(request);
     }
 
-    [HttpPost("{id}/approve")]
+    [HttpPost("changerequest/{id}/approve")]
     public async Task<IActionResult> ApproveChangeRequest(Guid id)
     {
         try
@@ -50,6 +59,19 @@ public class ChangeRequestController : ControllerBase
         {
             return NotFound();
         }
+    }
+
+    /// <summary>
+    /// Read API: Retrieves current vendor master data (SAP) + Overlay.
+    /// Route: GET /api/vendor/{id}
+    /// </summary>
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetEffectiveVendorState(string id)
+    {
+        // Using 'id' which could be a UUID for new vendors or SAP ID for existing.
+        // The Repository logic handles the lookup.
+        var result = await _repository.GetEffectiveVendorStateAsync(id);
+        return Ok(result);
     }
 }
 
