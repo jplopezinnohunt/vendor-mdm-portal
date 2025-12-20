@@ -21,7 +21,7 @@ public interface ISapVendorService
     /// Maps to BAPI_VENDOR_GETDETAIL
     /// Returns data from LFA1, LFBK, LFB1 tables
     /// </summary>
-    Task<VendorGetResponse> GetVendorAsync(string vendor Number, string companyCode);
+    Task<VendorGetResponse> GetVendorAsync(string vendorNumber, string companyCode);
     
     /// <summary>
     /// Create new vendor in SAP
