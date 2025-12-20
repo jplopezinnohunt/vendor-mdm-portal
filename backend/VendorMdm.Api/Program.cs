@@ -345,6 +345,19 @@ else
 }
 */
 
+// File Storage Service
+var useFileStorageMock = builder.Configuration.GetValue<bool>("Services:FileStorage:UseMock", true);
+if (useFileStorageMock)
+{
+    builder.Services.AddScoped<IFileStorageService, FileStorageSimulationService>();
+    Console.WriteLine("✓ File Storage: MOCK (Local filesystem)");
+}
+else
+{
+    builder.Services.AddScoped<IFileStorageService, FileStorageAzureBlobService>();
+    Console.WriteLine("✓ File Storage: REAL (Azure Blob Storage - requires configuration)");
+}
+
 Console.WriteLine("═══════════════════════════════════════════════════════════");
 Console.WriteLine("");
 
