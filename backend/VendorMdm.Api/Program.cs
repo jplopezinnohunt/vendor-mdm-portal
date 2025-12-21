@@ -358,6 +358,20 @@ else
     Console.WriteLine("✓ File Storage: REAL (Azure Blob Storage - requires configuration)");
 }
 
+// Sanctions Screening Service
+var useSanctionsScreeningMock = builder.Configuration.GetValue<bool>("Services:SanctionsScreening:UseMock", true);
+if (useSanctionsScreeningMock)
+{
+    builder.Services.AddScoped<ISanctionsScreeningService, SanctionsScreeningSimulationService>();
+    Console.WriteLine("✓ Sanctions Screening: MOCK (Hardcoded test cases)");
+}
+else
+{
+    // Register HttpClient for OpenSanctions API
+    builder.Services.AddHttpClient<ISanctionsScreeningService, SanctionsScreeningOpenSanctionsService>();
+    Console.WriteLine("✓ Sanctions Screening: REAL (OpenSanctions.org API - 300+ sources)");
+}
+
 Console.WriteLine("═══════════════════════════════════════════════════════════");
 Console.WriteLine("");
 
