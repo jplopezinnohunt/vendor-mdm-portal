@@ -57,6 +57,98 @@ public class SystemController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get service implementation status (Mock vs Real)
+    /// Shows which services are using Mock implementations vs Real integrations
+    /// </summary>
+    [HttpGet("services")]
+    public IActionResult GetServiceStatus()
+    {
+        try
+        {
+            var environment = DetermineEnvironment();
+            
+            var serviceStatus = new
+            {
+                Environment = environment,
+                Description = GetEnvironmentDescription(environment),
+                Services = new
+                {
+                    SAP = GetServiceConfig("Services:SAP"),
+                    FileStorage = GetServiceConfig("Services:FileStorage"),
+                    SanctionsScreening = GetServiceConfig("Services:SanctionsScreening"),
+                    RBAC = GetServiceConfig("Services:RBAC"),
+                    MasterData = GetServiceConfig("Services:MasterData"),
+                    Workflow = GetServiceConfig("Services:Workflow"),
+                    Email = GetServiceConfig("Services:Email")
+                },
+                LastChecked = DateTime.UtcNow
+            };
+
+            return Ok(serviceStatus);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving service status");
+            return StatusCode(500, new { error = "Failed to retrieve service status" });
+        }
+    }
+
+    private string DetermineEnvironment()
+    {
+        var dataSourceMode = GetCurrentMode();
+        
+        // Check if running locally
+        var isLocal = dataSourceMode == DataSourceMode.Local ||
+                     _configuration.GetValue<bool>("UseLocalEmulators");
+        
+        if (isLocal)
+        {
+            return "Local";
+        }
+
+        // Check if in Azure
+        var isAzure = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WEBSITE_SITE_NAME"));
+        
+        if (isAzure)
+        {
+            // Check if any service is using Mock in Azure
+            var sapMock = _configuration.GetValue<bool>("Services:SAP:UseMock", true);
+            var filesMock = _configuration.GetValue<bool>("Services:FileStorage:UseMock", true);
+            var sanctionsMock = _configuration.GetValue<bool>("Services:SanctionsScreening:UseMock", true);
+            
+            var anyMock = sapMock || filesMock || sanctionsMock;
+            
+            return anyMock ? "Azure (Mock)" : "Azure (Real)";
+        }
+
+        return "Unknown";
+    }
+
+    private string GetEnvironmentDescription(string environment)
+    {
+        return environment switch
+        {
+            "Local" => "Running locally with Mock services for development",
+            "Azure (Mock)" => "Deployed to Azure using Mock services for testing",
+            "Azure (Real)" => "Deployed to Azure with Real service integrations",
+            _ => "Environment Unknown"
+        };
+    }
+
+    private object GetServiceConfig(string configPath)
+    {
+        var useMock = _configuration.GetValue<bool>($"{configPath}:UseMock", true);
+        var realProvider = _configuration[$"{configPath}:RealProvider"] ?? "Not Configured";
+        
+        return new
+        {
+            Mode = useMock ? "Mock" : "Real",
+            Implementation = useMock ? "Simulation/Hardcoded" : realProvider,
+            ConfigPath = configPath
+        };
+    }
+
     private DataSourceMode GetCurrentMode()
     {
         var modeString = _configuration["DataSourceMode"];
