@@ -6,6 +6,7 @@ using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Azure;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Services;
+using VendorMdm.Api.Services.Helpers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 using VendorMdm.Shared.Models;
@@ -280,6 +281,99 @@ builder.Services.AddScoped<IFundService, FundService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IVendorService, VendorService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+
+// ═══════════════════════════════════════════════════════════════
+// SIMULATION SERVICES - Mock vs Real Implementation Selection
+// ═══════════════════════════════════════════════════════════════
+
+Console.WriteLine("");
+Console.WriteLine("═══════════════════════════════════════════════════════════");
+Console.WriteLine("🔌 SERVICE IMPLEMENTATION CONFIGURATION");
+Console.WriteLine("═══════════════════════════════════════════════════════════");
+
+// Helper Services (Always registered - used by both Mock and Real)
+builder.Services.AddSingleton<LevenshteinMatcher>();
+builder.Services.AddSingleton<IbanValidator>();
+builder.Services.AddSingleton<SwiftValidator>();
+builder.Services.AddSingleton<SapNameValidator>();
+
+// SAP Services
+var useSapMock = builder.Configuration.GetValue<bool>("Services:SAP:UseMock", true);
+if (useSapMock)
+{
+    builder.Services.AddScoped<ISapVendorService, SapVendorSimulationService>();
+    Console.WriteLine("✓ SAP: MOCK (Simulation with in-memory data)");
+}
+else
+{
+    builder.Services.AddScoped<ISapVendorService, SapVendorRfcService>();
+    Console.WriteLine("✓ SAP: REAL (RFC connection - requires SAP NCo)");
+}
+
+// TODO: Uncomment when RBAC services are created
+/*
+// RBAC Services
+var useRbacMock = builder.Configuration.GetValue<bool>("Services:RBAC:UseMock", true);
+if (useRbacMock)
+{
+    builder.Services.AddScoped<IAuthorizationService, AuthorizationSimulationService>();
+    builder.Services.AddScoped<IUserService, UserSimulationService>();
+    Console.WriteLine("✓ RBAC: MOCK (In-memory user roles)");
+}
+else
+{
+    builder.Services.AddScoped<IAuthorizationService, AzureAdAuthorizationService>();
+    builder.Services.AddScoped<IUserService, GraphUserService>();
+    Console.WriteLine("✓ RBAC: REAL (Azure AD integration)");
+}
+*/
+
+// TODO: Uncomment when MasterData services are created
+/*
+// Master Data Services
+var useMasterDataMock = builder.Configuration.GetValue<bool>("Services:MasterData:UseMock", true);
+if (useMasterDataMock)
+{
+    builder.Services.AddSingleton<IMasterDataService, MasterDataSimulationService>();
+    Console.WriteLine("✓ Master Data: MOCK (In-memory countries, currencies, etc.)");
+}
+else
+{
+    builder.Services.AddScoped<IMasterDataService, DatabaseMasterDataService>();
+    Console.WriteLine("✓ Master Data: REAL (SQL Database)");
+}
+*/
+
+// File Storage Service
+var useFileStorageMock = builder.Configuration.GetValue<bool>("Services:FileStorage:UseMock", true);
+if (useFileStorageMock)
+{
+    builder.Services.AddScoped<IFileStorageService, FileStorageSimulationService>();
+    Console.WriteLine("✓ File Storage: MOCK (Local filesystem)");
+}
+else
+{
+    builder.Services.AddScoped<IFileStorageService, FileStorageAzureBlobService>();
+    Console.WriteLine("✓ File Storage: REAL (Azure Blob Storage - requires configuration)");
+}
+
+// Sanctions Screening Service
+var useSanctionsScreeningMock = builder.Configuration.GetValue<bool>("Services:SanctionsScreening:UseMock", true);
+if (useSanctionsScreeningMock)
+{
+    builder.Services.AddScoped<ISanctionsScreeningService, SanctionsScreeningSimulationService>();
+    Console.WriteLine("✓ Sanctions Screening: MOCK (Hardcoded test cases)");
+}
+else
+{
+    // Register HttpClient for OpenSanctions API
+    builder.Services.AddHttpClient<ISanctionsScreeningService, SanctionsScreeningOpenSanctionsService>();
+    Console.WriteLine("✓ Sanctions Screening: REAL (OpenSanctions.org API - 300+ sources)");
+}
+
+Console.WriteLine("═══════════════════════════════════════════════════════════");
+Console.WriteLine("");
 
 var app = builder.Build();
 

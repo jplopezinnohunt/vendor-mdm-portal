@@ -11,10 +11,11 @@
 | Component | Method | Trigger | Rationale |
 |-----------|--------|---------|-----------|
 | **Backend API Code** | GitHub Actions | Auto (push to main) | Code changes benefit from automation |
-| **Frontend (SWA)** | GitHub Actions | Auto (push to main) | Azure's designed deployment method |
-| **Database Migrations** | GitHub Actions | Manual workflow | Schema changes require verification |
-| **Infrastructure (Bicep)** | GitHub Actions | Manual workflow | Critical changes require approval |
-| **Azure Functions** | GitHub Actions | Manual workflow | Deployment on-demand |
+| **Frontend (SWA)** | ✅ Automated | GitHub Actions | Push to `main` |
+| **Backend API** | ✅ Automated | GitHub Actions | Push to `main` |
+| **Database (SQL)** | ✅ **Automated** | GitHub Actions (`dotnet ef`) | Push to `main` |
+| **Infrastructure** | ⚠️ Manual | Azure CLI (`bicep`) | User Trigger |
+| **Azure Functions** | ⚠️ Manual | Azure CLI (`func check`) | User Trigger |
 
 ---
 
@@ -55,22 +56,23 @@ az webapp deployment list-publishing-profiles \
 
 ---
 
-### 3. Database Migrations (Manual Trigger)
+### 3. Database Migrations (Automated - Environment Safe)
 **File**: `.github/workflows/deploy-database-migrations.yml`  
 **Status**: ✅ **ACTIVE**  
-**Trigger**: Manual via GitHub Actions UI
+**Trigger**: Push to `main` OR Manual Dispatch
 
 **What it does**:
 1. Generates migration script from EF Core
 2. Patches for SQL Server (`TEXT` → `nvarchar(max)`)
-3. Applies to Azure SQL Database
+3. **Automated**: Defaults to `dev` environment on push
+4. **Manual**: Allows targeting `prod` with explicit approval
+5. Applies to Azure SQL Database safely
 
 **Secret required**: `AZURE_CREDENTIALS`
 
-**How to trigger**:
-1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
-2. Click "Deploy Database Migrations"
-3. Click "Run workflow" → Select environment (dev/prod)
+**Triggers**:
+- **Auto**: Push changes to `backend/VendorMdm.Api/Migrations/**` to `main`
+- **Manual**: Go to Actions → Deploy Database Migrations → Run workflow
 
 ---
 
@@ -184,7 +186,7 @@ git push origin main
 |-----------|-------------------|-----------------|------------------|
 | **Backend Code** | GitHub Actions | ✅ Auto | ❌ No |
 | **Frontend Code** | GitHub Actions | ✅ Auto | ❌ No |
-| **Database Schema** | GitHub Actions | ✅ Manual trigger | ✅ Yes |
+| **Database Schema** | GitHub Actions | ✅ Auto | ❌ No |
 | **Infrastructure** | GitHub Actions | ✅ Manual trigger | ✅ Yes |
 | **Azure Functions** | GitHub Actions | ✅ Manual trigger | ✅ Yes |
 

@@ -3,18 +3,18 @@
 
 @description('Environment name (dev, test, prod)')
 @allowed(['dev', 'test', 'prod'])
-param environment string = 'dev'
+param environmentName string = 'dev'
 
 @description('Primary Azure region for resources')
 param location string = resourceGroup().location
 
-@description('Admin username for SQL Server')
+@description('Admin username for SQL Server - OPTIONAL (SQL deployment disabled)')
 @secure()
-param sqlAdminUsername string
+param sqlAdminUsername string = ''
 
-@description('Admin password for SQL Server')
+@description('Admin password for SQL Server - OPTIONAL (SQL deployment disabled)')
 @secure()
-param sqlAdminPassword string
+param sqlAdminPassword string = ''
 
 // Azure AD Authentication Parameters
 // Currently DISABLED for API testing (see PENDING-AUTH-REENABLE.md)
@@ -30,7 +30,7 @@ param companyName string = 'Your Company'
 
 // Naming convention - clean and readable
 var prefix = 'vendor-mdm'
-var suffix = environment
+var suffix = environmentName
 
 // Resource names (no hash suffix for clarity)
 var sqlServerName = 'sql-${prefix}-${suffix}'
@@ -46,6 +46,8 @@ var appInsightsName = 'ai-${prefix}-${suffix}'
 // ============================================================================
 // 1. Azure SQL Database (Basic - 5 DTU - Cheapest)
 // ============================================================================
+// TEMPORARILY DISABLED - SQL Server already exists, avoid parameter conflicts
+/*
 resource sqlServer 'Microsoft.Sql/servers@2023-05-01-preview' = {
   name: sqlServerName
   location: location
@@ -85,6 +87,7 @@ resource sqlFirewallRuleAzure 'Microsoft.Sql/servers/firewallRules@2023-05-01-pr
     endIpAddress: '0.0.0.0'
   }
 }
+*/
 
 // ============================================================================
 // 2. Cosmos DB (Serverless - Pay per request)
@@ -194,6 +197,8 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
 }
 
 // Store connection strings in Key Vault
+// SQL Connection - DISABLED (server already exists)
+/*
 resource secretSqlConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
   name: 'ConnectionStrings--Sql'
@@ -201,6 +206,7 @@ resource secretSqlConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
     value: 'Server=tcp:${sqlServer.properties.fullyQualifiedDomainName},1433;Initial Catalog=${sqlDatabaseName};Persist Security Info=False;User ID=${sqlAdminUsername};Password=${sqlAdminPassword};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
   }
 }
+*/
 
 resource secretCosmosConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   parent: keyVault
@@ -347,8 +353,9 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
 // Outputs
 // ============================================================================
 output resourceGroupName string = resourceGroup().name
-output sqlServerName string = sqlServer.name
-output sqlDatabaseName string = sqlDatabase.name
+// SQL outputs - DISABLED (server deployment skipped)
+// output sqlServerName string = sqlServer.name
+// output sqlDatabaseName string = sqlDatabase.name
 output cosmosAccountName string = cosmosAccount.name
 output serviceBusNamespace string = serviceBusNamespace.name
 output keyVaultName string = keyVault.name

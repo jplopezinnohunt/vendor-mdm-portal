@@ -10,6 +10,9 @@ public interface IChangeRequestRepository
     Task<ChangeRequest> CreateRequestAsync(ChangeRequest request, object payload);
     Task<ChangeRequest?> GetRequestAsync(Guid id);
     Task ApproveRequestAsync(Guid id);
+    
+    // Feature: Overlay Logic (SAP + Pending Changes)
+    Task<object?> GetEffectiveVendorStateAsync(string sapVendorId);
 }
 
 public class ChangeRequestRepository : IChangeRequestRepository
@@ -79,5 +82,64 @@ public class ChangeRequestRepository : IChangeRequestRepository
 
         // 3. Publish to Service Bus
         await _serviceBus.PublishEventAsync("RequestApproved", new { RequestId = id, SapVendorId = request.SapVendorId });
+    }
+
+    /// <summary>
+    /// Gets the "Effective" state of a vendor by overlaying pending changes on top of SAP master data.
+    /// Scenario: User changed name to "NewName" (Pending). SAP has "OldName".
+    /// Result: "NewName" is shown.
+    /// </summary>
+    public async Task<object?> GetEffectiveVendorStateAsync(string sapVendorId)
+    {
+        // 1. Fetch Master Data from SAP (Mocked for now)
+        // In real impl, this would call ISapService
+        var sapMasterData = new 
+        { 
+            VendorId = sapVendorId, 
+            LegalName = "Acme Corp (SAP Legacy)", 
+            Status = "Active",
+            Region = "US"
+        };
+
+        // 2. Find LATEST Pending Change Request for this SAP Vendor
+        var pendingRequest = await _sqlContext.ChangeRequests
+            .Where(r => r.SapVendorId == sapVendorId && r.Status == "Submitted")
+            .OrderByDescending(r => r.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (pendingRequest == null)
+        {
+            // No pending changes - return SAP data as is
+            return sapMasterData;
+        }
+
+        // 3. Fetch the flexible payload from Cosmos
+        // Note: ChangeRequestData.Payload is typically JObject/JsonElement
+        var changeData = await _cosmosRepo.GetChangeRequestDataAsync(pendingRequest.Id.ToString());
+        
+        if (changeData?.Payload == null)
+        {
+            return sapMasterData;
+        }
+
+        // 4. Overlay Logic (Simple Merge)
+        // In a real implementation with JObject, use Merge(MergeSettings).
+        // For this demo, we return a composite object to show the concept.
+        
+        return new 
+        {
+            Meta = new { IsOverlay = true, PendingRequestId = pendingRequest.Id },
+            Base = sapMasterData,
+            Overlay = changeData.Payload,
+            // "Effective" would be the Merged view
+            Effective = MergeObjects(sapMasterData, changeData.Payload) 
+        };
+    }
+
+    private object MergeObjects(object original, object delta)
+    {
+        // Placeholder for deep merge logic (e.g. using Newtonsoft.Json.Linq.JObject.Merge)
+        // Returning delta for now to simulate "Last Write Wins" on the whole object
+        return delta;
     }
 }
