@@ -12,6 +12,8 @@ Based on research of KYC/KYB (Know Your Customer/Business) standards, vendor mas
 
 ## Document Classification Taxonomy
 
+![Document Classification Taxonomy](images/document-classification-taxonomy.png)
+
 ### Category 1: Company Information Documents
 
 #### Purpose

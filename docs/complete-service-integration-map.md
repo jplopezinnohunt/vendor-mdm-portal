@@ -8,55 +8,29 @@ This document shows how all services (SAP, File Storage, Sanctions Screening, Do
 
 ## 🏗️ Complete Architecture - All Services Combined
 
-```
-┌───────────────────────────────────────────────────────────────────────────
+![Service Architecture - Mock/Real Pattern](images/service-mockreal-architecture.png)
 
-┐
-│                          FRONTEND (Static Web App)                           │
-│                        Single React/TypeScript App                           │
-└────────────────────────────┬────────────────────────────────────────────────┘
-                             │
-                    All API calls through
-                    Canonical REST API
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         CANONICAL API LAYER                                  │
-│                     /api/sap, /api/files, /api/sanctions                    │
-│                                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
-│  │     SAP      │  │  Sanctions   │  │     File     │  │    Master    │   │
-│  │  Controller  │  │  Controller  │  │  Controller  │  │     Data     │   │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘   │
-└─────────┼──────────────────┼──────────────────┼──────────────────┼──────────┘
-          │                  │                  │                  │
-          │ DI               │ DI               │ DI               │ DI
-          │                  │                  │                  │
-┌─────────▼──────────────────▼──────────────────▼──────────────────▼──────────┐
-│                         SERVICE ABSTRACTION LAYER                            │
-│              All services implement interface-based contracts                │
-│                                                                              │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐          │
-│  │ISapVendorService │  │ISanctionsService │  │IFileStorageServ. │          │
-│  └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘          │
-└───────────┼──────────────────────┼──────────────────────┼────────────────────┘
-            │                      │                      │
-   Config decides        Config decides          Config decides
-   Mock or Real          Mock or Real            Mock or Real
-            │                      │                      │
-     ┌──────┴──────┐        ┌──────┴──────┐       ┌──────┴──────┐
-     │             │        │             │       │             │
-     ▼             ▼        ▼             ▼       ▼             ▼
-┌─────────┐   ┌─────────┐ ┌──────────┐  ┌────┐ ┌──────┐  ┌─────────┐
-│  MOCK   │   │  REAL   │ │   MOCK   │  │REAL│ │ MOCK │  │  REAL   │
-│  SAP    │   │   SAP   │ │SANCTIONS │  │API │ │ FILE │  │ AZURE   │
-│Simulate │   │ NCo/MoUV│ │Hardcoded │  │OFAC│ │ Disk │  │  BLOB   │
-└─────────┘   └─────────┘ └──────────┘  └────┘ └──────┘  └─────────┘
-```
+**Architecture Layers:**
+
+1. **Frontend Layer:** Single React application (Static Web App)
+2. **API Gateway:** Canonical REST API with consistent endpoints
+3. **Service Abstraction:** Interface-based contracts (ISapVendorService, ISanctionsScreeningService, IFileStorageService)
+4. **Configuration Toggle:** `appsettings.json` determines Mock vs Real for each service
+5. **Implementation Layer:** 
+   - **Mock** (Local development - green indicators show active)
+   - **Real** (Production integrations - SAP NCo, Azure Blob, OpenSanctions API)
+
+**Key Benefits:**
+- Frontend code never changes (calls same interface)
+- Can deploy to Azure with all Mock services for testing
+- Activate Real services progressively
+- Easy rollback if integration issues occur
 
 ---
 
 ## 📊 Complete Vendor Onboarding Flow
+
+![Vendor Onboarding - Complete Flow with Services](images/vendor-onboarding-complete-flow.png)
 
 **NEW VENDOR → Sanctions Screening → Documents → SAP Validation → Approval → SAP Creation**
 

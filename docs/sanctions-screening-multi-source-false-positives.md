@@ -138,6 +138,8 @@ Lists change frequently:
 
 ### Solution: Weighted Scoring Model
 
+![Sanctions Screening - Weighted Scoring Model](images/sanctions-weighted-scoring.png)
+
 Assign weights to different match factors:
 
 ```
