@@ -193,6 +193,8 @@ public class EmailService : IEmailService
             // Create email message
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(fromName, fromEmail));
+            message.Sender = new MailboxAddress(fromName, fromEmail);
+            message.ReplyTo.Add(new MailboxAddress(fromName, fromEmail));
             message.To.Add(new MailboxAddress(data.VendorName, data.Email));
             message.Subject = subject;
 
