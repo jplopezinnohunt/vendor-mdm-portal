@@ -5,7 +5,7 @@ using VendorMdm.Shared.Models;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
-[Route("api/vendor")] // Changed from [Route("api/[controller]")]
+[Route("api/[controller]")]
 public class ChangeRequestController : ControllerBase
 {
     private readonly IChangeRequestRepository _repository;
@@ -17,9 +17,9 @@ public class ChangeRequestController : ControllerBase
 
     /// <summary>
     /// Modification API: Accepts flexible CDM JSON payloads.
-    /// Route: POST /api/vendor/changerequest
+    /// Route: POST /api/ChangeRequest
     /// </summary>
-    [HttpPost("changerequest")]
+    [HttpPost]
     public async Task<IActionResult> CreateChangeRequest([FromBody] CreateChangeRequestDto dto)
     {
         var request = new ChangeRequest

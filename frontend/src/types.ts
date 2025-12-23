@@ -3,6 +3,7 @@
 export enum ApplicationStatus {
   Draft = 'Draft',
   Submitted = 'Submitted',
+  PendingReview = 'PendingReview',
   Approved = 'Approved',
   Rejected = 'Rejected',
 }
@@ -51,6 +52,20 @@ export interface VendorMasterData {
   banks: VendorBank[];
   email: string;
   phone: string;
+
+  // Expanded UNESCO Fields
+  companyCode?: string;
+  accountGroup?: string;
+  contactPerson?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+
+  // New Fields
+  birthDate?: string;
+  gender?: string;
+  profession?: string;
+  birthCountry?: string;
+  events?: { name: string, date: string }[];
 }
 
 // Entity: ChangeRequest
@@ -86,6 +101,8 @@ export interface VendorApplication {
   status: ApplicationStatus;
   submittedAt: string;
   sanctionCheckStatus?: 'Passed' | 'Failed' | 'Pending'; // Automated check status
+  attributes?: any; // Dynamic attributes from JSON
+  registrationType?: string; // Invitation, SelfRegistration
 }
 
 // Entity: Attachment
@@ -98,6 +115,9 @@ export interface Attachment {
 }
 
 // Form DTOs
+
+
+// Form DTOs
 export interface VendorProfileFormData {
   name: string;
   email: string;
@@ -106,7 +126,29 @@ export interface VendorProfileFormData {
   postalCode: string;
   country: string;
   taxNumber1: string;
+
+  // Bank Data
+  bankCountry: string;
   bankAccount: string;
   bankKey: string;
   iban: string;
+  swift: string; // SWIFT/BIC
+
+  // New Spec Fields
+  companyCode: string;
+  contactPerson: string;
+  contactPhone: string;
+  accountGroup: string;
+
+  // Individual Fields
+  birthDate?: string;
+  gender?: string;
+  profession?: string;
+  birthCountry?: string;
+
+  // Event Fields
+  eventDate?: string;
+
+  // Bank Specific
+  controlKey?: string;
 }

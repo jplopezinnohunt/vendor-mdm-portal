@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { NotFound } from './pages/NotFound';
 import { AuthProvider, useAuth, UserRole } from './context/AuthContext';
 import { MainLayout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -110,11 +111,12 @@ const App: React.FC = () => {
                 <InviteVendorForm />
               </ProtectedRoute>
             } />
-            <Route path="approver/invitations" element={
+            <Route path="approver/update-master-data" element={
               <ProtectedRoute allowedRoles={['Approver']}>
-                <InvitationManagement />
+                <ChangeRequestForm />
               </ProtectedRoute>
             } />
+
 
             {/* ADMIN ROUTES */}
             <Route path="admin/dashboard" element={
@@ -140,7 +142,8 @@ const App: React.FC = () => {
           </Route>
 
           {/* Catch all */}
-          <Route path="*" element={<RoleBasedRedirect />} />
+          <Route path="/404" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

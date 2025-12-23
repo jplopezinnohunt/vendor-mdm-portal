@@ -21,7 +21,7 @@ Sistema completo de invitación basado en tokens para onboarding de vendors pre-
 
 ## 🎯 Visión General
 
-El sistema de invitaciones permite a administradores y aprobadores invitar vendors pre-veteados al portal mediante enlaces únicos y temporales. Este flujo asegura que solo vendors autorizados puedan registrarse, manteniendo la calidad y seguridad del proceso de onboarding.
+El sistema de invitaciones permite a los **aprobadores (Vendor Unit)** invitar vendors pre-veteados al portal mediante enlaces únicos y temporales. Este flujo asegura que solo vendors autorizados puedan registrarse, manteniendo la calidad y seguridad del proceso de onboarding.
 
 ### Características Principales
 
@@ -41,7 +41,7 @@ El sistema de invitaciones permite a administradores y aprobadores invitar vendo
 ```mermaid
 graph TB
     subgraph "Frontend - React App"
-        A[Admin Dashboard] -->|Create Invitation| B[InviteVendorForm]
+        A[Approver Dashboard] -->|Create Invitation| B[InviteVendorForm]
         A -->|Manage| C[InvitationManagement]
         D[Vendor Portal] -->|Register| E[InvitationRegistration]
     end
@@ -139,12 +139,12 @@ sequenceDiagram
     Portal-->>Vendor: 27. Registration complete
 ```
 
-### Flujo de Usuario (Admin/Approver)
+### Flujo de Usuario (Approver / Vendor Unit)
 
 ```mermaid
 flowchart TD
-    Start([👨‍💼 Admin/Approver]) --> Login[Login al Portal]
-    Login --> Dashboard[Admin Dashboard]
+    Start([👨‍💼 Approver]) --> Login[Login al Portal]
+    Login --> Dashboard[Approver Dashboard]
     Dashboard --> Nav{Select Action}
     
     Nav -->|Invite Vendor| CreateForm[📝 InviteVendorForm]
@@ -401,7 +401,7 @@ flowchart LR
 
 ## 📖 Guías de Uso
 
-### Para Administradores/Aprobadores
+### Para Aprobadores (Vendor Unit)
 
 #### Crear una Invitación
 

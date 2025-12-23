@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Button, Input, Card } from '../components/ui/Elements';
 import { CheckCircle, AlertCircle, Loader } from 'lucide-react';
 import { api } from '../services/api';
+import { DynamicRegistrationForm } from './DynamicRegistrationForm';
 
 interface InvitationValidation {
     isValid: boolean;
@@ -11,6 +12,8 @@ interface InvitationValidation {
     vendorLegalName?: string;
     primaryContactEmail?: string;
     expiresAt?: string;
+    vendorType?: string;
+    currentStage?: string;
 }
 
 interface RegistrationFormData {
@@ -18,6 +21,7 @@ interface RegistrationFormData {
     taxId: string;
     contactName: string;
     email: string;
+    attributes: any;
 }
 
 export const InvitationRegistration: React.FC = () => {
@@ -28,10 +32,93 @@ export const InvitationRegistration: React.FC = () => {
     const [validating, setValidating] = useState(true);
     const [validation, setValidation] = useState<InvitationValidation | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [draftSaving, setDraftSaving] = useState(false); // New state
+    const [draftSaving, setDraftSaving] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
-    // ... useEffect ...
+    // MFA and Multi-Stage State
+    const [mfaTriggered, setMfaTriggered] = useState(false);
+    const [mfaVerified, setMfaVerified] = useState(false);
+    const [mfaCode, setMfaCode] = useState('');
+    const [verifyingMfa, setVerifyingMfa] = useState(false);
+    const [wizardStep, setWizardStep] = useState(1); // 1: MFA, 2: Initial Info, 3: Enrichment
+
+    const mfaAutoSent = React.useRef(false);
+
+    useEffect(() => {
+        const validateToken = async () => {
+            if (!token) return;
+            try {
+                setValidating(true);
+                const response = await api.get<InvitationValidation>(`/invitation/validate/${token}`);
+                setValidation(response.data);
+
+                if (response.data.isValid) {
+                    // Sync wizard step with backend stage
+                    if (response.data.currentStage === 'InvitationSent') {
+                        setWizardStep(1); // Need MFA
+                        if (!mfaAutoSent.current) {
+                            mfaAutoSent.current = true;
+                            triggerMfa();
+                        }
+                    } else if (response.data.currentStage === 'MfaVerified') {
+                        setWizardStep(2); // Initial Info
+                        setMfaVerified(true);
+                    } else if (response.data.currentStage === 'InitialInfoCompleted') {
+                        setWizardStep(3); // Enrichment
+                        setMfaVerified(true);
+                    }
+
+                    // Pre-fill form if data is returned
+                    if (response.data.vendorLegalName) {
+                        setValue('companyName', response.data.vendorLegalName);
+                        // ... name splitting logic ...
+                        if (response.data.vendorType === 'Physical') {
+                            const nameParts = response.data.vendorLegalName.split(' ');
+                            if (nameParts.length >= 2) {
+                                setValue('attributes.givenName', nameParts[0]);
+                                setValue('attributes.familyName', nameParts.slice(1).join(' '));
+                            } else {
+                                setValue('attributes.givenName', response.data.vendorLegalName);
+                            }
+                        }
+                    }
+                    if (response.data.primaryContactEmail) setValue('email', response.data.primaryContactEmail);
+                }
+            } catch (error: any) {
+                console.error('Validation failed:', error);
+                setValidation({
+                    isValid: false,
+                    errorMessage: error.response?.data?.error || 'Failed to validate link. It may have expired or is incorrect.'
+                });
+            } finally {
+                setValidating(false);
+            }
+        };
+
+        validateToken();
+    }, [token, setValue]);
+
+    const triggerMfa = async () => {
+        try {
+            await api.post(`/invitation/trigger-mfa/${token}`);
+            setMfaTriggered(true);
+        } catch (error) {
+            console.error('MFA trigger failed', error);
+        }
+    };
+
+    const handleVerifyMfa = async () => {
+        try {
+            setVerifyingMfa(true);
+            await api.post(`/invitation/verify-mfa/${token}`, { code: mfaCode });
+            setMfaVerified(true);
+            setWizardStep(2);
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Invalid MFA code');
+        } finally {
+            setVerifyingMfa(false);
+        }
+    };
 
     const handleSaveDraft = async () => {
         try {
@@ -51,11 +138,19 @@ export const InvitationRegistration: React.FC = () => {
     const onSubmit = async (data: RegistrationFormData) => {
         try {
             setSubmitting(true);
-            await api.post(`/invitation/complete/${token}`, data);
-            setSubmitted(true);
+
+            if (wizardStep === 2) {
+                // Submit Initial Info
+                await api.post(`/invitation/submit-initial/${token}`, data.attributes || {});
+                setWizardStep(3);
+            } else if (wizardStep === 3) {
+                // Submit Enrichment
+                await api.post(`/invitation/submit-enrichment/${token}`, data.attributes || {});
+                setSubmitted(true);
+            }
         } catch (error: any) {
             console.error('Submission failed:', error);
-            const errorMessage = error.response?.data?.error || 'Failed to submit application. Please try again.';
+            const errorMessage = error.response?.data?.error || 'Failed to submit data. Please try again.';
             alert(errorMessage);
         } finally {
             setSubmitting(false);
@@ -145,127 +240,106 @@ export const InvitationRegistration: React.FC = () => {
         );
     }
 
-    // Registration form
+    // Registration form wizard logic
     const expiresAt = validation.expiresAt ? new Date(validation.expiresAt).toLocaleString() : '';
 
     return (
         <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Complete Vendor Registration</h1>
-                    <p className="mt-2 text-gray-600">
-                        You've been invited to register as a vendor. Please complete the form below to submit your application.
-                    </p>
-                    {expiresAt && (
-                        <p className="mt-2 text-sm text-orange-600">
-                            This invitation expires on {expiresAt}
-                        </p>
-                    )}
+                    <h1 className="text-3xl font-bold text-gray-900">UNESCO Vendor Registration</h1>
+                    <div className="mt-4 flex items-center gap-2">
+                        {[1, 2, 3].map((s) => (
+                            <div key={s} className="flex items-center">
+                                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${wizardStep >= s ? 'bg-brand-600 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                                    {s}
+                                </div>
+                                {s < 3 && <div className={`h-1 w-12 ${wizardStep > s ? 'bg-brand-600' : 'bg-gray-200'}`} />}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                {!mfaVerified ? (
                     <Card>
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            {/* Company Name - Pre-filled and read-only */}
-                            <div className="md:col-span-2">
-                                <Input
-                                    label="Company Name"
-                                    {...register('companyName', { required: 'Company name is required' })}
-                                    error={errors.companyName?.message}
-                                    readOnly
-                                    className="bg-gray-50"
-                                />
-                                <p className="mt-1 text-xs text-gray-500">This field is pre-filled from your invitation</p>
-                            </div>
-
-                            {/* Tax ID */}
-                            <div>
-                                <Input
-                                    label="Tax ID / VAT Number"
-                                    {...register('taxId', { required: 'Tax ID is required' })}
-                                    error={errors.taxId?.message}
-                                    placeholder="e.g. US-123456789"
-                                />
-                            </div>
-
-                            {/* Contact Person */}
-                            <div>
-                                <Input
-                                    label="Contact Person"
-                                    {...register('contactName', { required: 'Contact name is required' })}
-                                    error={errors.contactName?.message}
-                                    placeholder="Full name"
-                                />
-                            </div>
-
-                            {/* Email - Pre-filled and read-only */}
-                            <div className="md:col-span-2">
-                                <Input
-                                    label="Email Address"
-                                    type="email"
-                                    {...register('email', {
-                                        required: 'Email is required',
-                                        pattern: {
-                                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                            message: "Invalid email address"
-                                        }
-                                    })}
-                                    error={errors.email?.message}
-                                    readOnly
-                                    className="bg-gray-50"
-                                />
-                                <p className="mt-1 text-xs text-gray-500">This field is pre-filled from your invitation</p>
-                            </div>
-                        </div>
-
-                        {/* Information Box */}
-                        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-sm text-blue-800">
-                                <strong>Required Documents (Next Step):</strong>
-                                <br />
-                                After submitting this form, you'll need to provide:
+                        <div className="py-6">
+                            <h2 className="text-xl font-bold mb-4">Identity Verification</h2>
+                            <p className="text-gray-600 mb-6">
+                                We've sent a 6-digit verification code to <strong>{validation.primaryContactEmail}</strong>.
+                                Please enter it below to access your invitation.
                             </p>
-                            <ul className="mt-2 space-y-1 text-sm text-blue-700 list-disc list-inside">
-                                <li>Tax Certificate (W-9/W-8 or equivalent)</li>
-                                <li>Banking Details (IBAN, Account Number)</li>
-                                <li>Certificate of Insurance</li>
-                                <li>Legal Entity Documentation</li>
-                            </ul>
-                        </div>
-
-                        <div className="mt-8 pt-6 border-t border-gray-200 flex gap-4">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                className="w-full justify-center"
-                                onClick={handleSaveDraft}
-                                disabled={submitting || draftSaving}
-                            >
-                                {draftSaving ? 'Saving...' : 'Save for Later'}
-                            </Button>
-                            <Button
-                                type="submit"
-                                className="w-full justify-center"
-                                size="lg"
-                                disabled={submitting || draftSaving}
-                            >
-                                {submitting ? 'Submitting...' : 'Submit Application'}
-                            </Button>
-                        </div>
-
-                        {/* Service Indicators */}
-                        <div className="mt-6 pt-6 border-t border-gray-100 grid grid-cols-2 gap-4">
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <div className="h-1.5 w-1.5 bg-blue-500 rounded-full"></div>
-                                <span>Form Validation: Client-side</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-green-600 font-medium">
-                                <div className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse"></div>
-                                <span>Backend: Connected (Invitation API)</span>
+                            <div className="max-w-xs">
+                                <Input
+                                    label="Verification Code"
+                                    placeholder="000000"
+                                    value={mfaCode}
+                                    onChange={(e) => setMfaCode(e.target.value)}
+                                    maxLength={6}
+                                />
+                                <Button
+                                    className="mt-4 w-full justify-center"
+                                    onClick={handleVerifyMfa}
+                                    disabled={verifyingMfa || mfaCode.length !== 6}
+                                >
+                                    {verifyingMfa ? 'Verifying...' : 'Verify & Continue'}
+                                </Button>
+                                <button
+                                    className="mt-4 text-sm text-brand-600 hover:underline"
+                                    onClick={triggerMfa}
+                                >
+                                    Resend code
+                                </button>
                             </div>
                         </div>
                     </Card>
-                </form>
+                ) : (
+                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                        <Card>
+                            <div className="mb-6">
+                                <h2 className="text-xl font-bold">
+                                    {wizardStep === 2 ? 'Initial Information' : 'Detailed Enrichment'}
+                                </h2>
+                                <p className="text-sm text-gray-500">
+                                    {wizardStep === 2
+                                        ? 'Please confirm your basic identity details.'
+                                        : 'Please provide full address, contact, and bank information.'}
+                                </p>
+                            </div>
+
+                            <DynamicRegistrationForm
+                                vendorType={validation.vendorType || 'Company'}
+                                wizardStep={wizardStep}
+                                register={register}
+                                errors={errors}
+                                readOnlyData={{
+                                    vendorLegalName: validation.vendorLegalName,
+                                    primaryContactEmail: validation.primaryContactEmail
+                                }}
+                                setValue={setValue}
+                            />
+
+                            <div className="mt-8 pt-6 border-t border-gray-200 flex gap-4">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    className="w-full justify-center"
+                                    onClick={handleSaveDraft}
+                                    disabled={submitting || draftSaving}
+                                >
+                                    {draftSaving ? 'Saving...' : 'Save for Later'}
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    className="w-full justify-center"
+                                    size="lg"
+                                    disabled={submitting || draftSaving}
+                                >
+                                    {submitting ? 'Submitting...' : wizardStep === 2 ? 'Next: Enrichment' : 'Submit Final Application'}
+                                </Button>
+                            </div>
+                        </Card>
+                    </form>
+                )}
             </div>
         </div>
     );

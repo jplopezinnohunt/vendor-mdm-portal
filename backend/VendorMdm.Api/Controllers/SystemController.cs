@@ -11,6 +11,7 @@ namespace VendorMdm.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Microsoft.AspNetCore.Authorization.AllowAnonymous]
 public class SystemController : ControllerBase
 {
     private readonly IConfiguration _configuration;

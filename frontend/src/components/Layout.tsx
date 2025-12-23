@@ -29,7 +29,6 @@ const APPROVER_NAV = [
   { name: 'My Worklist', href: '/approver/worklist', icon: ClipboardList },
   { name: 'Request History', href: '/approver/history', icon: FileText },
   { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: UserPlus },
-  { name: 'Invitations', href: '/approver/invitations', icon: Mail },
 ];
 
 const ADMIN_NAV = [
@@ -123,7 +122,7 @@ export const MainLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex flex-col lg:pl-64">
-        <ServiceStatusPanel />
+
         {/* Top Header */}
         <div className="sticky top-0 z-10 flex h-16 shrink-0 bg-white shadow">
           <button
@@ -152,6 +151,13 @@ export const MainLayout: React.FC = () => {
             </div>
           </div>
         </main>
+
+        {/* Footer with Service Status */}
+        <footer className="border-t border-gray-200 bg-white p-4">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+            <ServiceStatusPanel />
+          </div>
+        </footer>
       </div>
     </div>
   );

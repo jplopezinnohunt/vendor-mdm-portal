@@ -35,13 +35,27 @@ export const SystemStatus: React.FC = () => {
         loadStatus();
     }, []);
 
-    const getModeColor = (mode: string): string => {
+    const resolveMode = (mode: string | number): string => {
+        if (typeof mode === 'number') {
+            switch (mode) {
+                case 1: return 'Local';
+                case 2: return 'Mock';
+                case 3: return 'Connected';
+                default: return 'Auto';
+            }
+        }
+        return mode || 'Unknown';
+    };
+
+    const getModeColor = (rawMode: string | number): string => {
+        const mode = resolveMode(rawMode);
         switch (mode.toLowerCase()) {
             case 'connected':
                 return 'bg-green-100 text-green-800';
             case 'local':
             case 'local emulator':
             case 'local development':
+            case 'auto':
                 return 'bg-gray-100 text-gray-800';
             case 'mock':
                 return 'bg-yellow-100 text-yellow-800';
@@ -122,7 +136,7 @@ export const SystemStatus: React.FC = () => {
                     </div>
                     <div>
                         <span className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold ${getModeColor(config.mode)}`}>
-                            {config.mode}
+                            {resolveMode(config.mode)}
                         </span>
                     </div>
                 </div>
@@ -285,7 +299,95 @@ export const SystemStatus: React.FC = () => {
                 </Card>
             </div>
 
-            {/* Mode Information */}
+            {/* Service Integration Strategy */}
+            <Card className="p-6">
+                <div className="mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">Service Integration Strategy</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                        Overview of service simulations and real system connections. Azure Mocks mimic real system behavior to enable robust scenario testing without hard dependencies.
+                    </p>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Name</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azure Mock (Simulation)</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Real System (Connected)</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description / Role</th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Vendor Service</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                                        Available
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                        Planned
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500">
+                                    Manages vendor master data. Mock simulates CRUD and search.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">SAP ECC Gateway</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                                        Available
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                                        Pending
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500">
+                                    Simulates SAP responses (e.g., Block status, Payment terms). Triggers based on vendor ID.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Sanctions Screening</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                                        Available
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                                        Pending
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500">
+                                    Mock returns "Pass", "Fail", or "Review" based on applicant name patterns.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Email Service</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-800">
+                                        Available
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                        Active
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500">
+                                    Sends invitation and notification emails. Mock logs to console/DB.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+
+            {/* Mode Information - moved to bottom */}
             <Card className="p-6 bg-blue-50 border-blue-200">
                 <h3 className="text-sm font-semibold text-blue-900 mb-3">Data Source Modes</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

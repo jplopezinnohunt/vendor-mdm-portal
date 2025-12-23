@@ -1,9 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { VendorService } from '../../services/vendorService';
 import { ChangeRequest, ChangeRequestStatus, VendorApplication, ApplicationStatus, RequestType } from '../../types';
 import { Card, StatusBadge, Button } from '../../components/ui/Elements';
-import { CheckSquare, UserPlus, FileText, Search, Filter } from 'lucide-react';
+import { CheckSquare, UserPlus, FileText, Search, Filter, Plus, Send, Clock, Mail, CheckCircle, XCircle, Ban, RefreshCw } from 'lucide-react';
+import { api } from '../../services/api';
+
+interface Invitation {
+  id: string;
+  vendorLegalName: string;
+  primaryContactEmail: string;
+  status: string;
+  invitedByName: string;
+  createdAt: string;
+  expiresAt: string;
+  vendorApplicationId?: string;
+}
 
 interface ApproverDashboardProps {
   mode?: 'worklist' | 'history';
@@ -12,8 +24,10 @@ interface ApproverDashboardProps {
 export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'worklist' }) => {
   const [changeRequests, setChangeRequests] = useState<ChangeRequest[]>([]);
   const [onboardingRequests, setOnboardingRequests] = useState<VendorApplication[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'onboarding' | 'changes'>('onboarding');
+  const [activeTab, setActiveTab] = useState<'onboarding' | 'changes' | 'invitations'>('onboarding');
+  const navigate = useNavigate();
 
   // Filter States
   const [obFilters, setObFilters] = useState({
@@ -34,48 +48,82 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
+      try {
+        const [allChangeRequests, allOnboardingResponse, invitationsResponse] = await Promise.all([
+          VendorService.getAllChangeRequests(),
+          api.get('/review/pending').catch(() => ({ data: [] })),
+          api.get('/invitation/list').catch(() => ({ data: { invitations: [] } }))
+        ]);
 
-      const [allChangeRequests, allOnboarding] = await Promise.all([
-        VendorService.getAllChangeRequests(),
-        VendorService.getOnboardingRequests()
-      ]);
+        const allOnboarding = allOnboardingResponse.data || [];
+        const allInvitations = invitationsResponse.data.invitations || [];
 
-      if (mode === 'worklist') {
-        // Filter for items that need attention
-        const pendingChanges = allChangeRequests.filter(r =>
-          r.status === ChangeRequestStatus.New ||
-          r.status === ChangeRequestStatus.InReview ||
-          r.status === ChangeRequestStatus.Applied
-        );
-        const pendingOnboarding = allOnboarding.filter(a => a.status === ApplicationStatus.Submitted);
+        if (mode === 'worklist') {
+          const pendingChanges = allChangeRequests.filter(r =>
+            r.status !== ChangeRequestStatus.Approved &&
+            r.status !== ChangeRequestStatus.Rejected &&
+            r.status !== ChangeRequestStatus.Applied
+          );
 
-        setChangeRequests(pendingChanges.filter(r => r.status !== ChangeRequestStatus.Applied && r.status !== ChangeRequestStatus.Approved && r.status !== ChangeRequestStatus.Rejected));
-        setOnboardingRequests(pendingOnboarding);
-      } else {
-        // History Mode: Final statuses
-        const historyChanges = allChangeRequests.filter(r =>
-          r.status === ChangeRequestStatus.Approved ||
-          r.status === ChangeRequestStatus.Rejected ||
-          r.status === ChangeRequestStatus.Applied ||
-          r.status === ChangeRequestStatus.Error
-        );
-        const historyOnboarding = allOnboarding.filter(a =>
-          a.status === ApplicationStatus.Approved ||
-          a.status === ApplicationStatus.Rejected
-        );
+          const pendingOnboarding = allOnboarding.map((a: any) => {
+            let parsedAttributes = a.attributes;
+            if (typeof a.attributes === 'string' && a.attributes.trim() !== '') {
+              try {
+                parsedAttributes = JSON.parse(a.attributes);
+              } catch (e) {
+                console.warn('Failed to parse attributes for application', a.id, e);
+                parsedAttributes = {};
+              }
+            }
+            return {
+              ...a,
+              attributes: parsedAttributes || {},
+              status: a.status || ApplicationStatus.Submitted,
+              submittedAt: a.createdAt
+            };
+          });
 
-        setChangeRequests(historyChanges);
-        setOnboardingRequests(historyOnboarding);
+
+          // Filter invitations for Worklist
+          // Show: Pending, Accepted. Hide: Completed, Expired, Cancelled, Rejected, Approved.
+          const worklistInvitations = (allInvitations as Invitation[]).filter(i =>
+            i.status === 'Pending' || i.status === 'Accepted'
+          );
+
+          setChangeRequests(pendingChanges);
+          setOnboardingRequests(pendingOnboarding);
+          setInvitations(worklistInvitations);
+        } else {
+          // History mode
+          const historyChanges = allChangeRequests.filter(r =>
+            r.status === ChangeRequestStatus.Approved ||
+            r.status === ChangeRequestStatus.Rejected ||
+            r.status === ChangeRequestStatus.Applied ||
+            r.status === ChangeRequestStatus.Error
+          );
+
+          // Filter invitations for History
+          // Show: Completed, Expired, Cancelled, Rejected, Approved
+          const historyInvitations = (allInvitations as Invitation[]).filter(i =>
+            i.status !== 'Pending' && i.status !== 'Accepted'
+          );
+
+          setChangeRequests(historyChanges);
+          setOnboardingRequests([]); // History for onboarding not yet standardized via API
+          setInvitations(historyInvitations);
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     loadData();
   }, [mode]);
 
   const totalCount = changeRequests.length + onboardingRequests.length;
-  const highRiskCount = changeRequests.filter(r => r.items.some(i => i.isSensitive)).length;
+  const highRiskCount = changeRequests.filter(r => (r.items || []).some(i => i.isSensitive)).length;
 
   // Filter Logic
   const filteredOnboarding = onboardingRequests.filter(app =>
@@ -86,7 +134,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   );
 
   const filteredChanges = changeRequests.filter(req => {
-    const isSensitive = req.items.some(i => i.isSensitive);
+    const isSensitive = (req.items || []).some(i => i.isSensitive);
     const risk = isSensitive ? 'High Risk' : 'Standard';
     return (
       req.id.toLowerCase().includes(crFilters.id.toLowerCase()) &&
@@ -102,9 +150,14 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
     if (app.status === ApplicationStatus.Approved) return { label: 'Approved', style: 'bg-green-100 text-green-800' };
     if (app.status === ApplicationStatus.Rejected) return { label: 'Rejected', style: 'bg-red-100 text-red-800' };
 
-    // Status is Submitted, check sanctions
-    if (app.sanctionCheckStatus === 'Pending') return { label: 'Sanction Screening', style: 'bg-yellow-100 text-yellow-800' };
-    if (app.sanctionCheckStatus === 'Failed') return { label: 'Sanction Failed', style: 'bg-red-100 text-red-800' };
+    // Check attributes for Sanctions Status if available
+    const sanctionsStatus = app.attributes?.SanctionsStatus || app.sanctionCheckStatus;
+
+    if (sanctionsStatus === 'Pending') return { label: 'Sanction Screening', style: 'bg-yellow-100 text-yellow-800' };
+    if (sanctionsStatus === 'Failed' || sanctionsStatus === 'PotentialMatch') return { label: 'Sanction Hit', style: 'bg-red-100 text-red-800' };
+
+    // Status is Submitted/PendingReview
+    if (app.status === 'PendingReview') return { label: 'Internal Review', style: 'bg-blue-100 text-blue-800' };
 
     // Passed sanctions, so it's in internal review
     return { label: 'Internal Review', style: 'bg-blue-100 text-blue-800' };
@@ -139,6 +192,74 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
     </select>
   );
 
+  const getInvitationStatusBadge = (status: string) => {
+    const badges = {
+      Pending: {
+        icon: Clock,
+        className: 'bg-yellow-100 text-yellow-800',
+        label: 'Pending'
+      },
+      Accepted: {
+        icon: Mail,
+        className: 'bg-blue-100 text-blue-800',
+        label: 'Accepted'
+      },
+      Completed: {
+        icon: CheckCircle,
+        className: 'bg-green-100 text-green-800',
+        label: 'Completed'
+      },
+      Expired: {
+        icon: XCircle,
+        className: 'bg-gray-100 text-gray-800',
+        label: 'Expired'
+      },
+      Cancelled: {
+        icon: Ban,
+        className: 'bg-red-100 text-red-800',
+        label: 'Cancelled'
+      }
+    };
+
+    const badge = badges[status as keyof typeof badges] || badges.Pending;
+    const Icon = badge.icon;
+
+    return (
+      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+        <Icon className="h-3 w-3" />
+        {badge.label}
+      </span>
+    );
+  };
+
+  const handleResend = async (id: string) => {
+    if (!confirm('Are you sure you want to resend this invitation?')) return;
+    try {
+      await api.post(`/invitation/resend/${id}`);
+      alert('Invitation has been resent successfully!');
+      // Refresh invitations
+      const res = await api.get('/invitation/list');
+      setInvitations(res.data.invitations);
+    } catch (error) {
+      console.error('Failed to resend invitation:', error);
+      alert('Failed to resend invitation');
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    if (!confirm('Are you sure you want to CANCEL this invitation? Access will be revoked immediately.')) return;
+    try {
+      await api.post(`/invitation/cancel/${id}`);
+      alert('Invitation has been cancelled successfully!');
+      // Refresh invitations
+      const res = await api.get('/invitation/list');
+      setInvitations(res.data.invitations);
+    } catch (error) {
+      console.error('Failed to cancel invitation:', error);
+      alert('Failed to cancel invitation');
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="sm:flex sm:items-center">
@@ -152,20 +273,47 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
               : 'View past decisions and finalized requests.'}
           </p>
         </div>
+        {mode === 'worklist' && (
+          <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/approver/update-master-data')}
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Update Master Data
+            </Button>
+            <Button
+              onClick={() => navigate('/approver/invite-vendor')}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              New Invitation
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* KPI Cards - Only show in Worklist mode */}
       {mode === 'worklist' && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
           <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
             <dt className="truncate text-sm font-medium text-gray-500">Total Pending</dt>
-            <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">{totalCount}</dd>
+            <dd className="mt-1 text-3xl font-semibold tracking-tight text-gray-900">
+              {changeRequests.length + onboardingRequests.length + invitations.length}
+            </dd>
           </div>
-          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
+          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6 border-l-4 border-blue-500">
             <dt className="truncate text-sm font-medium text-gray-500">New Onboarding</dt>
             <dd className="mt-1 text-3xl font-semibold tracking-tight text-blue-600">{onboardingRequests.length}</dd>
           </div>
-          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6">
+          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6 border-l-4 border-yellow-500">
+            <dt className="truncate text-sm font-medium text-gray-500">Open Invitations</dt>
+            <dd className="mt-1 text-3xl font-semibold tracking-tight text-yellow-600">
+              {invitations.length}
+            </dd>
+          </div>
+          <div className="bg-white overflow-hidden rounded-lg shadow px-4 py-5 sm:p-6 border-l-4 border-red-500">
             <dt className="truncate text-sm font-medium text-gray-500">High Risk Changes</dt>
             <dd className="mt-1 text-3xl font-semibold tracking-tight text-red-600">
               {highRiskCount}
@@ -201,6 +349,19 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
             Vendor Master Data Changes
             <span className={`ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium ${activeTab === 'changes' ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-900'}`}>
               {changeRequests.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('invitations')}
+            className={`${activeTab === 'invitations'
+              ? 'border-brand-500 text-brand-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+          >
+            <Mail className={`mr-2 h-5 w-5 ${activeTab === 'invitations' ? 'text-brand-500' : 'text-gray-400'}`} />
+            Sent Invitations
+            <span className={`ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium ${activeTab === 'invitations' ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-900'}`}>
+              {invitations.length}
             </span>
           </button>
         </nav>
@@ -289,6 +450,81 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                         </tr>
                       )
                     })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        ) : activeTab === 'invitations' ? (
+          /* Sent Invitations Table */
+          <Card className="px-0 py-0">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Vendor</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Expires</th>
+                    <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {loading ? (
+                    <tr><td colSpan={6} className="px-6 py-4 text-center">Loading...</td></tr>
+                  ) : invitations.length === 0 ? (
+                    <tr><td colSpan={6} className="px-6 py-4 text-center text-gray-500">No invitations found.</td></tr>
+                  ) : (
+                    invitations.map((inv) => (
+                      <tr key={inv.id}>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{inv.vendorLegalName}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{inv.primaryContactEmail}</td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm">
+                          {getInvitationStatusBadge(inv.status)}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                          {new Date(inv.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                          {new Date(inv.expiresAt).toLocaleDateString()}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                          <div className="flex items-center justify-end gap-2">
+                            {(inv.status === 'Pending' || inv.status === 'Expired') && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleResend(inv.id)}
+                                  title="Resend Email"
+                                >
+                                  <RefreshCw className="h-3 w-3" />
+                                </Button>
+                              </>
+                            )}
+                            {(inv.status === 'Pending' || inv.status === 'Accepted') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleCancel(inv.id)}
+                                title="Cancel Invitation"
+                              >
+                                <Ban className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {inv.vendorApplicationId && (
+                              <Link to={`/approver/onboarding/${inv.vendorApplicationId}`}>
+                                <Button size="sm" variant="primary">
+                                  View App
+                                </Button>
+                              </Link>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
