@@ -1,10 +1,7 @@
-// API Base URL configuration - use window.location for production, localhost for dev
-const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:5001'
-    : window.location.origin;
+import { API_BASE_URL } from './api';
 
 export interface DataSourceConfiguration {
-    mode: string;
+    mode: string | number;
     database: DatabaseConfig;
     cosmos: CosmosConfig;
     serviceBus: ServiceBusConfig;
@@ -43,12 +40,13 @@ export interface EmailConfig {
     statusMessage?: string;
 }
 
+
 export const SystemService = {
     /**
      * Get current data source configuration and connection status
      */
     getDataSourceStatus: async (): Promise<DataSourceConfiguration> => {
-        const response = await fetch(`${API_BASE_URL}/api/system/data-sources`);
+        const response = await fetch(`${API_BASE_URL}/system/data-sources`);
         if (!response.ok) {
             throw new Error('Failed to fetch data source status');
         }

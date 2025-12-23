@@ -87,4 +87,29 @@ public class VendorController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+    [HttpGet("search")]
+    public async Task<ActionResult<IEnumerable<Vendor>>> SearchVendors([FromQuery] string query)
+    {
+        // Simple search implementation
+        try
+        {
+            var vendors = await _service.GetAllVendorsAsync();
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return Ok(vendors); // Return all if no query
+            }
+
+            var results = vendors.Where(v => 
+                (v.LegalName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (v.TaxId?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+
+            return Ok(results);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to search vendors");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 }

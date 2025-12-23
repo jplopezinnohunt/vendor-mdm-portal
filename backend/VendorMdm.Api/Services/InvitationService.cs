@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Azure.Cosmos;
 using VendorMdm.Api.Data;
@@ -17,6 +18,11 @@ public interface IInvitationService
     Task<InvitationListResponse> GetInvitationsAsync(int page = 1, int pageSize = 20, string? status = null);
     Task<bool> CompleteInvitationAsync(string token, Guid vendorApplicationId);
     Task<bool> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
+    Task<bool> TriggerMfaAsync(string token);
+    Task<bool> VerifyMfaCodeAsync(string token, string code);
+    Task<bool> SubmitInitialInfoAsync(string token, Dictionary<string, object> initialInfo);
+    Task<bool> SubmitEnrichmentAsync(string token, Dictionary<string, object> enrichmentData);
+    Task<bool> CancelInvitationAsync(Guid invitationId, Guid requestedBy);
     Task ExpireOldInvitationsAsync(); // Background task to expire old invitations
 }
 
@@ -88,6 +94,10 @@ public class InvitationService : IInvitationService
             InvitedBy = invitedBy,
             InvitedByName = invitedByName,
             ExpiresAt = expiresAt,
+            VendorType = request.VendorType,
+            AccountGroup = !string.IsNullOrEmpty(request.AccountGroup) 
+                ? request.AccountGroup 
+                : MapVendorTypeToAccountGroup(request.VendorType),
             Status = InvitationStatus.Pending,
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow
@@ -289,7 +299,9 @@ public class InvitationService : IInvitationService
             IsValid = true,
             VendorLegalName = invitation.VendorLegalName,
             PrimaryContactEmail = invitation.PrimaryContactEmail,
-            ExpiresAt = invitation.ExpiresAt
+            VendorType = invitation.VendorType,
+            ExpiresAt = invitation.ExpiresAt,
+            CurrentStage = invitation.CurrentStage
         };
     }
 
@@ -436,6 +448,7 @@ public class InvitationService : IInvitationService
         invitation.InvitationToken = GenerateSecureToken();
         invitation.ExpiresAt = DateTime.UtcNow.AddDays(14);
         invitation.Status = InvitationStatus.Pending;
+        invitation.CurrentStage = InvitationStage.InvitationSent;
 
         await _context.SaveChangesAsync();
 
@@ -522,6 +535,52 @@ public class InvitationService : IInvitationService
         return true;
     }
 
+    public async Task<bool> CancelInvitationAsync(Guid invitationId, Guid requestedBy)
+    {
+        var invitation = await _context.VendorInvitations
+            .FirstOrDefaultAsync(i => i.Id == invitationId);
+
+        if (invitation == null || invitation.Status == InvitationStatus.Completed || invitation.Status == InvitationStatus.Cancelled)
+        {
+            return false;
+        }
+
+        var previousStatus = invitation.Status;
+        invitation.Status = InvitationStatus.Cancelled;
+        
+        // Log who cancelled it in attributes
+        var attributes = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+        attributes["cancelledBy"] = requestedBy;
+        attributes["cancelledAt"] = DateTime.UtcNow;
+        invitation.Attributes = JsonSerializer.Serialize(attributes);
+
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation(
+            "Invitation {InvitationId} status updated from {PreviousStatus} to Cancelled by {RequestedBy}",
+            invitation.Id, previousStatus, requestedBy);
+
+        // Emit domain event
+        try
+        {
+            await EmitDomainEventAsync("InvitationCancelled", invitation.Id.ToString(), new
+            {
+                InvitationId = invitation.Id,
+                CancelledBy = requestedBy,
+                CancelledAt = DateTime.UtcNow,
+                VendorName = invitation.VendorLegalName,
+                Email = invitation.PrimaryContactEmail
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to emit InvitationCancelled event to CosmosDB for {InvitationId}", invitation.Id);
+            // Continue - event consistency shouldn't block core logic
+        }
+
+        return true;
+    }
+
     public async Task ExpireOldInvitationsAsync()
     {
         var expiredInvitations = await _context.VendorInvitations
@@ -584,6 +643,98 @@ public class InvitationService : IInvitationService
             new PartitionKey(eventType));
     }
 
+    public async Task<bool> TriggerMfaAsync(string token)
+    {
+        var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
+        if (invitation == null || (invitation.Status != InvitationStatus.Pending && invitation.Status != InvitationStatus.Accepted)) return false;
+
+        // Generate 6-digit code
+        var code = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+        var expiresAt = DateTime.UtcNow.AddMinutes(15);
+
+        // Update Attributes
+        var attributes = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+        attributes["mfaCode"] = code;
+        attributes["mfaCodeExpiresAt"] = expiresAt;
+        invitation.Attributes = JsonSerializer.Serialize(attributes);
+
+        await _context.SaveChangesAsync();
+
+        // Send Email
+        return await _emailService.SendMfaCodeEmailAsync(invitation.PrimaryContactEmail, invitation.VendorLegalName, code);
+    }
+
+    public async Task<bool> VerifyMfaCodeAsync(string token, string code)
+    {
+        var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
+        if (invitation == null) return false;
+
+        var attributes = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(invitation.Attributes) ?? new();
+        
+        if (attributes.TryGetValue("mfaCode", out var storedCode) && 
+            attributes.TryGetValue("mfaCodeExpiresAt", out var expiresAtElement))
+        {
+            var storedCodeStr = storedCode.GetString();
+            var expiresAt = expiresAtElement.GetDateTime();
+
+            if (storedCodeStr == code && expiresAt > DateTime.UtcNow)
+            {
+                invitation.CurrentStage = InvitationStage.MfaVerified;
+                
+                // Clear the code after successful use
+                var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+                dict.Remove("mfaCode");
+                dict.Remove("mfaCodeExpiresAt");
+                invitation.Attributes = JsonSerializer.Serialize(dict);
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public async Task<bool> SubmitInitialInfoAsync(string token, Dictionary<string, object> initialInfo)
+    {
+        var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
+        if (invitation == null || invitation.CurrentStage != InvitationStage.MfaVerified) return false;
+
+        // Merge initial info into attributes
+        var attributes = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+        foreach (var kvp in initialInfo)
+        {
+            attributes[kvp.Key] = kvp.Value;
+        }
+        
+        invitation.Attributes = JsonSerializer.Serialize(attributes);
+        invitation.CurrentStage = InvitationStage.InitialInfoCompleted;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> SubmitEnrichmentAsync(string token, Dictionary<string, object> enrichmentData)
+    {
+        var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
+        if (invitation == null || invitation.CurrentStage != InvitationStage.InitialInfoCompleted) return false;
+
+        // Merge enrichment data into attributes
+        var attributes = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+        foreach (var kvp in enrichmentData)
+        {
+            attributes[kvp.Key] = kvp.Value;
+        }
+
+        invitation.Attributes = JsonSerializer.Serialize(attributes);
+        invitation.CurrentStage = InvitationStage.Enriched;
+        invitation.Status = InvitationStatus.Completed;
+        invitation.CompletedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private static string GenerateSecureToken()
     {
         // Generate a cryptographically secure random token
@@ -600,5 +751,17 @@ public class InvitationService : IInvitationService
             .Replace("=", "");
 
         return token;
+    }
+
+    private static string MapVendorTypeToAccountGroup(string vendorType)
+    {
+        return vendorType switch
+        {
+            "Physical" => "INDV",
+            "Company" => "HQSU",
+            "Meeting" => "EVNT",
+            "Participant" => "PART",
+            _ => "INDV" // Default fallback
+        };
     }
 }

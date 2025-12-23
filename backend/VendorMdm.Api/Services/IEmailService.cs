@@ -9,6 +9,11 @@ public interface IEmailService
     /// Sends an invitation email to a vendor
     /// </summary>
     Task<bool> SendInvitationEmailAsync(InvitationEmailData data);
+
+    /// <summary>
+    /// Sends an MFA verification code to a vendor
+    /// </summary>
+    Task<bool> SendMfaCodeEmailAsync(string email, string vendorName, string code);
 }
 
 /// <summary>

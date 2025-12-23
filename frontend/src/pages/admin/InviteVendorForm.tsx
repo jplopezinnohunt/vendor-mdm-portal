@@ -8,16 +8,54 @@ import { api } from '../../services/api';
 interface InviteVendorFormData {
     vendorLegalName: string;
     primaryContactEmail: string;
+    vendorType: string;
+    accountGroup: string;
     expirationDays: number;
     notes?: string;
 }
 
+const ACCOUNT_GROUP_OPTIONS: Record<string, { label: string; value: string }[]> = {
+    Physical: [
+        { label: 'Individual - Physical Person (INDV)', value: 'INDV' },
+        { label: 'SC - Staff Contract Holder (SCSA)', value: 'SCSA' },
+        { label: 'Fellow / Grant Recipient (FELL)', value: 'FELL' },
+    ],
+    Company: [
+        { label: 'Company / Organization (HQSU)', value: 'HQSU' },
+        { label: 'Insurance Provider (INSO)', value: 'INSO' },
+        { label: 'NGO Supplier (NGOS)', value: 'NGOS' },
+    ],
+    Meeting: [
+        { label: 'Event Venue/Service Provider (EVNT)', value: 'EVNT' },
+        { label: 'Conference Organizer (CONF)', value: 'CONF' },
+    ],
+    Participant: [
+        { label: 'Participant - One-time Payment (PART)', value: 'PART' },
+    ],
+};
+
 export const InviteVendorForm: React.FC = () => {
-    const { register, handleSubmit, reset, formState: { errors } } = useForm<InviteVendorFormData>();
+    const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<InviteVendorFormData>({
+        defaultValues: {
+            vendorType: 'Physical',
+            accountGroup: 'INDV',
+            expirationDays: 14
+        }
+    });
     const [submitted, setSubmitted] = useState(false);
     const [invitationData, setInvitationData] = useState<any>(null);
     const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
+
+    const selectedVendorType = watch('vendorType');
+
+    // Update account group when vendor type changes
+    React.useEffect(() => {
+        const options = ACCOUNT_GROUP_OPTIONS[selectedVendorType] || [];
+        if (options.length > 0) {
+            setValue('accountGroup', options[0].value);
+        }
+    }, [selectedVendorType, setValue]);
 
     const onSubmit = async (data: InviteVendorFormData) => {
         try {
@@ -188,11 +226,48 @@ export const InviteVendorForm: React.FC = () => {
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Vendor Type
+                                </label>
+                                <select
+                                    {...register('vendorType', { required: true })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                >
+                                    <option value="Physical">Physical Person</option>
+                                    <option value="Company">Company or Organization</option>
+                                    <option value="Meeting">Meeting or Conference</option>
+                                    <option value="Participant">Participant</option>
+                                </select>
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Determines the data fields and SAP Account Group
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Account Group (UNESCO Reference)
+                                </label>
+                                <select
+                                    {...register('accountGroup', { required: true })}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                >
+                                    {(ACCOUNT_GROUP_OPTIONS[selectedVendorType] || []).map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="mt-1 text-xs text-brand-600 font-medium">
+                                    Determines SAP posting, reconciliation account, and payment processing rules.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Invitation Expiration
                                 </label>
                                 <select
                                     {...register('expirationDays', { required: true })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                                     defaultValue="14"
                                 >
                                     <option value="7">7 days</option>
@@ -211,7 +286,7 @@ export const InviteVendorForm: React.FC = () => {
                                 <textarea
                                     {...register('notes')}
                                     rows={3}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                                     placeholder="Why is this vendor being onboarded? Project name, service type, etc."
                                 />
                                 <p className="mt-1 text-xs text-gray-500">

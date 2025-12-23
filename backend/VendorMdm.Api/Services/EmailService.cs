@@ -33,14 +33,45 @@ public class EmailService : IEmailService
 
     public async Task<bool> SendInvitationEmailAsync(InvitationEmailData data)
     {
+        return await SendEmailAsync(data.Email, $"Onboarding Invitation for {data.VendorName}", data);
+    }
+
+    public async Task<bool> SendMfaCodeEmailAsync(string email, string vendorName, string code)
+    {
+        var data = new InvitationEmailData
+        {
+            Email = email,
+            VendorName = vendorName,
+            Notes = $"Your verification code is: {code}",
+            // We use the same structure for now, but we'll build a specific HTML for MFA
+        };
+
+        return await SendEmailAsync(email, "Your Verification Code", data, isMfa: true, mfaCode: code);
+    }
+
+    private async Task<bool> SendEmailAsync(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null)
+    {
         try
         {
+            // Prepare data for logging/functions
+            var payload = new
+            {
+                Email = email,
+                Subject = subject,
+                VendorName = data.VendorName,
+                IsMfa = isMfa,
+                MfaCode = mfaCode,
+                InvitationLink = data.BaseUrl != null ? $"{data.BaseUrl}/invitation/register/{data.Token}" : null,
+                Notes = data.Notes
+            };
+
             // Try Azure Function HTTP endpoint first (for local dev)
             if (_useLocalEmulators)
             {
                 var functionUrl = _configuration["EmailService:FunctionUrl"] 
                     ?? "http://localhost:7071/api/invitation/send-email";
                 
+                // For simulation purposes, we'll just log if function call fails
                 if (await TrySendViaFunctionAsync(functionUrl, data))
                 {
                     return true;
@@ -48,26 +79,24 @@ public class EmailService : IEmailService
             }
 
             // Try SMTP if configured
-            // Check both Key Vault and local configuration
             var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
             if (smtpEnabled)
             {
-                if (await TrySendViaSmtpAsync(data))
+                if (await TrySendViaSmtpAsync(data, subject, isMfa, mfaCode))
                 {
                     return true;
                 }
             }
 
             // Fallback: Log email (for local development)
-            LogEmail(data);
+            LogEmail(email, subject, data, isMfa, mfaCode);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send invitation email to {Email}", data.Email);
-            // Log email as fallback
-            LogEmail(data);
-            return false; // Return false but still log the email
+            _logger.LogError(ex, "Failed to send email to {Email}", email);
+            LogEmail(email, subject, data, isMfa, mfaCode);
+            return false;
         }
     }
 
@@ -123,7 +152,7 @@ public class EmailService : IEmailService
     /// <summary>
     /// Try to send email via SMTP
     /// </summary>
-    private async Task<bool> TrySendViaSmtpAsync(InvitationEmailData data)
+    private async Task<bool> TrySendViaSmtpAsync(InvitationEmailData data, string subject, bool isMfa = false, string? mfaCode = null)
     {
         try
         {
@@ -155,7 +184,7 @@ public class EmailService : IEmailService
                 return false;
             }
 
-            var baseUrl = data.BaseUrl ?? _configuration["App:BaseUrl"] ?? "http://localhost:3002";
+            var baseUrl = data.BaseUrl ?? _configuration["App:BaseUrl"] ?? "http://localhost:3000";
             var invitationLink = $"{baseUrl}/invitation/register/{data.Token}";
             var expiresAt = data.ExpiresAt.ToString("MMMM dd, yyyy 'at' hh:mm tt");
             var companyName = data.CompanyName ?? "Your Company";
@@ -164,12 +193,12 @@ public class EmailService : IEmailService
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(fromName, fromEmail));
             message.To.Add(new MailboxAddress(data.VendorName, data.Email));
-            message.Subject = $"Action Required: Invitation to Register as Vendor with {companyName}";
+            message.Subject = subject;
 
             // Build HTML email body
             var bodyBuilder = new BodyBuilder
             {
-                HtmlBody = BuildEmailHtml(data, invitationLink, expiresAt, companyName)
+                HtmlBody = BuildEmailHtml(data, invitationLink, expiresAt, companyName, isMfa, mfaCode)
             };
 
             message.Body = bodyBuilder.ToMessageBody();
@@ -198,8 +227,24 @@ public class EmailService : IEmailService
     /// <summary>
     /// Build HTML email content
     /// </summary>
-    private string BuildEmailHtml(InvitationEmailData data, string invitationLink, string expiresAt, string companyName)
+    private string BuildEmailHtml(InvitationEmailData data, string invitationLink, string expiresAt, string companyName, bool isMfa = false, string? mfaCode = null)
     {
+        if (isMfa)
+        {
+            return $@"
+                <div style='font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;'>
+                    <h2 style='color: #0078d4;'>Verification Code</h2>
+                    <p>Hello {data.VendorName},</p>
+                    <p>To access the UNESCO Vendor Onboarding portal, please use the following verification code:</p>
+                    <div style='background: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;'>
+                        {mfaCode}
+                    </div>
+                    <p>This code will expire in 15 minutes.</p>
+                    <p>If you did not request this code, please ignore this email.</p>
+                    <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;' />
+                    <p style='font-size: 12px; color: #666;'>This is an automated message from the UNESCO Vendor Portal.</p>
+                </div>";
+        }
         return $@"
 <!DOCTYPE html>
 <html lang=""en"">
@@ -286,8 +331,21 @@ public class EmailService : IEmailService
     /// <summary>
     /// Log email details (fallback for local development)
     /// </summary>
-    private void LogEmail(InvitationEmailData data)
+    private void LogEmail(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null)
     {
+        if (isMfa)
+        {
+            Console.WriteLine("");
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine("📧 MFA VERIFICATION CODE (LOCAL DEV)");
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine($"To: {email}");
+            Console.WriteLine($"Code: {mfaCode}");
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine("");
+            return;
+        }
+
         var baseUrl = data.BaseUrl ?? _configuration["App:BaseUrl"] ?? "http://localhost:3002";
         var invitationLink = $"{baseUrl}/invitation/register/{data.Token}";
         var expiresAt = data.ExpiresAt.ToString("MMMM dd, yyyy 'at' hh:mm tt");

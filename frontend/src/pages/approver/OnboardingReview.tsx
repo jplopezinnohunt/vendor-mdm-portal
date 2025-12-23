@@ -6,6 +6,7 @@ import { VendorApplication, ApplicationStatus } from '../../types';
 import { Card, Button, Input } from '../../components/ui/Elements';
 import { WorkflowTracker } from '../../components/ui/WorkflowTracker';
 import { ArrowLeft, CheckCircle, XCircle, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { api } from '../../services/api';
 
 export const OnboardingReview: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,21 +17,58 @@ export const OnboardingReview: React.FC = () => {
 
   useEffect(() => {
     if (id) {
-      VendorService.getOnboardingRequestById(id).then(data => {
-        if (data) setApp(data);
-        setLoading(false);
-      });
+      // Fetch application details
+      api.get(`/review/${id}`)
+        .then(response => {
+          const data = response.data;
+          // Parse attributes if needed
+          if (typeof data.attributes === 'string') {
+            try {
+              data.attributes = JSON.parse(data.attributes);
+            } catch (e) {
+              console.error("Failed to parse attributes", e);
+              data.attributes = {};
+            }
+          }
+          setApp(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to load review details", err);
+          setLoading(false); // Should handle error state better
+        });
     }
   }, [id]);
 
   const handleDecision = async (status: ApplicationStatus.Approved | ApplicationStatus.Rejected) => {
     if (!app) return;
-    if (status === ApplicationStatus.Rejected && !confirm("Reject this application?")) return;
 
-    setProcessing(true);
-    await VendorService.processOnboardingRequest(app.id, status);
-    setProcessing(false);
-    navigate('/approver/worklist');
+    if (status === ApplicationStatus.Rejected) {
+      const reason = prompt("Please enter rejection reason:");
+      if (!reason) return; // Cancel if no reason
+
+      setProcessing(true);
+      try {
+        await api.post(`/review/${app.id}/reject`, { reason });
+        navigate('/approver/worklist');
+      } catch (error) {
+        console.error("Rejection failed", error);
+        alert("Failed to reject application");
+        setProcessing(false);
+      }
+    } else {
+      if (!confirm("Approve this application and create vendor in SAP?")) return;
+
+      setProcessing(true);
+      try {
+        await api.post(`/review/${app.id}/approve`, { comments: "Approved via Web Portal" });
+        navigate('/approver/worklist');
+      } catch (error) {
+        console.error("Approval failed", error);
+        alert("Failed to approve application");
+        setProcessing(false);
+      }
+    }
   };
 
   if (loading) return <div className="p-8">Loading application details...</div>;
@@ -95,7 +133,7 @@ export const OnboardingReview: React.FC = () => {
               variant="danger"
               onClick={() => handleDecision(ApplicationStatus.Rejected)}
               isLoading={processing}
-              disabled={app.status !== ApplicationStatus.Submitted}
+              disabled={app.status !== ApplicationStatus.Submitted && app.status !== ApplicationStatus.PendingReview}
             >
               <XCircle className="mr-2 h-4 w-4" /> Reject
             </Button>
@@ -103,7 +141,7 @@ export const OnboardingReview: React.FC = () => {
               variant="primary"
               onClick={() => handleDecision(ApplicationStatus.Approved)}
               isLoading={processing}
-              disabled={app.status !== ApplicationStatus.Submitted || app.sanctionCheckStatus === 'Failed' || app.sanctionCheckStatus === 'Pending'}
+              disabled={(app.status !== ApplicationStatus.Submitted && app.status !== ApplicationStatus.PendingReview) || app.sanctionCheckStatus === 'Failed' || app.sanctionCheckStatus === 'Pending'}
             >
               <CheckCircle className="mr-2 h-4 w-4" /> Approve & Create
             </Button>
@@ -181,6 +219,25 @@ export const OnboardingReview: React.FC = () => {
               className="bg-gray-50"
             />
           </div>
+
+          {/* Dynamic Attributes Display */}
+          {app.attributes && Object.entries(app.attributes).map(([key, value]) => {
+            // Skip Sanctions metadata keys
+            if (key.startsWith('Sanctions')) return null;
+            // Skip basic keys already shown
+            if (['companyName', 'taxId', 'contactName', 'email'].includes(key)) return null;
+
+            return (
+              <div key={key}>
+                <Input
+                  label={key.replace(/([A-Z])/g, ' $1').trim()} // Regex to space out CamelCase
+                  value={String(value)}
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+            );
+          })}
 
           <div className="md:col-span-2">
             <Input

@@ -24,7 +24,6 @@ public class ChangeRequest
     /// Semi-structured attributes for flexible data storage.
     /// Stores: approvalHistory, rejectionReason, changeImpactAssessment, notificationsSent
     /// </summary>
-    [Column(TypeName = "nvarchar(max)")]
     public string Attributes { get; set; } = "{}";
 }
 
@@ -62,7 +61,6 @@ public class VendorApplication
     /// Semi-structured attributes for flexible data storage.
     /// Stores: industryMetadata, certifications, additionalContacts, customFields
     /// </summary>
-    [Column(TypeName = "nvarchar(max)")]
     public string Attributes { get; set; } = "{}";
 }
 
@@ -78,7 +76,6 @@ public class WorkflowState
     /// Semi-structured attributes for flexible data storage.
     /// Stores: displayOrder, colorCode, iconName, transitionsAllowed
     /// </summary>
-    [Column(TypeName = "nvarchar(max)")]
     public string Attributes { get; set; } = "{}";
 }
 
@@ -102,7 +99,6 @@ public class UserRole
     /// Semi-structured attributes for flexible data storage.
     /// Stores: fullName, email, phoneNumber, department, uiPreferences, notificationSettings
     /// </summary>
-    [Column(TypeName = "nvarchar(max)")]
     public string Attributes { get; set; } = "{}";
 }
 
@@ -119,7 +115,6 @@ public class Attachment
     /// Semi-structured attributes for flexible data storage.
     /// Stores: fileSizeBytes, mimeType, uploadedByName, virusScanResult, thumbnailUrl
     /// </summary>
-    [Column(TypeName = "nvarchar(max)")]
     public string Attributes { get; set; } = "{}";
 }
 
@@ -161,16 +156,49 @@ public class VendorInvitation
 
     public Guid? VendorApplicationId { get; set; }
 
+    [MaxLength(50)]
+    public string VendorType { get; set; } = string.Empty;
+
+    [MaxLength(10)]
+    public string AccountGroup { get; set; } = string.Empty;
+
+    [MaxLength(20)]
+    public string SanctionsStatus { get; set; } = "NotScreened";
+
+    [Column(TypeName = "decimal(5, 2)")]
+    public decimal? SanctionsScore { get; set; }
+
+    [MaxLength(20)]
+    public string ReviewStatus { get; set; } = "NotRequired";
+
     [MaxLength(1000)]
     [Obsolete("Use Attributes JSON column instead. Will be removed in next major version.")]
     public string? Notes { get; set; }
 
     /// <summary>
-    /// Semi-structured attributes for flexible data storage.
-    /// Stores: notes, customFields, invitationMetadata, uiPreferences
+    /// Current stage of the invitation workflow.
+    /// Stage 1: InvitationSent
+    /// Stage 2: MfaVerified
+    /// Stage 3: InitialInfoCompleted
+    /// Stage 4: Enriched
     /// </summary>
-    [Column(TypeName = "nvarchar(max)")]
+    [Required]
+    [MaxLength(50)]
+    public string CurrentStage { get; set; } = InvitationStage.InvitationSent;
+
+    /// <summary>
+    /// Semi-structured attributes for flexible data storage.
+    /// Stores: notes, customFields, invitationMetadata, uiPreferences, mfaCode, mfaCodeExpiresAt
+    /// </summary>
     public string Attributes { get; set; } = "{}";
+}
+
+public static class InvitationStage
+{
+    public const string InvitationSent = "InvitationSent";
+    public const string MfaVerified = "MfaVerified";
+    public const string InitialInfoCompleted = "InitialInfoCompleted";
+    public const string Enriched = "Enriched";
 }
 
 public static class InvitationStatus
@@ -179,5 +207,8 @@ public static class InvitationStatus
     public const string Accepted = "Accepted";
     public const string Expired = "Expired";
     public const string Completed = "Completed";
+    public const string PendingReview = "PendingReview";
+    public const string Approved = "Approved";
+    public const string Rejected = "Rejected";
     public const string Cancelled = "Cancelled";
 }

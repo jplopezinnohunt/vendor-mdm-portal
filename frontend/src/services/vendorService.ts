@@ -16,6 +16,15 @@ const MOCK_VENDOR_DATA: VendorMasterData = {
   },
   email: 'finance@acme.com',
   phone: '+1 555 0123',
+  companyCode: 'UNES', // Default UNESCO Company Code
+  accountGroup: 'INDV', // Default Individual / Physical Vendor
+  contactPerson: 'John Doe',
+  contactEmail: 'john.doe@acme.com',
+  contactPhone: '+1 555 9991',
+  birthDate: '1980-01-01',
+  gender: 'Mr',
+  profession: 'Engineer',
+  birthCountry: 'US',
   banks: [
     {
       id: '1',
@@ -26,6 +35,41 @@ const MOCK_VENDOR_DATA: VendorMasterData = {
       iban: ''
     }
   ]
+};
+
+const MOCK_VENDOR_HQSU: VendorMasterData = {
+  ...MOCK_VENDOR_DATA,
+  sapVendorId: '100451',
+  name: 'Acme Logistics',
+  accountGroup: 'HQSU',
+  legalForm: 'SA',
+  birthDate: undefined,
+  gender: undefined
+};
+
+const MOCK_VENDOR_EVNT: VendorMasterData = {
+  ...MOCK_VENDOR_DATA,
+  sapVendorId: '100452',
+  name: 'ConfEx Center',
+  accountGroup: 'EVNT',
+  events: [{ name: 'Global Summit', date: '2024-12-01' }],
+  address: { ...MOCK_VENDOR_DATA.address, street: 'Exhibition Rd 1' }
+};
+
+const MOCK_VENDOR_PART: VendorMasterData = {
+  ...MOCK_VENDOR_DATA,
+  sapVendorId: '100453',
+  name: 'Jane Smith',
+  accountGroup: 'PART',
+  address: { ...MOCK_VENDOR_DATA.address, country: 'FR' }, // French participant
+  banks: [{ ...MOCK_VENDOR_DATA.banks[0], bankCountry: 'FR', iban: 'FR76...' }]
+};
+
+const MOCK_VENDORS_MAP: Record<string, VendorMasterData> = {
+  '100450': MOCK_VENDOR_DATA,
+  '100451': MOCK_VENDOR_HQSU,
+  '100452': MOCK_VENDOR_EVNT,
+  '100453': MOCK_VENDOR_PART
 };
 
 // Mock Onboarding Applications (Prospects)
@@ -115,15 +159,16 @@ let MOCK_REQUESTS_DB: ChangeRequest[] = [
 export const VendorService = {
   // --- Vendor Methods ---
 
-  getCurrentVendor: async (): Promise<VendorMasterData> => {
+  getCurrentVendor: async (vendorId: string = '100450'): Promise<VendorMasterData> => {
+    // Strategy: Always try API first if we are in MOCK or FINAL mode, or pointing to a real URL
     try {
-      // Try Real Backend
-      const response = await api.get('/vendor/100450');
+      // Logic: If explicitly MOCK/FINAL, or if we just want to try the connection
+      const response = await api.get(`/changerequest/${vendorId}`);
       const data = response.data;
 
       // Map Backend DTO to Frontend Type
       return {
-        sapVendorId: data.vendorId || '100450',
+        sapVendorId: data.vendorId || vendorId,
         name: data.name || 'Acme Corp',
         legalForm: 'Inc.',
         taxNumber1: 'US123456789',
@@ -135,12 +180,47 @@ export const VendorService = {
         },
         email: 'finance@acme.com',
         phone: '+1 555 0123',
+        companyCode: 'UNES',
+        accountGroup: 'INDV',
+        contactPerson: 'John Doe',
+        contactEmail: 'john.doe@acme.com',
+        contactPhone: '+1 555 9991',
+        birthDate: data.birthDate || '1980-01-01',
+        gender: data.gender || 'Mr',
+        profession: data.profession || 'Engineer',
+        birthCountry: data.birthCountry || 'US',
         banks: MOCK_VENDOR_DATA.banks
       };
     } catch (error) {
-      console.warn('Backend unreachable, using Mock Data for Vendor', error);
+      // Only fallback if we are NOT in strict FINAL mode (optional, but safer to always fallback in dev)
+      console.warn('Backend Service unreachable. If you expected an Azure Mock response, check connection.', error);
+
       return new Promise((resolve) => {
-        setTimeout(() => resolve(MOCK_VENDOR_DATA), 800);
+        const mock = MOCK_VENDORS_MAP[vendorId] || { ...MOCK_VENDOR_DATA, sapVendorId: vendorId };
+        setTimeout(() => resolve(mock), 800);
+      });
+    }
+  },
+
+  searchVendors: async (query: string): Promise<VendorMasterData[]> => {
+    // 1. Try Real Backend Search
+    try {
+      const response = await api.get(`/vendor/search?query=${query}`);
+      // Map backend vendor model to frontend model if necessary
+      return response.data;
+    } catch (error) {
+      console.warn('Backend search unreachable, falling back to mock', error);
+
+      // 2. Fallback to Mock Logic
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const allMockVendors = Object.values(MOCK_VENDORS_MAP);
+          const results = allMockVendors.filter(v =>
+            v.name.toLowerCase().includes(query.toLowerCase()) ||
+            v.sapVendorId.includes(query)
+          );
+          resolve(results);
+        }, 600);
       });
     }
   },
@@ -160,12 +240,13 @@ export const VendorService = {
 
   submitChangeRequest: async (
     deltaItems: any[],
-    attachments: File[]
+    attachments: File[],
+    vendorId: string = '100450'
   ): Promise<ChangeRequest> => {
     try {
       const payload = {
         requesterId: '00000000-0000-0000-0000-000000000001',
-        sapVendorId: '100450',
+        sapVendorId: vendorId,
         payload: { items: deltaItems }
       };
       const response = await api.post('/changerequest', payload);
@@ -204,7 +285,7 @@ export const VendorService = {
 
   getOnboardingRequests: async (): Promise<VendorApplication[]> => {
     try {
-      const response = await api.get('/vendor/onboarding/pending');
+      const response = await api.get('/review/pending');
       return response.data.map((item: any) => ({
         id: item.id,
         companyName: item.companyName,
