@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { VendorService } from '../../services/vendorService';
 import { ChangeRequest, ChangeRequestStatus, VendorApplication, ApplicationStatus, RequestType } from '../../types';
-import { Card, StatusBadge, Button } from '../../components/ui/Elements';
+import { Card, StatusBadge, Button, Modal } from '../../components/ui/Elements';
 import { CheckSquare, UserPlus, FileText, Search, Filter, Plus, Send, Clock, Mail, CheckCircle, XCircle, Ban, RefreshCw } from 'lucide-react';
 import { api } from '../../services/api';
 
@@ -233,13 +233,9 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   };
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
 
-  const handleResend = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!window.confirm('Are you sure you want to resend this invitation?')) return;
-
+  const handleResend = async (id: string) => {
     setActionLoading(id + '-resend');
     try {
       await api.post(`/invitation/resend/${id}`);
@@ -252,19 +248,15 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
       alert(error.userMessage || 'Failed to resend invitation');
     } finally {
       setActionLoading(null);
+      setConfirmAction(null);
     }
   };
 
-  const handleCancel = async (e: React.MouseEvent, id: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!window.confirm('Are you sure you want to CANCEL this invitation? Access will be revoked immediately.')) return;
-
+  const handleCancel = async (id: string) => {
     setActionLoading(id + '-cancel');
     try {
       await api.post(`/invitation/cancel/${id}`);
-      alert('Invitation has been cancelled successfully!');
+      alert('Invitation has been cancelled successfully.');
       // Refresh invitations
       const res = await api.get('/invitation/list');
       setInvitations(res.data.invitations || []);
@@ -273,6 +265,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
       alert(error.userMessage || 'Failed to cancel invitation');
     } finally {
       setActionLoading(null);
+      setConfirmAction(null);
     }
   };
 
@@ -514,7 +507,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                                   variant="outline"
                                   type="button"
                                   isLoading={actionLoading === inv.id + '-resend'}
-                                  onClick={(e) => handleResend(e, inv.id)}
+                                  onClick={() => setConfirmAction({ id: inv.id, type: 'resend' })}
                                   title="Resend Email"
                                 >
                                   <RefreshCw className={`h-3 w-3 ${actionLoading === inv.id + '-resend' ? 'animate-spin' : ''}`} />
@@ -528,7 +521,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                                 type="button"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 isLoading={actionLoading === inv.id + '-cancel'}
-                                onClick={(e) => handleCancel(e, inv.id)}
+                                onClick={() => setConfirmAction({ id: inv.id, type: 'cancel' })}
                                 title="Cancel Invitation"
                               >
                                 <Ban className="h-3 w-3" />
@@ -649,6 +642,38 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
           </Card>
         )}
       </div>
+
+      <Modal
+        isOpen={!!confirmAction}
+        onClose={() => !actionLoading && setConfirmAction(null)}
+        title={confirmAction?.type === 'resend' ? 'Resend Invitation' : 'Cancel Invitation'}
+        footer={
+          <div className="flex gap-3">
+            <Button
+              variant="secondary"
+              onClick={() => setConfirmAction(null)}
+              disabled={!!actionLoading}
+            >
+              No, Close
+            </Button>
+            <Button
+              variant={confirmAction?.type === 'resend' ? 'primary' : 'danger'}
+              onClick={() => confirmAction?.type === 'resend'
+                ? handleResend(confirmAction!.id)
+                : handleCancel(confirmAction!.id)}
+              isLoading={!!actionLoading}
+            >
+              {confirmAction?.type === 'resend' ? 'Yes, Resend' : 'Yes, Cancel Access'}
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-gray-600">
+          {confirmAction?.type === 'resend'
+            ? 'Are you sure you want to resend this invitation email to the vendor?'
+            : 'Are you sure you want to CANCEL this invitation? The vendor will no longer be able to use the link and any progress may be lost.'}
+        </p>
+      </Modal>
     </div>
   );
 };

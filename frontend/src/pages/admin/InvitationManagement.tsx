@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Card } from '../../components/ui/Elements';
+import { Button, Card, Modal } from '../../components/ui/Elements';
 import { Plus, RefreshCw, Mail, CheckCircle, Clock, XCircle, Ban, Send } from 'lucide-react';
 import { api } from '../../services/api';
 
@@ -18,7 +18,9 @@ interface Invitation {
 export const InvitationManagement: React.FC = () => {
     const [invitations, setInvitations] = useState<Invitation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [filter, setFilter] = useState<string>('');
+    const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
     const navigate = useNavigate();
 
     const loadInvitations = async () => {
@@ -51,17 +53,32 @@ export const InvitationManagement: React.FC = () => {
     }, [loading]);
 
     const handleResend = async (id: string) => {
-        if (!confirm('Are you sure you want to resend this invitation?')) {
-            return;
-        }
-
+        setActionLoading(id + '-resend');
         try {
             await api.post(`/invitation/resend/${id}`);
             alert('Invitation has been resent successfully!');
             loadInvitations();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to resend invitation:', error);
-            alert('Failed to resend invitation');
+            alert(error.userMessage || 'Failed to resend invitation');
+        } finally {
+            setActionLoading(null);
+            setConfirmAction(null);
+        }
+    };
+
+    const handleCancel = async (id: string) => {
+        setActionLoading(id + '-cancel');
+        try {
+            await api.post(`/invitation/cancel/${id}`);
+            alert('Invitation has been cancelled successfully.');
+            loadInvitations();
+        } catch (error: any) {
+            console.error('Failed to cancel invitation:', error);
+            alert(error.userMessage || 'Failed to cancel invitation');
+        } finally {
+            setActionLoading(null);
+            setConfirmAction(null);
         }
     };
 
@@ -124,9 +141,9 @@ export const InvitationManagement: React.FC = () => {
 
     const canResend = (status: string): boolean => {
         const normalizedStatus = status?.toLowerCase()?.trim();
-        return normalizedStatus === 'pending' || 
-               normalizedStatus === 'expired' || 
-               normalizedStatus === 'accepted';
+        return normalizedStatus === 'pending' ||
+            normalizedStatus === 'expired' ||
+            normalizedStatus === 'accepted';
     };
 
     return (
@@ -255,8 +272,8 @@ export const InvitationManagement: React.FC = () => {
                                                         <button
                                                             onClick={() => handleResend(invitation.id)}
                                                             className="ml-2 p-1.5 text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-md transition-colors"
-                                                            title={invitation.status?.toLowerCase() === 'expired' 
-                                                                ? 'Reactivate invitation and send email' 
+                                                            title={invitation.status?.toLowerCase() === 'expired'
+                                                                ? 'Reactivate invitation and send email'
                                                                 : 'Resend invitation email'}
                                                         >
                                                             <Mail className="h-4 w-4" />
@@ -282,27 +299,41 @@ export const InvitationManagement: React.FC = () => {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    {/* Resend button with icon */}
+                                                    {/* Resend button */}
                                                     {canResend(invitation.status) && (
-                                                        <button
-                                                            onClick={() => handleResend(invitation.id)}
-                                                            className="p-2 text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-md transition-colors"
-                                                            title={invitation.status?.toLowerCase() === 'expired' 
-                                                                ? 'Reactivate invitation and send email' 
-                                                                : 'Resend invitation email'}
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            onClick={() => setConfirmAction({ id: invitation.id, type: 'resend' })}
+                                                            isLoading={actionLoading === invitation.id + '-resend'}
+                                                            title="Resend Email"
                                                         >
                                                             <Mail className="h-4 w-4" />
-                                                        </button>
+                                                        </Button>
+                                                    )}
+                                                    {/* Cancel button */}
+                                                    {(invitation.status === 'Pending' || invitation.status === 'Accepted') && (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline"
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            onClick={() => setConfirmAction({ id: invitation.id, type: 'cancel' })}
+                                                            isLoading={actionLoading === invitation.id + '-cancel'}
+                                                            title="Cancel Invitation"
+                                                        >
+                                                            <Ban className="h-4 w-4" />
+                                                        </Button>
                                                     )}
                                                     {/* View Application button */}
                                                     {invitation.vendorApplicationId && (
-                                                        <button
+                                                        <Button
+                                                            size="sm"
+                                                            variant="primary"
                                                             onClick={() => navigate(`/approver/onboarding/${invitation.vendorApplicationId}`)}
-                                                            className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-md transition-colors"
                                                             title="View vendor application"
                                                         >
                                                             <CheckCircle className="h-4 w-4" />
-                                                        </button>
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </td>
@@ -343,6 +374,39 @@ export const InvitationManagement: React.FC = () => {
                         </Card>
                     </div>
                 )}
+
+                {/* Confirmation Modal */}
+                <Modal
+                    isOpen={!!confirmAction}
+                    onClose={() => !actionLoading && setConfirmAction(null)}
+                    title={confirmAction?.type === 'resend' ? 'Resend Invitation' : 'Cancel Invitation'}
+                    footer={
+                        <div className="flex gap-3">
+                            <Button
+                                variant="secondary"
+                                onClick={() => setConfirmAction(null)}
+                                disabled={!!actionLoading}
+                            >
+                                No, Cancel
+                            </Button>
+                            <Button
+                                variant={confirmAction?.type === 'resend' ? 'primary' : 'danger'}
+                                onClick={() => confirmAction?.type === 'resend'
+                                    ? handleResend(confirmAction.id)
+                                    : handleCancel(confirmAction.id)}
+                                isLoading={!!actionLoading}
+                            >
+                                {confirmAction?.type === 'resend' ? 'Yes, Resend' : 'Yes, Cancel Access'}
+                            </Button>
+                        </div>
+                    }
+                >
+                    <p className="text-gray-600">
+                        {confirmAction?.type === 'resend'
+                            ? 'Are you sure you want to resend this invitation email to the vendor?'
+                            : 'Are you sure you want to CANCEL this invitation? The vendor will no longer be able to use the link and any progress may be lost.'}
+                    </p>
+                </Modal>
             </div>
         </div>
     );
