@@ -232,31 +232,47 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
     );
   };
 
-  const handleResend = async (id: string) => {
-    if (!confirm('Are you sure you want to resend this invitation?')) return;
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const handleResend = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm('Are you sure you want to resend this invitation?')) return;
+
+    setActionLoading(id + '-resend');
     try {
       await api.post(`/invitation/resend/${id}`);
       alert('Invitation has been resent successfully!');
       // Refresh invitations
       const res = await api.get('/invitation/list');
-      setInvitations(res.data.invitations);
-    } catch (error) {
+      setInvitations(res.data.invitations || []);
+    } catch (error: any) {
       console.error('Failed to resend invitation:', error);
-      alert('Failed to resend invitation');
+      alert(error.userMessage || 'Failed to resend invitation');
+    } finally {
+      setActionLoading(null);
     }
   };
 
-  const handleCancel = async (id: string) => {
-    if (!confirm('Are you sure you want to CANCEL this invitation? Access will be revoked immediately.')) return;
+  const handleCancel = async (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!window.confirm('Are you sure you want to CANCEL this invitation? Access will be revoked immediately.')) return;
+
+    setActionLoading(id + '-cancel');
     try {
       await api.post(`/invitation/cancel/${id}`);
       alert('Invitation has been cancelled successfully!');
       // Refresh invitations
       const res = await api.get('/invitation/list');
-      setInvitations(res.data.invitations);
-    } catch (error) {
+      setInvitations(res.data.invitations || []);
+    } catch (error: any) {
       console.error('Failed to cancel invitation:', error);
-      alert('Failed to cancel invitation');
+      alert(error.userMessage || 'Failed to cancel invitation');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -496,10 +512,12 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleResend(inv.id)}
+                                  type="button"
+                                  isLoading={actionLoading === inv.id + '-resend'}
+                                  onClick={(e) => handleResend(e, inv.id)}
                                   title="Resend Email"
                                 >
-                                  <RefreshCw className="h-3 w-3" />
+                                  <RefreshCw className={`h-3 w-3 ${actionLoading === inv.id + '-resend' ? 'animate-spin' : ''}`} />
                                 </Button>
                               </>
                             )}
@@ -507,8 +525,10 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                               <Button
                                 size="sm"
                                 variant="outline"
+                                type="button"
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => handleCancel(inv.id)}
+                                isLoading={actionLoading === inv.id + '-cancel'}
+                                onClick={(e) => handleCancel(e, inv.id)}
                                 title="Cancel Invitation"
                               >
                                 <Ban className="h-3 w-3" />
