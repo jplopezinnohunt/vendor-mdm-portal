@@ -71,6 +71,29 @@ jobs:
         echo "clientSecret=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .clientSecret)" >> $GITHUB_OUTPUT
         echo "tenantId=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r .tenantId)" >> $GITHUB_OUTPUT
 
+    - name: Add Firewall Rule for GitHub Runner
+      id: firewall
+      run: |
+        # Determine SQL Server name
+        TARGET_ENV="${{ inputs.environment }}"
+        if [ -z "$TARGET_ENV" ]; then TARGET_ENV="dev"; fi
+        if [ "$TARGET_ENV" == "dev" ]; then SQL_SERVER="sql-vendor-mdm-dev"; else SQL_SERVER="sql-vendor-mdm-prod"; fi
+        
+        # Get Runner IP
+        AGENT_IP=$(curl -s https://api.ipify.org)
+        echo "Adding firewall rule for IP: $AGENT_IP"
+        
+        # Add Rule
+        az sql server firewall-rule create \
+          --resource-group rg-vendor-mdm-dev-v3 \
+          --server $SQL_SERVER \
+          --name "GitHubRunner-${{ github.run_id }}" \
+          --start-ip-address $AGENT_IP \
+          --end-ip-address $AGENT_IP
+        
+        echo "agent_ip=$AGENT_IP" >> $GITHUB_OUTPUT
+        echo "sql_server=$SQL_SERVER" >> $GITHUB_OUTPUT
+
     - name: Apply Migrations (dotnet ef)
       env:
         DataSourceMode: Connected
@@ -106,6 +129,21 @@ jobs:
         export ConnectionStrings__Sql="$CONN_STRING"
         
         dotnet ef database update --context SqlDbContext
+
+    - name: Remove Firewall Rule
+      if: always()
+      run: |
+        # Retrieve values from previous step
+        AGENT_IP="${{ steps.firewall.outputs.agent_ip }}"
+        SQL_SERVER="${{ steps.firewall.outputs.sql_server }}"
+        
+        if [ ! -z "$AGENT_IP" ]; then
+          echo "Removing firewall rule for IP: $AGENT_IP"
+          az sql server firewall-rule delete \
+            --resource-group rg-vendor-mdm-dev-v3 \
+            --server $SQL_SERVER \
+            --name "GitHubRunner-${{ github.run_id }}"
+        fi
     
     - name: Verify Migration
       run: |
