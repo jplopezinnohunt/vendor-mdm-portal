@@ -184,6 +184,9 @@ public class EmailService : IEmailService
                 return false;
             }
 
+            _logger.LogInformation("SMTP Sending from: {FromEmail} (Name: {FromName}) using Host: {Host}", fromEmail, fromName, smtpHost);
+            Console.WriteLine($"📧 SMTP Debug: From={fromEmail}, Name={fromName}, Host={smtpHost}");
+
             var baseUrl = data.BaseUrl ?? _configuration["App:BaseUrl"] ?? "http://localhost:3000";
             var invitationLink = $"{baseUrl}/invitation/register/{data.Token}";
             var expiresAt = data.ExpiresAt.ToString("MMMM dd, yyyy 'at' hh:mm tt");
