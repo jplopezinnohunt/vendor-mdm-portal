@@ -428,7 +428,75 @@ public class SapVendorSimulationService : ISapVendorService
                     Currency = "ARS"
                 }
             },
-            // Add more mock vendors as needed
+            new()
+            {
+                SapId = "10199999",
+                LegalName = "Test TEST",
+                AccountGroup = "SCSA",
+                Country = "FR",
+                Blocked = false,
+                GeneralData = new SapGeneralData
+                {
+                    Title = "Mr",
+                    Name1 = "Test",
+                    Name2 = "TEST",
+                    Street = "7 Place de Fontenoy",
+                    City = "Paris",
+                    Country = "FR",
+                    DateOfBirth = new DateTime(1990, 1, 1)
+                },
+                CompanyCodeData = new SapCompanyCodeData
+                {
+                    CompanyCode = "UNES",
+                    Currency = "EUR"
+                }
+            },
+            new()
+            {
+                SapId = "405961",
+                LegalName = "TESTA Chantal",
+                AccountGroup = "INDV",
+                Country = "FR",
+                Blocked = false,
+                GeneralData = new SapGeneralData
+                {
+                    Title = "Ms",
+                    Name1 = "TESTA",
+                    Name2 = "Chantal",
+                    Street = "15 Rue de Rivoli",
+                    City = "Paris",
+                    Country = "FR",
+                    DateOfBirth = new DateTime(1954, 2, 7)
+                },
+                CompanyCodeData = new SapCompanyCodeData
+                {
+                    CompanyCode = "UNES",
+                    Currency = "EUR"
+                }
+            },
+            new()
+            {
+                SapId = "473865",
+                LegalName = "TESTOR Pierre",
+                AccountGroup = "INDV",
+                Country = "FR",
+                Blocked = false,
+                GeneralData = new SapGeneralData
+                {
+                    Title = "Mr",
+                    Name1 = "TESTOR",
+                    Name2 = "Pierre",
+                    Street = "22 Avenue Montaigne",
+                    City = "Paris",
+                    Country = "FR",
+                    DateOfBirth = new DateTime(1975, 2, 3)
+                },
+                CompanyCodeData = new SapCompanyCodeData
+                {
+                    CompanyCode = "UNES",
+                    Currency = "EUR"
+                }
+            }
         };
     }
 }
