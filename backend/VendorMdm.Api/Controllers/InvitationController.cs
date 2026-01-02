@@ -94,6 +94,8 @@ public class InvitationController : ControllerBase
                     invitedByName = i.InvitedByName,
                     createdAt = i.CreatedAt,
                     expiresAt = i.ExpiresAt,
+                    vendorType = i.VendorType,
+                    accountGroup = i.AccountGroup,
                     vendorApplicationId = i.VendorApplicationId
                 })
                 .ToListAsync();
@@ -117,14 +119,14 @@ public class InvitationController : ControllerBase
         try
         {
             var requestedBy = Guid.NewGuid(); // In production: parse from token
-            var success = await _invitationService.ResendInvitationAsync(id, requestedBy);
+            var (success, invitationLink) = await _invitationService.ResendInvitationAsync(id, requestedBy);
 
             if (!success)
             {
                 return NotFound(new { error = "Invitation not found or already completed" });
             }
 
-            return Ok(new { message = "Invitation resent successfully" });
+            return Ok(new { message = "Invitation resent successfully", invitationLink });
         }
         catch (Exception ex)
         {
@@ -295,6 +297,13 @@ public class InvitationController : ControllerBase
                 return BadRequest(new { error = validation.ErrorMessage });
             }
 
+            // Retrieve the invitation record to get details like VendorType
+            var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
+            if (invitation == null)
+            {
+                return BadRequest(new { error = "Invitation record not found" });
+            }
+
             // Create vendor application
             var application = new VendorApplication
             {
@@ -309,14 +318,13 @@ public class InvitationController : ControllerBase
             };
 
             // Perform Sanctions Screening
-            // Map request to ScreeningRequest
+            // Map request to ScreeningRequest using explicit VendorType
             var screeningRequest = new ScreeningRequest
             {
                 VendorId = application.Id.ToString(),
-                EntityType = request.CompanyName != string.Empty ? "Company" : "Individual", // Simple heuristic
+                EntityType = (invitation.VendorType == "Physical" || invitation.VendorType == "Participant") ? "Individual" : "Company",
                 EntityName = !string.IsNullOrEmpty(request.CompanyName) ? request.CompanyName : request.ContactName,
                 TaxId = request.TaxId,
-                // Extract more fields from Attributes if available
             };
 
             // Basic parsing of Attributes for specific screening fields
@@ -330,11 +338,13 @@ public class InvitationController : ControllerBase
             // Update Application Status based on screening
             application.Status = "PendingReview";
             
-            // Enrich Attributes with Screening Info
+            // Enrich Attributes with Screening Info, Vendor Type and Account Group
             var attributesDict = new Dictionary<string, object>(request.Attributes);
             attributesDict["SanctionsScreeningId"] = screeningResult.ScreeningId;
             attributesDict["SanctionsStatus"] = screeningResult.Status;
-            attributesDict["SanctionsScore"] = screeningResult.OverallRisk; // Assuming enum maps to int/string
+            attributesDict["SanctionsScore"] = screeningResult.OverallRisk;
+            attributesDict["VendorType"] = invitation.VendorType;
+            attributesDict["AccountGroup"] = invitation.AccountGroup;
             
             application.Attributes = JsonSerializer.Serialize(attributesDict);
 

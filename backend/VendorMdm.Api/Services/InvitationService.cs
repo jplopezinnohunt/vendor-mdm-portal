@@ -17,7 +17,7 @@ public interface IInvitationService
     Task<VendorInvitation?> GetInvitationByTokenAsync(string token);
     Task<InvitationListResponse> GetInvitationsAsync(int page = 1, int pageSize = 20, string? status = null);
     Task<bool> CompleteInvitationAsync(string token, Guid vendorApplicationId);
-    Task<bool> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
+    Task<(bool Success, string? Link)> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
     Task<bool> TriggerMfaAsync(string token);
     Task<bool> VerifyMfaCodeAsync(string token, string code);
     Task<bool> SubmitInitialInfoAsync(string token, Dictionary<string, object> initialInfo);
@@ -434,14 +434,14 @@ public class InvitationService : IInvitationService
         return true;
     }
 
-    public async Task<bool> ResendInvitationAsync(Guid invitationId, Guid requestedBy)
+    public async Task<(bool Success, string? Link)> ResendInvitationAsync(Guid invitationId, Guid requestedBy)
     {
         var invitation = await _context.VendorInvitations
             .FirstOrDefaultAsync(i => i.Id == invitationId);
 
         if (invitation == null || invitation.Status == InvitationStatus.Completed)
         {
-            return false;
+            return (false, null);
         }
 
         // Generate new token and extend expiration
@@ -532,7 +532,8 @@ public class InvitationService : IInvitationService
             "Invitation {InvitationId} resent by {RequestedBy}",
             invitationId, requestedBy);
 
-        return true;
+        var link = $"/invitation/register/{invitation.InvitationToken}";
+        return (true, link);
     }
 
     public async Task<bool> CancelInvitationAsync(Guid invitationId, Guid requestedBy)
@@ -669,27 +670,40 @@ public class InvitationService : IInvitationService
         var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
         if (invitation == null) return false;
 
-        var attributes = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(invitation.Attributes) ?? new();
-        
-        if (attributes.TryGetValue("mfaCode", out var storedCode) && 
-            attributes.TryGetValue("mfaCodeExpiresAt", out var expiresAtElement))
+        if (string.IsNullOrEmpty(invitation.Attributes)) 
         {
-            var storedCodeStr = storedCode.GetString();
-            var expiresAt = expiresAtElement.GetDateTime();
+            _logger.LogWarning("MFA check failed: No attributes found for invitation {InvitationId}", invitation.Id);
+            return false;
+        }
 
-            if (storedCodeStr == code && expiresAt > DateTime.UtcNow)
+        try 
+        {
+            var attributes = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(invitation.Attributes) ?? new();
+            
+            if (attributes.TryGetValue("mfaCode", out var storedCode) && 
+                attributes.TryGetValue("mfaCodeExpiresAt", out var expiresAtElement))
             {
-                invitation.CurrentStage = InvitationStage.MfaVerified;
-                
-                // Clear the code after successful use
-                var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
-                dict.Remove("mfaCode");
-                dict.Remove("mfaCodeExpiresAt");
-                invitation.Attributes = JsonSerializer.Serialize(dict);
+                var storedCodeStr = storedCode.GetString();
+                var expiresAt = expiresAtElement.GetDateTime();
 
-                await _context.SaveChangesAsync();
-                return true;
+                if (storedCodeStr == code && expiresAt > DateTime.UtcNow)
+                {
+                    invitation.CurrentStage = InvitationStage.MfaVerified;
+                    
+                    // Clear the code after successful use
+                    var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+                    dict.Remove("mfaCode");
+                    dict.Remove("mfaCodeExpiresAt");
+                    invitation.Attributes = JsonSerializer.Serialize(dict);
+
+                    await _context.SaveChangesAsync();
+                    return true;
+                }
             }
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Failed to parse attributes for invitation {InvitationId}", invitation.Id);
         }
 
         return false;

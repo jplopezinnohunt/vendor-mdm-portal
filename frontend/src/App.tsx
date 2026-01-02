@@ -6,6 +6,7 @@ import { MainLayout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { VendorProfile } from './pages/VendorProfile';
 import { ChangeRequestForm } from './pages/ChangeRequestForm';
+import { CreateVendorForm } from './pages/approver/CreateVendorForm';
 import { RequestHistory } from './pages/RequestHistory';
 import { Login } from './pages/Login';
 import { VendorRegistration } from './pages/VendorRegistration';
@@ -107,12 +108,17 @@ const App: React.FC = () => {
               </ProtectedRoute>
             } />
             <Route path="approver/invite-vendor" element={
-              <ProtectedRoute allowedRoles={['Approver']}>
+              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <InviteVendorForm />
               </ProtectedRoute>
             } />
-            <Route path="approver/update-master-data" element={
-              <ProtectedRoute allowedRoles={['Approver']}>
+            <Route path="approver/create-vendor" element={
+              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+                <CreateVendorForm />
+              </ProtectedRoute>
+            } />
+            <Route path="approver/update-vendor" element={
+              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <ChangeRequestForm />
               </ProtectedRoute>
             } />

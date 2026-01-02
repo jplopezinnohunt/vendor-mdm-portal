@@ -9,6 +9,9 @@ public class CreateInvitationRequest
     public string VendorType { get; set; } = "Physical"; // Physical, Company, Meeting, Participant
     public int ExpirationDays { get; set; } = 14; // Default 14 days
     public string? AccountGroup { get; set; } // Specific UNESCO Account Group
+    public string? CompanyCode { get; set; } // UNESCO Entity (UNES, IIEP, etc.)
+    public string? Country { get; set; } // Initial context country
+    public DateTime? DateOfBirth { get; set; } // For physical person duplicate check context
     public string? Notes { get; set; }
 }
 

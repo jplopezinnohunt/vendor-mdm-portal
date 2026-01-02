@@ -28,6 +28,8 @@ public class InvitationMetadata
 /// </summary>
 public class VendorApplicationAttributes
 {
+    public string? VendorType { get; set; }
+    public string? AccountGroup { get; set; }
     public string? IndustryCode { get; set; }
     public List<string>? Certifications { get; set; }
     public List<AdditionalContact>? AdditionalContacts { get; set; }

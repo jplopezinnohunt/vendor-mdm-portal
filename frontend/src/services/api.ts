@@ -1,9 +1,7 @@
 import axios from 'axios';
 
-// In Azure Static Web Apps, /api routes automatically to the backend
-// For local dev, point to the ASP.NET Core API (port 5001 - 5000 is used by AirPlay on macOS)
-// Can be overridden with VITE_API_BASE_URL environment variable
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
+// In Azure Static Web Apps or when using Vite proxy, /api routes to the backend
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

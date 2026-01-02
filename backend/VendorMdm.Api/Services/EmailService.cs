@@ -235,18 +235,65 @@ public class EmailService : IEmailService
         if (isMfa)
         {
             return $@"
-                <div style='font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;'>
-                    <h2 style='color: #0078d4;'>Verification Code</h2>
-                    <p>Hello {data.VendorName},</p>
-                    <p>To access the UNESCO Vendor Onboarding portal, please use the following verification code:</p>
-                    <div style='background: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;'>
-                        {mfaCode}
-                    </div>
-                    <p>This code will expire in 15 minutes.</p>
-                    <p>If you did not request this code, please ignore this email.</p>
-                    <hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;' />
-                    <p style='font-size: 12px; color: #666;'>This is an automated message from the UNESCO Vendor Portal.</p>
-                </div>";
+<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <title>Verification Code</title>
+</head>
+<body style=""margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;"">
+    <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""background-color: #f5f5f5; padding: 40px 20px;"">
+        <tr>
+            <td align=""center"">
+                <table width=""600"" cellpadding=""0"" cellspacing=""0"" style=""background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
+                    <!-- Header -->
+                    <tr>
+                        <td style=""background: linear-gradient(135deg, #0078d4 0%, #005a9e 100%); padding: 40px; text-align: center; border-radius: 8px 8px 0 0;"">
+                            <h1 style=""color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;"">Identity Verification</h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Content -->
+                    <tr>
+                        <td style=""padding: 40px; text-align: center;"">
+                            <p style=""color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;"">
+                                Hello {data.VendorName},
+                            </p>
+                            <p style=""color: #666666; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;"">
+                                To access the UNESCO Vendor Onboarding portal, please use the following verification code:
+                            </p>
+                            
+                            <div style=""background-color: #f8f9fa; border: 2px dashed #0078d4; border-radius: 8px; padding: 24px; margin: 0 auto 30px auto; max-width: 280px;"">
+                                <span style=""font-family: 'Courier New', Courier, monospace; font-size: 42px; font-weight: bold; color: #0078d4; letter-spacing: 8px;"">
+                                    {mfaCode}
+                                </span>
+                            </div>
+                            
+                            <p style=""color: #856404; font-size: 14px; background-color: #fff3cd; padding: 12px; border-radius: 4px; display: inline-block;"">
+                                ⏰ This code will expire in 15 minutes.
+                            </p>
+                            
+                            <p style=""color: #999999; font-size: 14px; margin: 40px 0 0 0;"">
+                                If you did not request this code, please ignore this email.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style=""padding: 20px; text-align: center; background-color: #f8f9fa; border-radius: 0 0 8px 8px; border-top: 1px solid #eee;"">
+                            <p style=""color: #999999; font-size: 12px; margin: 0;"">
+                                © {DateTime.UtcNow.Year} UNESCO Vendor Management System
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
         }
         return $@"
 <!DOCTYPE html>

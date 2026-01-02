@@ -140,6 +140,14 @@ export const DynamicFormSection: React.FC<DynamicFormSectionProps> = ({
                         />
                     </div>
 
+                    <div className="sm:col-span-3">
+                        <Input
+                            label="Tax Number / VAT ID"
+                            {...register('taxNumber1')}
+                            placeholder="e.g. FR123456789"
+                        />
+                    </div>
+
                     {/* Individual Specific Fields */}
                     {isIndividual && (
                         <>

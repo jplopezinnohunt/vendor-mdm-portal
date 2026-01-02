@@ -28,7 +28,9 @@ const VENDOR_NAV = [
 const APPROVER_NAV = [
   { name: 'My Worklist', href: '/approver/worklist', icon: ClipboardList },
   { name: 'Request History', href: '/approver/history', icon: FileText },
-  { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: UserPlus },
+  { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: Mail },
+  { name: 'Create Vendor', href: '/approver/create-vendor', icon: UserPlus },
+  { name: 'Update Vendor', href: '/approver/update-vendor', icon: FileText },
 ];
 
 const ADMIN_NAV = [
