@@ -262,7 +262,7 @@ public class DocumentRequirementsService
             var dt when dt == DocumentType.TradeLicense ||
                        dt == DocumentType.CompaniesHouseCert ||
                        dt == DocumentType.Handelsregister ||
-                       dt == DocumentType.IsoCertificate
+                       dt == DocumentType.IsoCertification
                 => SecurityLevel.Internal,
             
             // Default to Internal
