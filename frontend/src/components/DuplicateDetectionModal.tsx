@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, AlertTriangle, ExternalLink, User, Globe, Hash, Info } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, AlertTriangle, ExternalLink, User, Globe, Hash, Info, Eye, GitCompare } from 'lucide-react';
 import { Button } from './Elements';
 
 interface DuplicateVendor {
@@ -10,6 +10,9 @@ interface DuplicateVendor {
     country: string;
     companyCode: string;
     accountGroup: string;
+    sapStatus: string;  // "Valid", "Blocked", "Deleted"
+    blocked: boolean;
+    matchScore: number;  // 0.0 to 1.0
 }
 
 interface DuplicateDetectionModalProps {
@@ -25,7 +28,31 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
     onProceed,
     duplicates
 }) => {
+    const [selectedVendor, setSelectedVendor] = useState<DuplicateVendor | null>(null);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [showCompareModal, setShowCompareModal] = useState(false);
+
     if (!isOpen) return null;
+
+    const handleViewDetails = (vendor: DuplicateVendor) => {
+        setSelectedVendor(vendor);
+        setShowDetailsModal(true);
+    };
+
+    const handleCompare = (vendor: DuplicateVendor) => {
+        setSelectedVendor(vendor);
+        setShowCompareModal(true);
+    };
+
+    const closeDetailsModal = () => {
+        setShowDetailsModal(false);
+        setSelectedVendor(null);
+    };
+
+    const closeCompareModal = () => {
+        setShowCompareModal(false);
+        setSelectedVendor(null);
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
@@ -62,7 +89,9 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
                                     <th className="px-4 py-3 text-sm font-semibold border-r border-white/20">Req. Id</th>
                                     <th className="px-4 py-3 text-sm font-semibold border-r border-white/20">Country</th>
                                     <th className="px-4 py-3 text-sm font-semibold border-r border-white/20">Company</th>
-                                    <th className="px-4 py-3 text-sm font-semibold">Account Group</th>
+                                    <th className="px-4 py-3 text-sm font-semibold border-r border-white/20">Account Group</th>
+                                    <th className="px-4 py-3 text-sm font-semibold border-r border-white/20 text-center">Status</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
@@ -79,12 +108,43 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
                                         <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200">{vendor.reqId || '-'}</td>
                                         <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200">{vendor.country}</td>
                                         <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200">{vendor.companyCode}</td>
-                                        <td className="px-4 py-4 text-sm text-gray-600">{vendor.accountGroup}</td>
+                                        <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200">{vendor.accountGroup}</td>
+                                        <td className="px-4 py-4 text-sm text-center border-r border-gray-200">
+                                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${vendor.sapStatus === 'Valid' ? 'bg-green-100 text-green-800' :
+                                                    vendor.sapStatus === 'Blocked' ? 'bg-red-100 text-red-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {vendor.blocked && '🔒 '}
+                                                {vendor.sapStatus}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4 text-sm text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleViewDetails(vendor)}
+                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded transition-all"
+                                                    title="View vendor details"
+                                                >
+                                                    <Eye className="w-3 h-3" />
+                                                    View
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCompare(vendor)}
+                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded transition-all"
+                                                    title="Compare with new vendor"
+                                                >
+                                                    <GitCompare className="w-3 h-3" />
+                                                    Compare
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))}
                                 {duplicates.length === 0 && (
                                     <tr>
-                                        <td colSpan={7} className="px-4 py-8 text-center text-gray-500 italic">
+                                        <td colSpan={9} className="px-4 py-8 text-center text-gray-500 italic">
                                             No matches found.
                                         </td>
                                     </tr>
