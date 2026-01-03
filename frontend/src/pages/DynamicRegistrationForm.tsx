@@ -1,7 +1,10 @@
-import React from 'react';
-import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
+import React, { useState } from 'react';
+import { UseFormRegister, FieldErrors, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 import { Input } from '../components/ui/Elements';
 import { BankInformationForm } from '../components/BankInformationForm';
+import { CollapsibleSection } from '../components/ui/CollapsibleSection';
+import { FileUpload } from '../components/ui/FileUpload';
+import { AttachmentMetadata } from '../types/vendor';
 
 interface DynamicRegistrationFormProps {
     vendorType: string;
@@ -13,6 +16,7 @@ interface DynamicRegistrationFormProps {
         primaryContactEmail?: string;
     };
     setValue: UseFormSetValue<any>;
+    watch: UseFormWatch<any>;
 }
 
 export const DynamicRegistrationForm: React.FC<DynamicRegistrationFormProps> = ({
@@ -21,7 +25,8 @@ export const DynamicRegistrationForm: React.FC<DynamicRegistrationFormProps> = (
     register,
     errors,
     readOnlyData,
-    setValue
+    setValue,
+    watch
 }) => {
     // Shared common section titles
     const ADDRESS_TITLE = vendorType === 'Meeting' ? 'Event Provider Address' :
@@ -90,20 +95,151 @@ export const DynamicRegistrationForm: React.FC<DynamicRegistrationFormProps> = (
                         </div>
                     </section>
 
-                    <section>
-                        <h3 className="text-lg font-medium border-b pb-2 mb-4">{ADDRESS_TITLE}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <Input label="Street Address *" {...register('attributes.street', { required: 'Street is required' })} />
+                    <CollapsibleSection title={ADDRESS_TITLE} defaultExpanded={true}>
+                        <div className="grid grid-cols-4 gap-4">
+                            <div className="col-span-1">
+                                <Input
+                                    label="House No."
+                                    {...register('attributes.address.houseNo')}
+                                    placeholder="123"
+                                />
                             </div>
-                            <div>
-                                <Input label="City *" {...register('attributes.city', { required: 'City is required' })} />
+                            <div className="col-span-3">
+                                <Input
+                                    label="Street Name *"
+                                    {...register('attributes.address.streetName', { required: 'Street name is required' })}
+                                    error={errors.attributes?.address?.streetName?.message as string}
+                                    placeholder="Main Street"
+                                />
                             </div>
-                            <div>
-                                <Input label="Country *" {...register('attributes.country', { required: 'Country is required' })} />
+                            <div className="col-span-4">
+                                <Input
+                                    label="Street Name 2"
+                                    {...register('attributes.address.streetName2')}
+                                    placeholder="Building name or additional address line"
+                                />
+                            </div>
+                            <div className="col-span-4">
+                                <Input
+                                    label="Street Name 3"
+                                    {...register('attributes.address.streetName3')}
+                                    placeholder="Additional address line"
+                                />
+                            </div>
+                            <div className="col-span-4">
+                                <Input
+                                    label="Street Name 4"
+                                    {...register('attributes.address.streetName4')}
+                                    placeholder="Additional address line"
+                                />
+                            </div>
+                            <div className="col-span-2">
+                                <Input
+                                    label="Postal Code *"
+                                    {...register('attributes.address.postalCode', { required: 'Postal code is required' })}
+                                    error={errors.attributes?.address?.postalCode?.message as string}
+                                    placeholder="12345"
+                                />
+                            </div>
+                            <div className="col-span-2">
+                                <Input
+                                    label="City *"
+                                    {...register('attributes.address.city', { required: 'City is required' })}
+                                    error={errors.attributes?.address?.city?.message as string}
+                                    placeholder="Dubai"
+                                />
+                            </div>
+                            <div className="col-span-4">
+                                <Input
+                                    label="Country *"
+                                    {...register('attributes.address.country', { required: 'Country is required' })}
+                                    error={errors.attributes?.address?.country?.message as string}
+                                    placeholder="United Arab Emirates"
+                                />
                             </div>
                         </div>
-                    </section>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Contact Information" defaultExpanded={true}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <Input
+                                    label="Phone"
+                                    {...register('attributes.contactInfo.phone')}
+                                    placeholder="+971 50 123 4567"
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="Mobile Phone"
+                                    {...register('attributes.contactInfo.mobilePhone')}
+                                    placeholder="+971 55 123 4567"
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="Email"
+                                    type="email"
+                                    {...register('attributes.contactInfo.email')}
+                                    placeholder="contact@example.com"
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="Email for Payment"
+                                    type="email"
+                                    {...register('attributes.contactInfo.paymentEmail')}
+                                    placeholder="accounting@example.com"
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="Fax"
+                                    {...register('attributes.contactInfo.fax')}
+                                    placeholder="+971 4 123 4567"
+                                />
+                            </div>
+                        </div>
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Identification Documents" defaultExpanded={true}>
+                        <FileUpload
+                            label="Identification (Max 2 files)"
+                            category="DOC_ID_VERIFY"
+                            docType="DOCTYPE_PASSPORT"
+                            maxFiles={2}
+                            vendorId={readOnlyData.vendorLegalName || 'new-vendor'}
+                            onUploadComplete={(metadata) => {
+                                const current = watch('attributes.attachments') || [];
+                                setValue('attributes.attachments', [...current, metadata]);
+                            }}
+                            onDelete={(blobName) => {
+                                const filtered = (watch('attributes.attachments') || [])
+                                    .filter((a: AttachmentMetadata) => a.blobName !== blobName);
+                                setValue('attributes.attachments', filtered);
+                            }}
+                            existingFiles={watch('attributes.attachments')}
+                        />
+                    </CollapsibleSection>
+
+                    <CollapsibleSection title="Other Details" defaultExpanded={false}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <Input
+                                    label="Emergency Contact Name"
+                                    {...register('attributes.otherDetails.emergencyContactName')}
+                                    placeholder="Jane Doe"
+                                />
+                            </div>
+                            <div>
+                                <Input
+                                    label="Emergency Contact Phone"
+                                    {...register('attributes.otherDetails.emergencyContactPhone')}
+                                    placeholder="+971 50 999 8888"
+                                />
+                            </div>
+                        </div>
+                    </CollapsibleSection>
 
                     <section>
                         <h3 className="text-lg font-medium border-b pb-2 mb-4">Bank Information (Mandatory)</h3>
