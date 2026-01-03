@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, AlertTriangle, ExternalLink, User, Globe, Hash, Info, Eye, GitCompare } from 'lucide-react';
 import { Button } from './Elements';
 
@@ -28,25 +29,31 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
     onProceed,
     duplicates
 }) => {
+    const navigate = useNavigate();
     const [selectedVendor, setSelectedVendor] = useState<DuplicateVendor | null>(null);
-    const [showDetailsModal, setShowDetailsModal] = useState(false);
     const [showCompareModal, setShowCompareModal] = useState(false);
 
     if (!isOpen) return null;
 
     const handleViewDetails = (vendor: DuplicateVendor) => {
-        setSelectedVendor(vendor);
-        setShowDetailsModal(true);
+        // Navigate to view-vendor page with vendor data as query params
+        const params = new URLSearchParams({
+            sapId: vendor.sapId,
+            vendorName: vendor.vendorName,
+            country: vendor.country,
+            companyCode: vendor.companyCode,
+            accountGroup: vendor.accountGroup,
+            sapStatus: vendor.sapStatus,
+            blocked: String(vendor.blocked),
+            ...(vendor.dateOfBirth && { dateOfBirth: vendor.dateOfBirth }),
+            ...(vendor.reqId && { reqId: vendor.reqId })
+        });
+        navigate(`/view-vendor?${params.toString()}`);
     };
 
     const handleCompare = (vendor: DuplicateVendor) => {
         setSelectedVendor(vendor);
         setShowCompareModal(true);
-    };
-
-    const closeDetailsModal = () => {
-        setShowDetailsModal(false);
-        setSelectedVendor(null);
     };
 
     const closeCompareModal = () => {
@@ -111,8 +118,8 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
                                         <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200">{vendor.accountGroup}</td>
                                         <td className="px-4 py-4 text-sm text-center border-r border-gray-200">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${vendor.sapStatus === 'Valid' ? 'bg-green-100 text-green-800' :
-                                                    vendor.sapStatus === 'Blocked' ? 'bg-red-100 text-red-800' :
-                                                        'bg-gray-100 text-gray-800'
+                                                vendor.sapStatus === 'Blocked' ? 'bg-red-100 text-red-800' :
+                                                    'bg-gray-100 text-gray-800'
                                                 }`}>
                                                 {vendor.blocked && '🔒 '}
                                                 {vendor.sapStatus}

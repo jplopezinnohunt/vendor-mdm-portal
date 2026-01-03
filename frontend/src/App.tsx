@@ -18,6 +18,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { InviteVendorForm } from './pages/admin/InviteVendorForm';
 import { InvitationManagement } from './pages/admin/InvitationManagement';
 import { SystemStatus } from './pages/admin/SystemStatus';
+import { ViewVendor } from './pages/ViewVendor';
 import BranchingStrategy from './pages/BranchingStrategy';
 
 // Protected Route Guard
@@ -120,6 +121,11 @@ const App: React.FC = () => {
             <Route path="approver/update-vendor" element={
               <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <ChangeRequestForm />
+              </ProtectedRoute>
+            } />
+            <Route path="view-vendor" element={
+              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+                <ViewVendor />
               </ProtectedRoute>
             } />
 
