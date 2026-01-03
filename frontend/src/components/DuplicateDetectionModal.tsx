@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { X, AlertTriangle, ExternalLink, User, Globe, Hash, Info, Eye, GitCompare } from 'lucide-react';
 import { Button } from './Elements';
 
@@ -29,14 +28,13 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
     onProceed,
     duplicates
 }) => {
-    const navigate = useNavigate();
     const [selectedVendor, setSelectedVendor] = useState<DuplicateVendor | null>(null);
     const [showCompareModal, setShowCompareModal] = useState(false);
 
     if (!isOpen) return null;
 
     const handleViewDetails = (vendor: DuplicateVendor) => {
-        // Navigate to view-vendor page with vendor data as query params
+        // Open view-vendor page in a new tab to preserve modal state
         const params = new URLSearchParams({
             sapId: vendor.sapId,
             vendorName: vendor.vendorName,
@@ -48,7 +46,7 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
             ...(vendor.dateOfBirth && { dateOfBirth: vendor.dateOfBirth }),
             ...(vendor.reqId && { reqId: vendor.reqId })
         });
-        navigate(`/view-vendor?${params.toString()}`);
+        window.open(`/view-vendor?${params.toString()}`, '_blank');
     };
 
     const handleCompare = (vendor: DuplicateVendor) => {
