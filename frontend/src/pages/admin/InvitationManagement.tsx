@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card, Modal } from '../../components/ui/Elements';
-import { Plus, RefreshCw, Mail, CheckCircle, Clock, XCircle, Ban, Send } from 'lucide-react';
+import { Plus, RefreshCw, Mail, CheckCircle, Clock, XCircle, Ban, Send, Copy, Link as LinkIcon } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface Invitation {
@@ -12,6 +12,8 @@ interface Invitation {
     invitedByName: string;
     createdAt: string;
     expiresAt: string;
+    vendorType: string;
+    accountGroup: string;
     vendorApplicationId?: string;
 }
 
@@ -21,6 +23,7 @@ export const InvitationManagement: React.FC = () => {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [filter, setFilter] = useState<string>('');
     const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
+    const [resentLink, setResentLink] = useState<{ id: string, link: string } | null>(null);
     const navigate = useNavigate();
 
     const loadInvitations = async () => {
@@ -55,8 +58,9 @@ export const InvitationManagement: React.FC = () => {
     const handleResend = async (id: string) => {
         setActionLoading(id + '-resend');
         try {
-            await api.post(`/invitation/resend/${id}`);
-            alert('Invitation has been resent successfully!');
+            const response = await api.post(`/invitation/resend/${id}`);
+            const link = `${window.location.origin}${response.data.invitationLink}`;
+            setResentLink({ id, link });
             loadInvitations();
         } catch (error: any) {
             console.error('Failed to resend invitation:', error);
@@ -80,6 +84,11 @@ export const InvitationManagement: React.FC = () => {
             setActionLoading(null);
             setConfirmAction(null);
         }
+    };
+
+    const handleCopy = (link: string) => {
+        navigator.clipboard.writeText(link);
+        alert('Link copied to clipboard');
     };
 
     const getStatusBadge = (status: string) => {
@@ -235,6 +244,9 @@ export const InvitationManagement: React.FC = () => {
                                             Contact Email
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Type / Group
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             Status
                                         </th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -265,20 +277,23 @@ export const InvitationManagement: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="flex flex-col">
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${invitation.vendorType === 'Company' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
+                                                            invitation.vendorType === 'Physical' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                                                invitation.vendorType === 'Meeting' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                                    invitation.vendorType === 'Participant' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                                                        'bg-gray-50 text-gray-700 border-gray-100'
+                                                        }`}>
+                                                        {invitation.vendorType}
+                                                    </span>
+                                                    <span className="text-[10px] text-gray-400 font-mono mt-1">
+                                                        SAP: {invitation.accountGroup}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     {getStatusBadge(invitation.status)}
-                                                    {/* Resend button with icon */}
-                                                    {canResend(invitation.status) && (
-                                                        <button
-                                                            onClick={() => handleResend(invitation.id)}
-                                                            className="ml-2 p-1.5 text-brand-600 hover:text-brand-900 hover:bg-brand-50 rounded-md transition-colors"
-                                                            title={invitation.status?.toLowerCase() === 'expired'
-                                                                ? 'Reactivate invitation and send email'
-                                                                : 'Resend invitation email'}
-                                                        >
-                                                            <Mail className="h-4 w-4" />
-                                                        </button>
-                                                    )}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -306,6 +321,7 @@ export const InvitationManagement: React.FC = () => {
                                                             variant="outline"
                                                             onClick={() => setConfirmAction({ id: invitation.id, type: 'resend' })}
                                                             isLoading={actionLoading === invitation.id + '-resend'}
+                                                            className="text-brand-600 border-brand-200 hover:bg-brand-50"
                                                             title="Resend Email"
                                                         >
                                                             <Mail className="h-4 w-4" />
@@ -316,7 +332,7 @@ export const InvitationManagement: React.FC = () => {
                                                         <Button
                                                             size="sm"
                                                             variant="outline"
-                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                            className="text-red-600 border-red-200 hover:bg-red-50"
                                                             onClick={() => setConfirmAction({ id: invitation.id, type: 'cancel' })}
                                                             isLoading={actionLoading === invitation.id + '-cancel'}
                                                             title="Cancel Invitation"
@@ -403,9 +419,35 @@ export const InvitationManagement: React.FC = () => {
                 >
                     <p className="text-gray-600">
                         {confirmAction?.type === 'resend'
-                            ? 'Are you sure you want to resend this invitation email to the vendor?'
+                            ? 'Are you sure you want to resend this invitation email to the vendor? This will generate a new secure link and expire the previous one.'
                             : 'Are you sure you want to CANCEL this invitation? The vendor will no longer be able to use the link and any progress may be lost.'}
                     </p>
+                </Modal>
+
+                {/* Resent Link Modal */}
+                <Modal
+                    isOpen={!!resentLink}
+                    onClose={() => setResentLink(null)}
+                    title="Invitation Resent Successfully"
+                    footer={
+                        <Button onClick={() => setResentLink(null)}>Done</Button>
+                    }
+                >
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-600 text-left">
+                            A new invitation has been sent. You can also manually copy the link below:
+                        </p>
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+                            <code className="text-xs text-brand-700 break-all flex-1">{resentLink?.link}</code>
+                            <button
+                                onClick={() => handleCopy(resentLink?.link || '')}
+                                className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex-shrink-0"
+                                title="Copy to clipboard"
+                            >
+                                <Copy className="h-4 w-4 text-gray-600" />
+                            </button>
+                        </div>
+                    </div>
                 </Modal>
             </div>
         </div>

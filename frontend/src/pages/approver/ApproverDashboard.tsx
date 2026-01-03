@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { VendorService } from '../../services/vendorService';
 import { ChangeRequest, ChangeRequestStatus, VendorApplication, ApplicationStatus, RequestType } from '../../types';
 import { Card, StatusBadge, Button, Modal } from '../../components/ui/Elements';
-import { CheckSquare, UserPlus, FileText, Search, Filter, Plus, Send, Clock, Mail, CheckCircle, XCircle, Ban, RefreshCw } from 'lucide-react';
+import { CheckSquare, UserPlus, FileText, Search, Filter, Plus, Send, Clock, Mail, CheckCircle, XCircle, Ban, RefreshCw, Copy } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface Invitation {
@@ -85,9 +85,9 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
 
 
           // Filter invitations for Worklist
-          // Show: Pending, Accepted. Hide: Completed, Expired, Cancelled, Rejected, Approved.
+          // Show: Pending, Accepted, Expired. Hide: Completed, Cancelled, Rejected, Approved.
           const worklistInvitations = (allInvitations as Invitation[]).filter(i =>
-            i.status === 'Pending' || i.status === 'Accepted'
+            i.status === 'Pending' || i.status === 'Accepted' || i.status === 'Expired'
           );
 
           setChangeRequests(pendingChanges);
@@ -234,15 +234,20 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
+  const [resentLink, setResentLink] = useState<{ id: string, link: string } | null>(null);
 
   const handleResend = async (id: string) => {
     setActionLoading(id + '-resend');
     try {
-      await api.post(`/invitation/resend/${id}`);
-      alert('Invitation has been resent successfully!');
+      const response = await api.post(`/invitation/resend/${id}`);
+      const link = `${window.location.origin}${response.data.invitationLink}`;
+      setResentLink({ id, link });
       // Refresh invitations
       const res = await api.get('/invitation/list');
-      setInvitations(res.data.invitations || []);
+      setInvitations(mode === 'worklist'
+        ? (res.data.invitations || []).filter((i: any) => i.status === 'Pending' || i.status === 'Accepted' || i.status === 'Expired')
+        : (res.data.invitations || []).filter((i: any) => i.status !== 'Pending' && i.status !== 'Accepted')
+      );
     } catch (error: any) {
       console.error('Failed to resend invitation:', error);
       alert(error.userMessage || 'Failed to resend invitation');
@@ -259,7 +264,10 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
       alert('Invitation has been cancelled successfully.');
       // Refresh invitations
       const res = await api.get('/invitation/list');
-      setInvitations(res.data.invitations || []);
+      setInvitations(mode === 'worklist'
+        ? (res.data.invitations || []).filter((i: any) => i.status === 'Pending' || i.status === 'Accepted' || i.status === 'Expired')
+        : (res.data.invitations || []).filter((i: any) => i.status !== 'Pending' && i.status !== 'Accepted')
+      );
     } catch (error: any) {
       console.error('Failed to cancel invitation:', error);
       alert(error.userMessage || 'Failed to cancel invitation');
@@ -267,6 +275,11 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
       setActionLoading(null);
       setConfirmAction(null);
     }
+  };
+
+  const handleCopy = (link: string) => {
+    navigator.clipboard.writeText(link);
+    alert('Link copied to clipboard');
   };
 
   return (
@@ -283,21 +296,29 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
           </p>
         </div>
         {mode === 'worklist' && (
-          <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex gap-2">
+          <div className="mt-4 sm:ml-16 sm:mt-0 sm:flex-none flex flex-wrap gap-2">
             <Button
-              variant="secondary"
-              onClick={() => navigate('/approver/update-master-data')}
-              className="flex items-center gap-2"
-            >
-              <FileText className="h-4 w-4" />
-              Update Master Data
-            </Button>
-            <Button
+              variant="outline"
               onClick={() => navigate('/approver/invite-vendor')}
               className="flex items-center gap-2"
             >
+              <Mail className="h-4 w-4" />
+              Invite Vendor
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => navigate('/approver/update-vendor')}
+              className="flex items-center gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              Update Vendor
+            </Button>
+            <Button
+              onClick={() => navigate('/approver/create-vendor')}
+              className="flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
-              New Invitation
+              Create Vendor
             </Button>
           </div>
         )}
@@ -466,83 +487,95 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
           </Card>
         ) : activeTab === 'invitations' ? (
           /* Sent Invitations Table */
-          <Card className="px-0 py-0">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Vendor</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Expires</th>
-                    <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {loading ? (
-                    <tr><td colSpan={6} className="px-6 py-4 text-center">Loading...</td></tr>
-                  ) : invitations.length === 0 ? (
-                    <tr><td colSpan={6} className="px-6 py-4 text-center text-gray-500">No invitations found.</td></tr>
-                  ) : (
-                    invitations.map((inv) => (
-                      <tr key={inv.id}>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{inv.vendorLegalName}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{inv.primaryContactEmail}</td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm">
-                          {getInvitationStatusBadge(inv.status)}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                          {new Date(inv.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                          {new Date(inv.expiresAt).toLocaleDateString()}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                          <div className="flex items-center justify-end gap-2">
-                            {(inv.status === 'Pending' || inv.status === 'Expired') && (
-                              <>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Vendor Invitations</h3>
+              <Button
+                size="sm"
+                onClick={() => navigate('/approver/invite-vendor')}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Invite Vendor
+              </Button>
+            </div>
+            <Card className="px-0 py-0">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Vendor</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Created</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Expires</th>
+                      <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {loading ? (
+                      <tr><td colSpan={6} className="px-6 py-4 text-center">Loading...</td></tr>
+                    ) : invitations.length === 0 ? (
+                      <tr><td colSpan={6} className="px-6 py-4 text-center text-gray-500">No invitations found.</td></tr>
+                    ) : (
+                      invitations.map((inv) => (
+                        <tr key={inv.id}>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{inv.vendorLegalName}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{inv.primaryContactEmail}</td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm">
+                            {getInvitationStatusBadge(inv.status)}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                            {new Date(inv.createdAt).toLocaleDateString()}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                            {new Date(inv.expiresAt).toLocaleDateString()}
+                          </td>
+                          <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                            <div className="flex items-center justify-end gap-2">
+                              {(inv.status === 'Pending' || inv.status === 'Expired' || inv.status === 'Accepted') && (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   type="button"
+                                  className="text-brand-600 border-brand-200 hover:bg-brand-50"
                                   isLoading={actionLoading === inv.id + '-resend'}
                                   onClick={() => setConfirmAction({ id: inv.id, type: 'resend' })}
                                   title="Resend Email"
                                 >
-                                  <RefreshCw className={`h-3 w-3 ${actionLoading === inv.id + '-resend' ? 'animate-spin' : ''}`} />
+                                  <Mail className="h-3 w-3" />
                                 </Button>
-                              </>
-                            )}
-                            {(inv.status === 'Pending' || inv.status === 'Accepted') && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                type="button"
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                isLoading={actionLoading === inv.id + '-cancel'}
-                                onClick={() => setConfirmAction({ id: inv.id, type: 'cancel' })}
-                                title="Cancel Invitation"
-                              >
-                                <Ban className="h-3 w-3" />
-                              </Button>
-                            )}
-                            {inv.vendorApplicationId && (
-                              <Link to={`/approver/onboarding/${inv.vendorApplicationId}`}>
-                                <Button size="sm" variant="primary">
-                                  View App
+                              )}
+                              {(inv.status === 'Pending' || inv.status === 'Accepted') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  type="button"
+                                  className="text-red-600 border-red-200 hover:bg-red-50"
+                                  isLoading={actionLoading === inv.id + '-cancel'}
+                                  onClick={() => setConfirmAction({ id: inv.id, type: 'cancel' })}
+                                  title="Cancel Invitation"
+                                >
+                                  <Ban className="h-3 w-3" />
                                 </Button>
-                              </Link>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                              )}
+                              {inv.vendorApplicationId && (
+                                <Link to={`/approver/onboarding/${inv.vendorApplicationId}`}>
+                                  <Button size="sm" variant="primary">
+                                    View App
+                                  </Button>
+                                </Link>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
         ) : (
           /* Vendor Changes Table */
           <Card className="px-0 py-0">
@@ -668,11 +701,37 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
           </div>
         }
       >
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-left">
           {confirmAction?.type === 'resend'
-            ? 'Are you sure you want to resend this invitation email to the vendor?'
+            ? 'Are you sure you want to resend this invitation email to the vendor? This will generate a new secure link and expire the previous one.'
             : 'Are you sure you want to CANCEL this invitation? The vendor will no longer be able to use the link and any progress may be lost.'}
         </p>
+      </Modal>
+
+      {/* Resent Link Modal */}
+      <Modal
+        isOpen={!!resentLink}
+        onClose={() => setResentLink(null)}
+        title="Invitation Resent Successfully"
+        footer={
+          <Button onClick={() => setResentLink(null)}>Done</Button>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 text-left">
+            A new invitation has been sent. You can also manually copy the link below:
+          </p>
+          <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md border border-gray-200">
+            <code className="text-xs text-brand-700 break-all flex-1">{resentLink?.link}</code>
+            <button
+              onClick={() => handleCopy(resentLink?.link || '')}
+              className="p-2 bg-white border border-gray-300 rounded hover:bg-gray-50 flex-shrink-0"
+              title="Copy to clipboard"
+            >
+              <Copy className="h-4 w-4 text-gray-600" />
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
