@@ -55,9 +55,22 @@ public class FileStorageAzureBlobService : IFileStorageService
                 };
             }
 
-            // Generate unique blob name
+            // Generate unique blob name with global folder structure
+            // Pattern: {env}/{entityType}/{entityId}/{categoryCode}/{docTypeCode}/{timestamp}_{guid}_{locale}_{filename}.{ext}
             var extension = Path.GetExtension(request.FileName);
-            var blobName = $"{request.App}/{request.EntityId}/{request.Process}/{Guid.NewGuid()}{extension}";
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd");
+            var guid = Guid.NewGuid().ToString("N").Substring(0, 8); // Short GUID (8 chars)
+            var sanitizedFilename = SanitizeFilename(Path.GetFileNameWithoutExtension(request.FileName));
+            var locale = request.Metadata?.GetValueOrDefault("Locale", "en-US") ?? "en-US";
+            
+            // Extract category code - use standard codes if available
+            var categoryCode = request.Category.ToUpper().Replace(" ", "_");
+            if (!categoryCode.StartsWith("DOC_"))
+            {
+                categoryCode = $"DOC_{categoryCode}"; // Ensure standard prefix
+            }
+            
+            var blobName = $"{request.App}/{request.EntityId}/{categoryCode}/{request.Process}/{timestamp}_{guid}_{locale}_{sanitizedFilename}{extension}";
 
             var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
             var blobClient = containerClient.GetBlobClient(blobName);
@@ -251,5 +264,28 @@ public class FileStorageAzureBlobService : IFileStorageService
         var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
         var blobClient = containerClient.GetBlobClient(fileId);
         return await blobClient.ExistsAsync();
+    }
+    
+    /// <summary>
+    /// Sanitize filename for safe blob storage naming
+    /// Removes special characters, keeps alphanumeric and basic punctuation
+    /// </summary>
+    private static string SanitizeFilename(string filename)
+    {
+        if (string.IsNullOrEmpty(filename))
+            return "document";
+            
+        // Replace spaces with hyphens
+        filename = filename.Replace(" ", "-");
+        
+        // Remove invalid characters (keep alphanumeric, hyphen, underscore)
+        var invalidChars = Path.GetInvalidFileNameChars();
+        filename = string.Join("", filename.Where(c => !invalidChars.Contains(c) && (char.IsLetterOrDigit(c) || c == '-' || c == '_')));
+        
+        // Limit length
+        if (filename.Length > 50)
+            filename = filename.Substring(0, 50);
+            
+        return filename.ToLower();
     }
 }
