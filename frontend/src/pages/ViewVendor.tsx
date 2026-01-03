@@ -112,8 +112,8 @@ export const ViewVendor: React.FC = () => {
 
             {/* Status Banner */}
             <div className={`px-6 py-4 rounded-lg border-l-4 ${vendorData.sapStatus === 'Valid' ? 'bg-green-50 border-green-500' :
-                    vendorData.sapStatus === 'Blocked' ? 'bg-red-50 border-red-500' :
-                        'bg-gray-50 border-gray-500'
+                vendorData.sapStatus === 'Blocked' ? 'bg-red-50 border-red-500' :
+                    'bg-gray-50 border-gray-500'
                 }`}>
                 <div className="flex items-center justify-between">
                     <div>
@@ -161,7 +161,7 @@ export const ViewVendor: React.FC = () => {
 
             {/* Contact Information */}
             <Card>
-                <div className="flex items-center gap-2 pb-4 border-border-gray-200 mb-4">
+                <div className="flex items-center gap-2 pb-4 border-b border-gray-200 mb-4">
                     <Building2 className="w-5 h-5 text-blue-600" />
                     <h2 className="text-lg font-bold text-gray-900">Contact Information</h2>
                 </div>
