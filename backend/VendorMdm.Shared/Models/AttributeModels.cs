@@ -196,3 +196,65 @@ public class WorkflowStateAttributes
 }
 
 #endregion
+
+#region DocumentRegistry Attributes
+
+/// <summary>
+/// Attributes for DocumentRegistry entity (JSONB storage)
+/// Stores OCR-extracted data, audit trail, and scan results
+/// </summary>
+public class DocumentRegistryAttributes
+{
+    /// <summary>
+    /// OCR/AI extracted data (varies by document type)
+    /// Examples:
+    /// - Trade License: { "licenseNumber": "CN-123", "issuingAuthority": "DED Dubai" }
+    /// - Passport: { "passportNumber": "N123", "fullName": "John Doe", "nationality": "UAE" }
+    /// </summary>
+    public Dictionary<string, object>? ExtractedData { get; set; }
+    
+    /// <summary>
+    /// Lightweight audit trail (append-only)
+    /// Tracks who viewed/downloaded/verified the document
+    /// </summary>
+    public List<DocumentAuditEntry>? AuditLog { get; set; }
+    
+    /// <summary>
+    /// OCR confidence score (0.0 - 1.0)
+    /// </summary>
+    public double? OcrConfidence { get; set; }
+    
+    /// <summary>
+    /// Malware/virus scan result
+    /// </summary>
+    public ScanResult? ScanResult { get; set; }
+    
+    /// <summary>
+    /// Additional metadata specific to document type
+    /// </summary>
+    public Dictionary<string,  string>? Metadata { get; set; }
+}
+
+/// <summary>
+/// Single audit log entry
+/// </summary>
+public class DocumentAuditEntry
+{
+    public string Action { get; set; } = string.Empty; // "Viewed", "Downloaded", "Verified", "Rejected"
+    public string By { get; set; } = string.Empty; // User email or system identifier
+    public DateTime At { get; set; }
+    public string? IpAddress { get; set; }
+}
+
+/// <summary>
+/// Scan result from malware/virus scanner
+/// </summary>
+public class ScanResult
+{
+    public string Status { get; set; } = "pending"; // "pending", "clean", "infected", "error"
+    public string? Engine { get; set; } // "Azure Defender", "ClamAV", "VirusTotal"
+    public DateTime? ScannedAt { get; set; }
+    public string? ThreatName { get; set; }
+}
+
+#endregion
