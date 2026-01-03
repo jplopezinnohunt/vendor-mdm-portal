@@ -291,3 +291,110 @@ public class User : CanonicalEntityBase
 
     // Inherits Attributes for: FullName, Department, UiPreferences, NotificationSettings
 }
+/// <summary>
+/// Document Registry - Enterprise document management with lifecycle tracking.
+/// Adapted from banking-grade architecture for vendor document handling.
+/// 
+/// Usage:
+/// - Stores metadata for all uploaded documents (trade licenses, passports, bank certs)
+/// - Supports security classification (1=Public to 4=Restricted/PII)
+/// - Tracks document lifecycle (Pending → Verified → Archived)
+/// - OCR-ready with extracted_data in JSONB
+/// - Expiry tracking for compliance alerts
+/// </summary>
+public class DocumentRegistry : CanonicalEntityBase
+{
+    // ============================================
+    // STRUCTURED COLUMNS (SQL) - For Indexing & Search
+    // ============================================
+    
+    /// <summary>
+    /// Entity type this document belongs to (e.g., "Vendor", "Employee", "Transaction")
+    /// </summary>
+    [Required]
+    [MaxLength(50)]
+    public string EntityType { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Reference ID of the entity (e.g., Vendor UUID)
+    /// </summary>
+    [Required]
+    [MaxLength(100)]
+    public string EntityRef { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Document category for organization: "Legal", "Identity", "Finance", "Tax", "Banking"
+    /// </summary>
+    [Required]
+    [MaxLength(50)]
+    public string Category { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Specific document type: "TradeLicense", "Passport", "BankCertificate", "VatCertificate"
+    /// </summary>
+    [Required]
+    [MaxLength(50)]
+    public string DocType { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// Security classification level:
+    /// 1 = Public (non-sensitive)
+    /// 2 = Internal (standard business docs)
+    /// 3 = Confidential (sensitive business)
+    /// 4 = Restricted (PII/highly sensitive - passports, IDs, salary slips)
+    /// </summary>
+    public int SecurityLevel { get; set; } = 2; // Default: Internal
+    
+    /// <summary>
+    /// Azure Blob Storage path (key): {env}/{entityType}/{entityRef}/{category}/{docType}/{timestamp}_{guid}_{filename}.{ext}
+    /// Example: prod/vendors/vendor-123/legal/trade-license/20260103_uuid_license.pdf
+    /// </summary>
+    [Required]
+    public string StoragePath { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// MIME type (application/pdf, image/jpeg, etc.)
+    /// </summary>
+    [MaxLength(100)]
+    public string? MimeType { get; set; }
+    
+    /// <summary>
+    /// File size in bytes
+    /// </summary>
+    public long FileSizeBytes { get; set; }
+    
+    // ============================================
+    // LIFECYCLE MANAGEMENT (Compliance Critical)
+    // ============================================
+    
+    /// <summary>
+    /// Document status in workflow: "Pending", "Verified", "Rejected", "Archived"
+    /// </summary>
+    [Required]
+    [MaxLength(20)]
+    public string DocumentStatus { get; set; } = "Pending";
+    
+    /// <summary>
+    /// Expiration date (NULL if doesn't expire).
+    /// INDEXED for compliance alerts (find expiring docs in next 30 days).
+    /// </summary>
+    public DateTime? ExpiryDate { get; set; }
+    
+    /// <summary>
+    /// Who uploaded the document (user email or system identifier)
+    /// </summary>
+    [MaxLength(255)]
+    public string? UploadedBy { get; set; }
+    
+    // ============================================
+    // JSONB DATA (Semi-Structured) - Inherited
+    // ============================================
+    // From CanonicalEntityBase:
+    // - Data (JSONB) - DocumentRegistryAttributes:
+    //   {
+    //     "extractedData": { "licenseNumber": "CN-123", "issuingAuthority": "DED Dubai" },
+    //     "auditLog": [ { "action": "Viewed", "by": "user@x.com", "at": "..." } ],
+    //     "ocrConfidence": 0.95,
+    //     "scanResult": { "status": "clean", "engine": "Azure Defender" }
+    //   }
+}

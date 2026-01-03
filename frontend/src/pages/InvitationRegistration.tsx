@@ -27,7 +27,7 @@ interface RegistrationFormData {
 export const InvitationRegistration: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
-    const { register, handleSubmit, setValue, getValues, formState: { errors } } = useForm<RegistrationFormData>();
+    const { register, handleSubmit, setValue, getValues, watch, formState: { errors } } = useForm<RegistrationFormData>();
 
     const [validating, setValidating] = useState(true);
     const [validation, setValidation] = useState<InvitationValidation | null>(null);
@@ -316,6 +316,7 @@ export const InvitationRegistration: React.FC = () => {
                                     primaryContactEmail: validation.primaryContactEmail
                                 }}
                                 setValue={setValue}
+                                watch={watch}
                             />
 
                             <div className="mt-8 pt-6 border-t border-gray-200 flex gap-4">
