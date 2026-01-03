@@ -42,6 +42,8 @@ var appServicePlanName = 'asp-${prefix}-${suffix}'
 var appServiceName = 'app-${prefix}-api-${suffix}'
 var staticWebAppName = 'swa-${prefix}-${suffix}'
 var appInsightsName = 'ai-${prefix}-${suffix}'
+var storageAccountName = 'st${replace(prefix, '-', '')}${suffix}' // Storage account name (no hyphens)
+
 
 // ============================================================================
 // 1. Azure SQL Database (Basic - 5 DTU - Cheapest)
@@ -178,8 +180,25 @@ resource serviceBusQueue 'Microsoft.ServiceBus/namespaces/queues@2022-10-01-prev
 }
 
 // ============================================================================
-// 4. Key Vault (Standard)
+// 4. Azure Storage Account (for vendor attachments)
 // ============================================================================
+module storageModule './modules/storage.bicep' = {
+  name: 'storage-deployment'
+  params: {
+    environmentName: environmentName
+    location: location
+    tags: {
+      Environment: environmentName
+      Project: 'VendorMDM'
+      Component: 'Storage'
+    }
+  }
+}
+
+// ============================================================================
+// 5. Key Vault (Standard)
+// ============================================================================
+
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
   location: location
@@ -224,9 +243,18 @@ resource secretServiceBusConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-0
   }
 }
 
+resource secretBlobStorageConnection 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'ConnectionStrings--BlobStorage'
+  properties: {
+    value: storageModule.outputs.connectionString
+  }
+}
+
 // ============================================================================
-// 5. App Service Plan & Backend API (Free Tier F1)
+// 6. App Service Plan & Backend API (Free Tier F1)
 // ============================================================================
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: appServicePlanName
   location: location
@@ -311,9 +339,22 @@ resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-
   }
 }
 
+// Grant App Service managed identity access to Storage Account
+// Storage Blob Data Contributor role (ba92f5b4-2d11-453d-a403-e96b0029c9fe)
+resource appServiceStorageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  scope: storageModule
+  name: guid(appService.id, storageModule.outputs.storageAccountId, 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+    principalId: appService.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // ============================================================================
 // 6. Static Web App (Frontend - Free Tier)
 // ============================================================================
+
 resource staticWebApp 'Microsoft.Web/staticSites@2023-01-01' = {
   name: staticWebAppName
   location: location // Consolidate to Central US with other resources
@@ -366,3 +407,6 @@ output staticWebAppUrl string = 'https://${staticWebApp.properties.defaultHostna
 output staticWebAppDeploymentToken string = listSecrets(staticWebApp.id, staticWebApp.apiVersion).properties.apiKey
 output appInsightsInstrumentationKey string = appInsights.properties.InstrumentationKey
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
+output storageAccountName string = storageModule.outputs.storageAccountName
+output blobEndpoint string = storageModule.outputs.blobEndpoint
+

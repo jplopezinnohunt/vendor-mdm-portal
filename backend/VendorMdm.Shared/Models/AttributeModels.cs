@@ -35,6 +35,53 @@ public class VendorApplicationAttributes
     public List<AdditionalContact>? AdditionalContacts { get; set; }
     public Dictionary<string, object>? CustomFields { get; set; }
     public string? ApplicationNotes { get; set; }
+    
+    // NEW: Extended structured data for personal details enhancement
+    public AddressDetails? Address { get; set; }
+    public ContactDetails? ContactInfo { get; set; }
+    public List<AttachmentMetadata>? Attachments { get; set; }
+    public Dictionary<string, object>? OtherDetails { get; set; } // Vendor-type-specific fields
+}
+
+/// <summary>
+/// Address details - supports full SAP address structure
+/// </summary>
+public class AddressDetails
+{
+    public string? HouseNo { get; set; }
+    public string? StreetName { get; set; }
+    public string? StreetName2 { get; set; }
+    public string? StreetName3 { get; set; }
+    public string? StreetName4 { get; set; }
+    public string? PostalCode { get; set; }
+    public string? City { get; set; }
+    public string? Country { get; set; }
+}
+
+/// <summary>
+/// Contact information - extended with payment email and fax
+/// </summary>
+public class ContactDetails
+{
+    public string? Phone { get; set; }
+    public string? MobilePhone { get; set; }
+    public string? Fax { get; set; }
+    public string? Email { get; set; }
+    public string? PaymentEmail { get; set; }
+}
+
+/// <summary>
+/// Attachment metadata - references blobs in Azure Storage
+/// </summary>
+public class AttachmentMetadata
+{
+    public string FileName { get; set; } = string.Empty;
+    public string BlobName { get; set; } = string.Empty; // GUID-based blob identifier
+    public string ContentType { get; set; } = string.Empty;
+    public long SizeBytes { get; set; }
+    public DateTime UploadedAt { get; set; }
+    public string Category { get; set; } = string.Empty; // "Identification", "BusinessLicense", etc.
+    public string? UploadedBy { get; set; } // User ID or email
 }
 
 public class AdditionalContact
@@ -44,6 +91,7 @@ public class AdditionalContact
     public string? Phone { get; set; }
     public string Role { get; set; } = string.Empty;
 }
+
 
 #endregion
 
