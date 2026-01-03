@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, AlertTriangle, ExternalLink, User, Globe, Hash, Info, Eye, GitCompare } from 'lucide-react';
 import { Button } from './Elements';
 import { VendorComparisonModal } from './VendorComparisonModal';
+import { VendorDetailModal } from './VendorDetailModal';
 
 interface DuplicateVendor {
     vendorName: string;
@@ -41,23 +42,13 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
 }) => {
     const [selectedVendor, setSelectedVendor] = useState<DuplicateVendor | null>(null);
     const [showCompareModal, setShowCompareModal] = useState(false);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
 
     if (!isOpen) return null;
 
     const handleViewDetails = (vendor: DuplicateVendor) => {
-        // Open view-vendor page in a new tab to preserve modal state
-        const params = new URLSearchParams({
-            sapId: vendor.sapId,
-            vendorName: vendor.vendorName,
-            country: vendor.country,
-            companyCode: vendor.companyCode,
-            accountGroup: vendor.accountGroup,
-            sapStatus: vendor.sapStatus,
-            blocked: String(vendor.blocked),
-            ...(vendor.dateOfBirth && { dateOfBirth: vendor.dateOfBirth }),
-            ...(vendor.reqId && { reqId: vendor.reqId })
-        });
-        window.open(`/view-vendor?${params.toString()}`, '_blank');
+        setSelectedVendor(vendor);
+        setShowDetailsModal(true);
     };
 
     const handleCompare = (vendor: DuplicateVendor) => {
@@ -67,6 +58,11 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
 
     const closeCompareModal = () => {
         setShowCompareModal(false);
+        setSelectedVendor(null);
+    };
+
+    const closeDetailsModal = () => {
+        setShowDetailsModal(false);
         setSelectedVendor(null);
     };
 
@@ -128,8 +124,8 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
                                             <td className="px-4 py-4 text-sm text-gray-600 border-r border-gray-200">{vendor.accountGroup}</td>
                                             <td className="px-4 py-4 text-sm text-center border-r border-gray-200">
                                                 <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${vendor.sapStatus === 'Valid' ? 'bg-green-100 text-green-800' :
-                                                        vendor.sapStatus === 'Blocked' ? 'bg-red-100 text-red-800' :
-                                                            'bg-gray-100 text-gray-800'
+                                                    vendor.sapStatus === 'Blocked' ? 'bg-red-100 text-red-800' :
+                                                        'bg-gray-100 text-gray-800'
                                                     }`}>
                                                     {vendor.blocked && '🔒 '}
                                                     {vendor.sapStatus}
@@ -197,6 +193,15 @@ export const DuplicateDetectionModal: React.FC<DuplicateDetectionModalProps> = (
                     onClose={closeCompareModal}
                     newVendor={newVendorData}
                     existingVendor={selectedVendor}
+                />
+            )}
+
+            {/* Detail Modal */}
+            {showDetailsModal && selectedVendor && (
+                <VendorDetailModal
+                    isOpen={showDetailsModal}
+                    onClose={closeDetailsModal}
+                    vendor={selectedVendor}
                 />
             )}
         </>
