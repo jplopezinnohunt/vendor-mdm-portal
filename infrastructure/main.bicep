@@ -339,17 +339,21 @@ resource keyVaultAccessPolicy 'Microsoft.KeyVault/vaults/accessPolicies@2023-07-
   }
 }
 
-// Grant App Service managed identity access to Storage Account
-// Storage Blob Data Contributor role (ba92f5b4-2d11-453d-a403-e96b0029c9fe)
-resource appServiceStorageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  scope: storageModule
-  name: guid(appService.id, storageModule.outputs.storageAccountId, 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
-  properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
-    principalId: appService.identity.principalId
-    principalType: 'ServicePrincipal'
-  }
-}
+// RBAC: Grant App Service managed identity access to Storage Account
+// TODO: Add this manually after deployment or in separate deployment
+// resource appServiceStorageRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+//   name: guid(appService.id, 'ba92f5b4-2d11-453d-a403-e96b0029c9fe', 'storage-blob-contributor')
+//   scope: resourceGroup()
+//   properties: {
+//     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
+//     principalId: appService.identity.principalId
+//     principalType: 'ServicePrincipal'
+//   }
+//   dependsOn: [
+//     storageModule
+//     appService
+//   ]
+// }
 
 // ============================================================================
 // 6. Static Web App (Frontend - Free Tier)
