@@ -702,6 +702,15 @@ export const CreateVendorForm: React.FC = () => {
                 onClose={() => setShowDupModal(false)}
                 onProceed={handleConfirmDuplicateBypass}
                 duplicates={checkResults || []}
+                newVendorData={{
+                    name: watch('name'),
+                    familyName: watch('familyName'),
+                    givenName: watch('givenName'),
+                    dateOfBirth: watch('dateOfBirth'),
+                    country: watch('country'),
+                    accountGroup: watch('accountGroup'),
+                    companyCode: watch('companyCode')
+                }}
             />
         </div>
     );
