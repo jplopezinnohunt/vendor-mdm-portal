@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card } from '../../components/ui/Elements';
@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
 import { CheckCircle, ChevronRight, ChevronLeft, Layout, Settings, FileText, User, Globe, Landmark, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { DuplicateDetectionModal } from '../../components/DuplicateDetectionModal';
+import { VendorHeaderPanel, WorkflowStatus } from '../../components/VendorHeaderPanel';
 
 const ACCOUNT_GROUP_OPTIONS: Record<string, { value: string, label: string }[]> = {
     'Physical': [
@@ -57,6 +58,11 @@ export const CreateVendorForm: React.FC = () => {
     const [sanctionsResult, setSanctionsResult] = useState<any>(null);
     const [isScreening, setIsScreening] = useState(false);
     const [validationTimestamp, setValidationTimestamp] = useState<string | null>(null);
+
+    // Header panel states
+    const [requestId, setRequestId] = useState<string | null>(null);
+    const [lastModification, setLastModification] = useState<string | null>(null);
+    const [sapNumber, setSapNumber] = useState<string | null>(null);
 
     // Wizard state
     const [activeStep, setActiveStep] = useState(0);
@@ -114,6 +120,30 @@ export const CreateVendorForm: React.FC = () => {
 
     const selectedVendorType = watch('vendorType');
     const isIndividual = selectedVendorType === 'Physical' || selectedVendorType === 'Participant';
+
+    // Computed values for header panel
+    const vendorName = useMemo(() => {
+        const data = watch();
+        if (isIndividual) {
+            const family = data.familyName || '';
+            const given = data.givenName || '';
+            if (family && given) {
+                return `${family.toUpperCase()} ${given}`;
+            }
+            return family || given || '';
+        }
+        return data.name || '';
+    }, [watch('familyName'), watch('givenName'), watch('name'), isIndividual]);
+
+    const workflowStatus: WorkflowStatus = useMemo(() => {
+        if (!categoryCommitted) return 'draft';
+        if (!validationPassed) return 'in-progress';
+        if (validationPassed && !submitted) return 'validation';
+        return 'completed';
+    }, [categoryCommitted, validationPassed, submitted]);
+
+    const lastSavedByUser = user?.name || user?.email || 'Unknown User';
+
 
     const handleValidationSequence = async () => {
         const data = watch();
@@ -212,6 +242,14 @@ export const CreateVendorForm: React.FC = () => {
                 })
             };
             await api.post('/vendor', payload);
+
+            // Update header panel metadata after successful save
+            const now = new Date();
+            const year = now.getFullYear();
+            const sequence = Math.floor(Math.random() * 99999).toString().padStart(5, '0'); // In production, this should come from backend
+            setRequestId(`MV-${year}-${sequence}`);
+            setLastModification(now.toLocaleString());
+
             setSubmitted(true);
         } catch (error: any) {
             console.error('Failed to create vendor:', error);
@@ -277,6 +315,21 @@ export const CreateVendorForm: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Header Information Panel - Only show when category is committed */}
+            {categoryCommitted && (
+                <VendorHeaderPanel
+                    requestId={requestId}
+                    vendorName={vendorName}
+                    workflow={workflowStatus}
+                    lastModification={lastModification}
+                    sapNumber={sapNumber}
+                    lastSavedBy={lastSavedByUser}
+                    companyCode={watch('companyCode') || 'UNES'}
+                    dutyStation={undefined}
+                    isDraft={!submitted}
+                />
+            )}
 
             {viewMode === 'wizard' && (
                 <div className="mb-8">
