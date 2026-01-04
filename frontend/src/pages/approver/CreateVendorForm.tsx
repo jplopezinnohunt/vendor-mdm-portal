@@ -606,6 +606,20 @@ export const CreateVendorForm: React.FC = () => {
                                         <div><label className="block text-xs font-medium text-blue-700 mb-1">Country of Birth *</label><select {...register('countryOfBirth')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="">Choose country</option><option value="FR">France</option></select></div>
                                         <div><label className="block text-xs font-medium text-blue-700 mb-1">Profession *</label><input {...register('profession')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                     </div>
+
+                                    {/* Personal Identity Documents */}
+                                    <div className="mt-6 pt-6 border-t">
+                                        <h4 className="text-sm font-bold text-gray-700 mb-3">📎 Personal Identity Documents</h4>
+                                        <p className="text-xs text-gray-600 mb-4">Upload identity documents (Passport, National ID, Certificates, etc.)</p>
+                                        <FileUpload
+                                            onFilesChange={(files) => {
+                                                console.log('Personal documents uploaded:', files);
+                                                // TODO: Store files in form state with category='personal-identity'
+                                            }}
+                                            maxFiles={5}
+                                            maxSizeBytes={10 * 1024 * 1024}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -663,20 +677,7 @@ export const CreateVendorForm: React.FC = () => {
                             </div>
                         </CollapsibleSection>
 
-                        {/* Attachments / Documents */}
-                        <CollapsibleSection title="Attachments & Documents" defaultExpanded={true}>
-                            <div className="space-y-4">
-                                <p className="text-sm text-gray-600">Upload supporting documents (max 10MB per file, PDF/JPG/PNG/DOCX)</p>
-                                <FileUpload
-                                    onFilesChange={(files) => {
-                                        console.log('Files uploaded:', files);
-                                        // TODO: Store files in form state
-                                    }}
-                                    maxFiles={10}
-                                    maxSizeBytes={10 * 1024 * 1024}
-                                />
-                            </div>
-                        </CollapsibleSection>
+
                     </div>
                 )}
 
