@@ -604,24 +604,53 @@ export const CreateVendorForm: React.FC = () => {
                                         <div><label className="block text-xs font-medium text-blue-700 mb-1">Profession *</label><input {...register('profession')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                     </div>
 
-                                    {/* Personal Identity Documents - Compact Layout */}
+                                    {/* Personal Identity Documents - Minimalist Layout */}
                                     <div className="mt-6 pt-4 border-t">
-                                        <h4 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">📎 Identity Documents</h4>
+                                        <h4 className="text-xs font-bold text-gray-700 mb-4 uppercase tracking-wide">📎 Identity Documents</h4>
                                         <div className="space-y-3">
-                                            {/* Passport - Compact */}
-                                            <div>
-                                                <label className="text-xs font-medium text-blue-700 flex items-center gap-1 mb-1">🛂 Passport <span className="text-gray-400 font-normal">(max 1)</span></label>
-                                                <FileUpload onFilesChange={(files) => console.log('Passport:', files)} maxFiles={1} maxSizeBytes={10 * 1024 * 1024} />
+                                            {/* Passport - Minimalist */}
+                                            <div className="flex items-center justify-between py-3 border-b">
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-semibold text-gray-800">🛂 PASSPORT</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">Upload passport copy (max 1 file, 10MB)</div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {/* TODO: Open file picker */ }}
+                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                                                >
+                                                    Upload
+                                                </button>
                                             </div>
-                                            {/* National ID - Compact */}
-                                            <div>
-                                                <label className="text-xs font-medium text-blue-700 flex items-center gap-1 mb-1">🪪 National ID / Residence <span className="text-gray-400 font-normal">(max 2)</span></label>
-                                                <FileUpload onFilesChange={(files) => console.log('National ID:', files)} maxFiles={2} maxSizeBytes={10 * 1024 * 1024} />
+
+                                            {/* National ID - Minimalist */}
+                                            <div className="flex items-center justify-between py-3 border-b">
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-semibold text-gray-800">🪪 NATIONAL ID / RESIDENCE</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">Upload ID card front & back (max 2 files, 10MB each)</div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {/* TODO: Open file picker */ }}
+                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                                                >
+                                                    Upload
+                                                </button>
                                             </div>
-                                            {/* Certificates - Compact */}
-                                            <div>
-                                                <label className="text-xs font-medium text-blue-700 flex items-center gap-1 mb-1">📜 Certificates & Documents <span className="text-gray-400 font-normal">(max 5)</span></label>
-                                                <FileUpload onFilesChange={(files) => console.log('Certificates:', files)} maxFiles={5} maxSizeBytes={10 * 1024 * 1024} />
+
+                                            {/* Certificates - Minimalist */}
+                                            <div className="flex items-center justify-between py-3">
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-semibold text-gray-800">📜 CERTIFICATES & DOCUMENTS</div>
+                                                    <div className="text-xs text-gray-500 mt-0.5">Professional certificates, diplomas, tax docs (max 5 files)</div>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {/* TODO: Open file picker */ }}
+                                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors"
+                                                >
+                                                    Upload
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
