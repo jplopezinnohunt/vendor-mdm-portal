@@ -662,6 +662,21 @@ export const CreateVendorForm: React.FC = () => {
                                 <div><label className="block text-xs font-medium text-blue-700 mb-1">Currency *</label><select {...register('currency')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
                             </div>
                         </CollapsibleSection>
+
+                        {/* Attachments / Documents */}
+                        <CollapsibleSection title="Attachments & Documents" defaultExpanded={true}>
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600">Upload supporting documents (max 10MB per file, PDF/JPG/PNG/DOCX)</p>
+                                <FileUpload
+                                    onFilesChange={(files) => {
+                                        console.log('Files uploaded:', files);
+                                        // TODO: Store files in form state
+                                    }}
+                                    maxFiles={10}
+                                    maxSizeBytes={10 * 1024 * 1024}
+                                />
+                            </div>
+                        </CollapsibleSection>
                     </div>
                 )}
 
