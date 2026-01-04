@@ -7,6 +7,9 @@ import { api } from '../../services/api';
 import { CheckCircle, ChevronRight, ChevronLeft, Layout, Settings, FileText, User, Globe, Landmark, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { DuplicateDetectionModal } from '../../components/DuplicateDetectionModal';
 import { VendorHeaderPanel, WorkflowStatus } from '../../components/VendorHeaderPanel';
+import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
+import { FileUpload } from '../../components/ui/FileUpload';
+import { AttachmentMetadata } from '../../types/vendor';
 
 const ACCOUNT_GROUP_OPTIONS: Record<string, { value: string, label: string }[]> = {
     'Physical': [
@@ -628,35 +631,37 @@ export const CreateVendorForm: React.FC = () => {
                         )}
 
                         {/* Address */}
-                        <div className="bg-white">
-                            <h3 className="text-[#333] font-bold text-lg mb-4 border-b pb-1">Address</h3>
+                        <CollapsibleSection title="Address" defaultExpanded={true}>
                             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                                 <div className="lg:col-span-1"><label className="block text-xs font-medium text-blue-700 mb-1">House No.</label><input {...register('houseNo')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                 <div className="lg:col-span-3"><label className="block text-xs font-medium text-blue-700 mb-1">Street Name *</label><input {...register('street1')} className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                <div className="lg:col-span-4"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 2</label><input {...register('street2')} placeholder="Building name or additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                <div className="lg:col-span-4"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 3</label><input {...register('street3')} placeholder="Additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                <div className="lg:col-span-4"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 4</label><input {...register('street4')} placeholder="Additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
                                 <div className="lg:col-span-1"><label className="block text-xs font-medium text-gray-500 mb-1">Postal Code</label><input {...register('postalCode')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                 <div className="lg:col-span-2"><label className="block text-xs font-medium text-blue-700 mb-1">City *</label><input {...register('city')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                 <div className="lg:col-span-1"><label className="block text-xs font-medium text-blue-700 mb-1">Country *</label><select {...register('country')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="">Choose country</option><option value="FR">France</option></select></div>
                             </div>
-                        </div>
+                        </CollapsibleSection>
 
                         {/* Contact */}
-                        <div className="bg-white">
-                            <h3 className="text-[#333] font-bold text-lg mb-4 border-b pb-1">Contact</h3>
+                        <CollapsibleSection title="Contact Information" defaultExpanded={true}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">Telephone</label><input {...register('telephone')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                 <div><label className="block text-xs font-medium text-gray-500 mb-1">Mobile Phone</label><input {...register('mobilePhone')} className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                <div><label className="block text-xs font-medium text-gray-500 mb-1">Fax</label><input {...register('fax')} className="w-full px-2 py-1 border rounded text-sm" placeholder="+1 234 567 8900" /></div>
                                 <div className="md:col-span-2"><label className="block text-xs font-medium text-blue-700 mb-1">Email *</label><input {...register('email')} className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                <div><label className="block text-xs font-medium text-gray-500 mb-1">Email for Payments</label><input {...register('paymentEmail')} placeholder="accounting@company.com" className="w-full px-2 py-1 border rounded text-sm" /></div>
                             </div>
-                        </div>
+                        </CollapsibleSection>
 
-                        {/* Various */}
-                        <div className="bg-white">
-                            <h3 className="text-[#333] font-bold text-lg mb-4 border-b pb-1">Various</h3>
+                        {/* Various / Other Details */}
+                        <CollapsibleSection title="Other Details" defaultExpanded={false}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div><label className="block text-xs font-medium text-blue-700 mb-1">SAP Language *</label><select {...register('sapLanguage')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="EN">English</option><option value="FR">French</option></select></div>
                                 <div><label className="block text-xs font-medium text-blue-700 mb-1">Currency *</label><select {...register('currency')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
                             </div>
-                        </div>
+                        </CollapsibleSection>
                     </div>
                 )}
 
