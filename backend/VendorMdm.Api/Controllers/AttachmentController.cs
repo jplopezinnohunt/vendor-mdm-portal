@@ -127,7 +127,7 @@ public class AttachmentController : ControllerBase
     /// <summary>
     /// Generate temporary download URL with SAS token
     /// </summary>
-    [HttpGet("{*blobName}/download-url")]
+    [HttpGet("download-url/{blobName}")]
     public async Task<IActionResult> GetDownloadUrl(string blobName)
     {
         try
@@ -167,7 +167,7 @@ public class AttachmentController : ControllerBase
     /// <summary>
     /// Delete attachment (soft delete - moves to deleted-blobs container)
     /// </summary>
-    [HttpDelete("{*blobName}")]
+    [HttpDelete("{blobName}")]
     public async Task<IActionResult> DeleteAttachment(string blobName)
     {
         try
