@@ -579,11 +579,8 @@ export const CreateVendorForm: React.FC = () => {
                 {(viewMode === 'full' || activeStep === 2) && categoryCommitted && validationPassed && (
                     <div className="animate-in fade-in slide-in-from-bottom duration-500 space-y-8">
                         {isIndividual ? (
-                            <div className="border border-[#4a7ec5] rounded overflow-hidden">
-                                <div className="bg-[#4a7ec5] text-white px-4 py-1 font-bold text-sm flex items-center gap-2">
-                                    👤 Personal details ({selectedVendorType})
-                                </div>
-                                <div className="p-6 bg-white space-y-6">
+                            <CollapsibleSection title={`👤 Personal details (${selectedVendorType})`} defaultExpanded={true}>
+                                <div className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                         <div>
                                             <label className="block text-xs font-medium text-blue-700 mb-1">Gender *</label>
@@ -607,54 +604,29 @@ export const CreateVendorForm: React.FC = () => {
                                         <div><label className="block text-xs font-medium text-blue-700 mb-1">Profession *</label><input {...register('profession')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                     </div>
 
-                                    {/* Personal Identity Documents - Categorized */}
-                                    <div className="mt-6 pt-6 border-t">
-                                        <h4 className="text-sm font-bold text-gray-700 mb-4">📎 Personal Identity Documents</h4>
-
-                                        {/* Passport */}
-                                        <div className="mb-6">
-                                            <h5 className="text-xs font-semibold text-blue-700 mb-2">🛂 Passport</h5>
-                                            <p className="text-xs text-gray-500 mb-2">Upload passport copy (Max 1 file)</p>
-                                            <FileUpload
-                                                onFilesChange={(files) => {
-                                                    console.log('Passport uploaded:', files);
-                                                    // TODO: Store with category='passport'
-                                                }}
-                                                maxFiles={1}
-                                                maxSizeBytes={10 * 1024 * 1024}
-                                            />
-                                        </div>
-
-                                        {/* National ID / Residence Permit */}
-                                        <div className="mb-6">
-                                            <h5 className="text-xs font-semibold text-blue-700 mb-2">🪪 National ID / Residence Permit</h5>
-                                            <p className="text-xs text-gray-500 mb-2">Upload national ID or residence permit (Max 2 files - front & back)</p>
-                                            <FileUpload
-                                                onFilesChange={(files) => {
-                                                    console.log('National ID uploaded:', files);
-                                                    // TODO: Store with category='national-id'
-                                                }}
-                                                maxFiles={2}
-                                                maxSizeBytes={10 * 1024 * 1024}
-                                            />
-                                        </div>
-
-                                        {/* Certificates & Other Documents */}
-                                        <div className="mb-4">
-                                            <h5 className="text-xs font-semibold text-blue-700 mb-2">📜 Certificates & Other Documents</h5>
-                                            <p className="text-xs text-gray-500 mb-2">Professional certificates, diplomas, tax documents, etc. (Max 5 files)</p>
-                                            <FileUpload
-                                                onFilesChange={(files) => {
-                                                    console.log('Certificates uploaded:', files);
-                                                    // TODO: Store with category='certificates'
-                                                }}
-                                                maxFiles={5}
-                                                maxSizeBytes={10 * 1024 * 1024}
-                                            />
+                                    {/* Personal Identity Documents - Compact Layout */}
+                                    <div className="mt-6 pt-4 border-t">
+                                        <h4 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">📎 Identity Documents</h4>
+                                        <div className="space-y-3">
+                                            {/* Passport - Compact */}
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 flex items-center gap-1 mb-1">🛂 Passport <span className="text-gray-400 font-normal">(max 1)</span></label>
+                                                <FileUpload onFilesChange={(files) => console.log('Passport:', files)} maxFiles={1} maxSizeBytes={10 * 1024 * 1024} />
+                                            </div>
+                                            {/* National ID - Compact */}
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 flex items-center gap-1 mb-1">🪪 National ID / Residence <span className="text-gray-400 font-normal">(max 2)</span></label>
+                                                <FileUpload onFilesChange={(files) => console.log('National ID:', files)} maxFiles={2} maxSizeBytes={10 * 1024 * 1024} />
+                                            </div>
+                                            {/* Certificates - Compact */}
+                                            <div>
+                                                <label className="text-xs font-medium text-blue-700 flex items-center gap-1 mb-1">📜 Certificates & Documents <span className="text-gray-400 font-normal">(max 5)</span></label>
+                                                <FileUpload onFilesChange={(files) => console.log('Certificates:', files)} maxFiles={5} maxSizeBytes={10 * 1024 * 1024} />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </CollapsibleSection>
                         ) : (
                             <div className="border border-[#4a7ec5] rounded overflow-hidden">
                                 <div className="bg-[#4a7ec5] text-white px-4 py-1 font-bold text-sm flex items-center gap-2">
@@ -677,17 +649,20 @@ export const CreateVendorForm: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Address */}
+                        {/* Address - Optimized Layout */}
                         <CollapsibleSection title="Address" defaultExpanded={true}>
-                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                                <div className="lg:col-span-1"><label className="block text-xs font-medium text-blue-700 mb-1">House No.</label><input {...register('houseNo')} className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                <div className="lg:col-span-3"><label className="block text-xs font-medium text-blue-700 mb-1">Street Name *</label><input {...register('street1')} className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                <div className="lg:col-span-4"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 2</label><input {...register('street2')} placeholder="Building name or additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                <div className="lg:col-span-4"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 3</label><input {...register('street3')} placeholder="Additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                <div className="lg:col-span-4"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 4</label><input {...register('street4')} placeholder="Additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                <div className="lg:col-span-1"><label className="block text-xs font-medium text-gray-500 mb-1">Postal Code</label><input {...register('postalCode')} className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                <div className="lg:col-span-2"><label className="block text-xs font-medium text-blue-700 mb-1">City *</label><input {...register('city')} className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                <div className="lg:col-span-1"><label className="block text-xs font-medium text-blue-700 mb-1">Country *</label><select {...register('country')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="">Choose country</option><option value="FR">France</option></select></div>
+                            <div className="grid grid-cols-12 gap-3">
+                                {/* Row 1: House No (2 cols) + Street Name (10 cols) */}
+                                <div className="col-span-12 md:col-span-2"><label className="block text-xs font-medium text-blue-700 mb-1">House No.</label><input {...register('houseNo')} className="w-full px-2 py-1 border rounded text-sm" placeholder="123" /></div>
+                                <div className="col-span-12 md:col-span-10"><label className="block text-xs font-medium text-blue-700 mb-1">Street Name *</label><input {...register('street1')} className="w-full px-2 py-1 border rounded text-sm" placeholder="Main Street" /></div>
+                                {/* Row 2-4: Additional street lines (full width) */}
+                                <div className="col-span-12"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 2</label><input {...register('street2')} placeholder="Building name, floor, suite" className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                <div className="col-span-12"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 3</label><input {...register('street3')} placeholder="Additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                <div className="col-span-12"><label className="block text-xs font-medium text-gray-500 mb-1">Street Name 4</label><input {...register('street4')} placeholder="Additional address line" className="w-full px-2 py-1 border rounded text-sm" /></div>
+                                {/* Row 5: Postal (3 cols) + City (5 cols) + Country (4 cols) */}
+                                <div className="col-span-12 md:col-span-3"><label className="block text-xs font-medium text-gray-500 mb-1">Postal Code</label><input {...register('postalCode')} className="w-full px-2 py-1 border rounded text-sm" placeholder="12345" /></div>
+                                <div className="col-span-12 md:col-span-5"><label className="block text-xs font-medium text-blue-700 mb-1">City *</label><input {...register('city')} className="w-full px-2 py-1 border rounded text-sm" placeholder="Paris" /></div>
+                                <div className="col-span-12 md:col-span-4"><label className="block text-xs font-medium text-blue-700 mb-1">Country *</label><select {...register('country')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="">Choose country</option><option value="FR">France</option></select></div>
                             </div>
                         </CollapsibleSection>
 
