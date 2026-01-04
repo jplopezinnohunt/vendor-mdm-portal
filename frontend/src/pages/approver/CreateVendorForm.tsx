@@ -607,18 +607,51 @@ export const CreateVendorForm: React.FC = () => {
                                         <div><label className="block text-xs font-medium text-blue-700 mb-1">Profession *</label><input {...register('profession')} className="w-full px-2 py-1 border rounded text-sm" /></div>
                                     </div>
 
-                                    {/* Personal Identity Documents */}
+                                    {/* Personal Identity Documents - Categorized */}
                                     <div className="mt-6 pt-6 border-t">
-                                        <h4 className="text-sm font-bold text-gray-700 mb-3">📎 Personal Identity Documents</h4>
-                                        <p className="text-xs text-gray-600 mb-4">Upload identity documents (Passport, National ID, Certificates, etc.)</p>
-                                        <FileUpload
-                                            onFilesChange={(files) => {
-                                                console.log('Personal documents uploaded:', files);
-                                                // TODO: Store files in form state with category='personal-identity'
-                                            }}
-                                            maxFiles={5}
-                                            maxSizeBytes={10 * 1024 * 1024}
-                                        />
+                                        <h4 className="text-sm font-bold text-gray-700 mb-4">📎 Personal Identity Documents</h4>
+
+                                        {/* Passport */}
+                                        <div className="mb-6">
+                                            <h5 className="text-xs font-semibold text-blue-700 mb-2">🛂 Passport</h5>
+                                            <p className="text-xs text-gray-500 mb-2">Upload passport copy (Max 1 file)</p>
+                                            <FileUpload
+                                                onFilesChange={(files) => {
+                                                    console.log('Passport uploaded:', files);
+                                                    // TODO: Store with category='passport'
+                                                }}
+                                                maxFiles={1}
+                                                maxSizeBytes={10 * 1024 * 1024}
+                                            />
+                                        </div>
+
+                                        {/* National ID / Residence Permit */}
+                                        <div className="mb-6">
+                                            <h5 className="text-xs font-semibold text-blue-700 mb-2">🪪 National ID / Residence Permit</h5>
+                                            <p className="text-xs text-gray-500 mb-2">Upload national ID or residence permit (Max 2 files - front & back)</p>
+                                            <FileUpload
+                                                onFilesChange={(files) => {
+                                                    console.log('National ID uploaded:', files);
+                                                    // TODO: Store with category='national-id'
+                                                }}
+                                                maxFiles={2}
+                                                maxSizeBytes={10 * 1024 * 1024}
+                                            />
+                                        </div>
+
+                                        {/* Certificates & Other Documents */}
+                                        <div className="mb-4">
+                                            <h5 className="text-xs font-semibold text-blue-700 mb-2">📜 Certificates & Other Documents</h5>
+                                            <p className="text-xs text-gray-500 mb-2">Professional certificates, diplomas, tax documents, etc. (Max 5 files)</p>
+                                            <FileUpload
+                                                onFilesChange={(files) => {
+                                                    console.log('Certificates uploaded:', files);
+                                                    // TODO: Store with category='certificates'
+                                                }}
+                                                maxFiles={5}
+                                                maxSizeBytes={10 * 1024 * 1024}
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
