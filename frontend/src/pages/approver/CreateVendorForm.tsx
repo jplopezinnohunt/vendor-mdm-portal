@@ -677,11 +677,78 @@ export const CreateVendorForm: React.FC = () => {
                             </div>
                         </CollapsibleSection>
 
-                        {/* Various / Other Details */}
-                        <CollapsibleSection title="Other Details" defaultExpanded={false}>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div><label className="block text-xs font-medium text-blue-700 mb-1">SAP Language *</label><select {...register('sapLanguage')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="EN">English</option><option value="FR">French</option></select></div>
-                                <div><label className="block text-xs font-medium text-blue-700 mb-1">Currency *</label><select {...register('currency')} className="w-full px-2 py-1 border rounded text-sm bg-white"><option value="EUR">EUR</option><option value="USD">USD</option></select></div>
+                        {/* Various - Complete Section */}
+                        <CollapsibleSection title="Various" defaultExpanded={false}>
+                            <div className="grid grid-cols-12 gap-3">
+                                {/* Row 1: SAP Contract Language + Tax Codes */}
+                                <div className="col-span-12 md:col-span-4">
+                                    <label className="block text-xs font-medium text-blue-700 mb-1">SAP Contract Language *</label>
+                                    <select {...register('sapLanguage')} className="w-full px-2 py-1 border rounded text-sm bg-white">
+                                        <option value="">Choose contract language</option>
+                                        <option value="EN">English</option>
+                                        <option value="FR">French</option>
+                                        <option value="ES">Spanish</option>
+                                        <option value="AR">Arabic</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-12 md:col-span-4">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Tax Code 1</label>
+                                    <input {...register('taxCode1')} className="w-full px-2 py-1 border rounded text-sm" placeholder="Tax classification code" />
+                                </div>
+                                <div className="col-span-12 md:col-span-4">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Tax Code 2</label>
+                                    <input {...register('taxCode2')} className="w-full px-2 py-1 border rounded text-sm" placeholder="Secondary tax code" />
+                                </div>
+
+                                {/* Row 2: Account Group + Nationality + Currency */}
+                                <div className="col-span-12 md:col-span-4">
+                                    <label className="block text-xs font-medium text-blue-700 mb-1 flex items-center gap-1">
+                                        Account Group *
+                                        <span className="text-[9px] text-gray-400 font-normal">(from step 1)</span>
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <select {...register('accountGroup')} className="flex-1 px-2 py-1 border rounded text-sm bg-white">
+                                            <option value="">Choose account group</option>
+                                            {selectedVendorType && ACCOUNT_GROUP_OPTIONS[selectedVendorType]?.map(opt => (
+                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            ))}
+                                        </select>
+                                        <button type="button" onClick={() => setValidationPassed(false)} className="px-2 py-1 bg-[#f2f7ff] border border-blue-300 rounded text-blue-700 text-[9px] font-bold hover:bg-blue-50">Change</button>
+                                    </div>
+                                </div>
+                                <div className="col-span-12 md:col-span-4">
+                                    <label className="block text-xs font-medium text-blue-700 mb-1">Nationality *</label>
+                                    <select {...register('nationality')} className="w-full px-2 py-1 border rounded text-sm bg-white">
+                                        <option value="">Choose nationality</option>
+                                        <option value="FR">French</option>
+                                        <option value="US">American</option>
+                                        <option value="GB">British</option>
+                                        <option value="DE">German</option>
+                                        <option value="ES">Spanish</option>
+                                    </select>
+                                </div>
+                                <div className="col-span-12 md:col-span-4">
+                                    <label className="block text-xs font-medium text-blue-700 mb-1">Order / Payment Currency *</label>
+                                    <select {...register('currency')} className="w-full px-2 py-1 border rounded text-sm bg-white">
+                                        <option value="">Choose currency</option>
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="CHF">CHF - Swiss Franc</option>
+                                    </select>
+                                </div>
+
+                                {/* Row 3: Permitted Payee */}
+                                <div className="col-span-12">
+                                    <label className="block text-xs font-medium text-blue-700 mb-1">Permitted Payee (SAP ID)</label>
+                                    <input {...register('permittedPayee')} className="w-full px-2 py-1 border rounded text-sm" placeholder="Vendor name or SAP number" />
+                                </div>
+
+                                {/* Row 4: Requestor Comments */}
+                                <div className="col-span-12">
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Requestor Comments</label>
+                                    <textarea {...register('requestorComments')} rows={3} className="w-full px-2 py-1 border rounded text-sm" placeholder="Additional notes or special instructions..." />
+                                </div>
                             </div>
                         </CollapsibleSection>
 
