@@ -11,6 +11,8 @@ import { CollapsibleSection } from '../../components/ui/CollapsibleSection';
 import { FileUpload } from '../../components/ui/FileUpload';
 import { AttachmentMetadata } from '../../types/vendor';
 
+import { BankInformationForm } from '../../components/BankInformationForm';
+
 const ACCOUNT_GROUP_OPTIONS: Record<string, { value: string, label: string }[]> = {
     'Physical': [
         { value: 'INDV', label: 'Individual - Physical Person (INDV)' },
@@ -91,12 +93,16 @@ export const CreateVendorForm: React.FC = () => {
             houseNo: '',
             street1: '',
             street2: '',
+            street3: '',
+            street4: '',
             postalCode: '',
             city: '',
             telephone: '',
             mobilePhone: '',
             fax: '',
             paymentEmail: '',
+            requestorComments: '',
+            permittedPayee: '',
             sapLanguage: 'EN',
             taxCode1: '',
             taxCode2: '',
@@ -790,13 +796,8 @@ export const CreateVendorForm: React.FC = () => {
                     <div className="animate-in fade-in slide-in-from-bottom duration-500 space-y-8">
                         <div className="border border-[#4a7ec5] rounded overflow-hidden">
                             <div className="bg-[#4a7ec5] text-white px-4 py-1 font-bold text-sm flex items-center gap-2">🏦 Bank Information</div>
-                            <div className="p-6 bg-white space-y-6">
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                    <div><label className="block text-xs font-medium text-blue-700 mb-1">Bank Name *</label><input {...register('bankName')} className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                    <div><label className="block text-xs font-medium text-blue-700 mb-1">Account Holder *</label><input {...register('bankAccHolder')} className="w-full px-2 py-1 border rounded text-sm" /></div>
-                                    <div><label className="block text-xs font-medium text-blue-700 mb-1">IBAN *</label><input {...register('bankIban')} className="w-full px-2 py-1 border rounded text-sm font-mono" /></div>
-                                    <div><label className="block text-xs font-medium text-blue-700 mb-1">SWIFT *</label><input {...register('bankSwift')} className="w-full px-2 py-1 border rounded text-sm font-mono" /></div>
-                                </div>
+                            <div className="p-6 bg-white">
+                                <BankInformationForm register={register} errors={errors} setValue={setValue} />
                             </div>
                         </div>
                     </div>

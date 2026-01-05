@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace VendorMdm.Shared.Models;
 
@@ -21,6 +22,9 @@ public class ReferenceDataItem
     
     [JsonProperty("isActive")]
     public bool IsActive { get; set; } = true;
+    
+    [JsonProperty("attributes")]
+    public JObject? Attributes { get; set; } // JSONB field for flexible metadata (e.g., bank config)
 }
 
 public class ValidationRule

@@ -118,15 +118,14 @@ public class SapVendorRfcService : ISapVendorService
 
     public Task<BankDuplicateCheckResult> CheckBankDuplicateAsync(BankDuplicateCheckRequest request)
     {
-        _logger.LogWarning("REAL SAP: CheckBankDuplicateAsync called for IBAN {IBAN}", 
-            request.Iban);
-        
-        // TODO: Query SAP LFBK table directly or via custom RFC
-        // Search for existing IBAN in the specified company code
-        
-        throw new NotImplementedException(
-            "Real SAP bank duplicate check not yet implemented. " +
-            $"IBAN: {request.Iban}, Company: {request.CompanyCode}");
+        _logger.LogWarning("RFC: Bank duplicate check not yet implemented - falling back to simulation");
+        throw new NotImplementedException("Bank duplicate check via RFC not yet implemented. Use SapVendorSimulationService.");
+    }
+    
+    public Task<BankCountryConfigResponse> GetBankCountryConfigurationAsync(string countryCode, string companyCode)
+    {
+        _logger.LogWarning("RFC: Bank country configuration not yet implemented - falling back to simulation");
+        throw new NotImplementedException("Bank country configuration via RFC not yet implemented. Use SapVendorSimulationService.");
     }
 }
 

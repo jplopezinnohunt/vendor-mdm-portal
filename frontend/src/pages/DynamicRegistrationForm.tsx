@@ -243,7 +243,7 @@ export const DynamicRegistrationForm: React.FC<DynamicRegistrationFormProps> = (
 
                     <section>
                         <h3 className="text-lg font-medium border-b pb-2 mb-4">Bank Information (Mandatory)</h3>
-                        <BankInformationForm register={register} errors={errors} setValue={setValue} />
+                        <BankInformationForm key="bank-form-v2" register={register} errors={errors} setValue={setValue} />
                     </section>
                 </div>
             );

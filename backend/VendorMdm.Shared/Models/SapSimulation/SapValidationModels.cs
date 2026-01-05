@@ -143,3 +143,37 @@ public class BankDuplicateMatch
     public string CompanyCode { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;  // "Active", "Blocked"
 }
+
+/// <summary>
+/// Response from SAP with bank field configuration for a country
+/// This is UI configuration only (show/hide, mandatory flags)
+/// Does NOT include validation logic (use ibankit for that)
+/// </summary>
+public class BankCountryConfigResponse
+{
+    public string CountryCode { get; set; } = string.Empty;
+    public string CountryName { get; set; } = string.Empty;
+    public string Region { get; set; } = string.Empty; // "SEPA", "North America", etc.
+    
+    // Field visibility (UI configuration)
+    public bool ShowIBAN { get; set; }
+    public bool ShowControlKey { get; set; }
+    public bool ShowBankNumber { get; set; }
+    public bool ShowSwiftBIC { get; set; }
+    public bool ShowAccountNumber { get; set; }
+    
+    // Mandatory flags (UI configuration)
+    public bool IbanMandatory { get; set; }
+    public bool SwiftMandatory { get; set; }
+    public bool AccountNumberMandatory { get; set; }
+    public bool ControlKeyMandatory { get; set; }
+    public bool BankNumberMandatory { get; set; }
+    
+    // Field-specific configuration
+    public List<string>? ControlKeyValues { get; set; } // For Germany/Austria: ["01", "02", "03", "21", "51", "99"]
+    public string? BankNumberLabel { get; set; } // "ABA Routing Number", "CBU", "Sort Code"
+    
+    // SAP mapping
+    public string PrimaryBankKey { get; set; } = string.Empty; // "IBAN", "RoutingNumber", "CBU"
+    public string[] PaymentMethods { get; set; } = Array.Empty<string>(); // ["SEPA_DD", "ACH", etc.]
+}

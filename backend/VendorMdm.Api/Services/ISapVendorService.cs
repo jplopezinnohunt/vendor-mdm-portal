@@ -60,4 +60,15 @@ public interface ISapVendorService
     /// Prevents same IBAN being registered to multiple vendors
     /// </summary>
     Task<BankDuplicateCheckResult> CheckBankDuplicateAsync(BankDuplicateCheckRequest request);
+    
+    /// <summary>
+    /// Get bank field configuration for a country from SAP
+    /// Returns UI configuration (which fields to show/hide, which are mandatory)
+    /// Does NOT include validation logic (use ibankit for that)
+    /// Maps to SAP table T012K or custom Z-function
+    /// </summary>
+    /// <param name="countryCode">2-letter country code (e.g., "FR", "DE")</param>
+    /// <param name="companyCode">Company code (e.g., "UNES")</param>
+    /// <returns>Field configuration from SAP business rules</returns>
+    Task<BankCountryConfigResponse> GetBankCountryConfigurationAsync(string countryCode, string companyCode);
 }

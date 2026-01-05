@@ -297,6 +297,266 @@ public class SapVendorSimulationService : ISapVendorService
             Matches = matches
         };
     }
+    
+    public async Task<BankCountryConfigResponse> GetBankCountryConfigurationAsync(string countryCode, string companyCode)
+    {
+        _logger.LogInformation("SIMULATION: Getting bank configuration from SAP for country {Country}, company {Company}", 
+            countryCode, companyCode);
+        
+        // Simulate SAP call latency
+        await Task.Delay(50);
+        
+        // Return configuration based on SAP business rules
+        // In real implementation, this would call SAP Z-function or read T012K table
+        return countryCode.ToUpper() switch
+        {
+            "FR" => new BankCountryConfigResponse
+            {
+                CountryCode = "FR",
+                CountryName = "France",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                AccountNumberMandatory = false,
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD", "WIRE" }
+            },
+            "DE" => new BankCountryConfigResponse
+            {
+                CountryCode = "DE",
+                CountryName = "Germany",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = true, // UNIQUE to Germany/Austria
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                ControlKeyMandatory = true,
+                AccountNumberMandatory = false,
+                ControlKeyValues = new List<string> { "01", "02", "03", "21", "51", "99" },
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD" }
+            },
+            "AT" => new BankCountryConfigResponse
+            {
+                CountryCode = "AT",
+                CountryName = "Austria",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = true, // UNIQUE to Germany/Austria
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                ControlKeyMandatory = true,
+                ControlKeyValues = new List<string> { "01", "02", "03", "21", "51", "99" },
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD" }
+            },
+            "US" => new BankCountryConfigResponse
+            {
+                CountryCode = "US",
+                CountryName = "United States",
+                Region = "North America",
+                ShowIBAN = false,
+                ShowControlKey = false,
+                ShowBankNumber = true,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                BankNumberMandatory = true,
+                SwiftMandatory = true,
+                AccountNumberMandatory = true,
+                BankNumberLabel = "ABA Routing Number (9 digits)",
+                PrimaryBankKey = "RoutingNumber",
+                PaymentMethods = new[] { "ACH", "WIRE" }
+            },
+            "AR" => new BankCountryConfigResponse
+            {
+                CountryCode = "AR",
+                CountryName = "Argentina",
+                Region = "Latin America",
+                ShowIBAN = false, // Argentina uses CBU instead
+                ShowControlKey = false,
+                ShowBankNumber = true,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                BankNumberMandatory = true,
+                SwiftMandatory = true,
+                AccountNumberMandatory = true,
+                BankNumberLabel = "CBU (22 digits)",
+                PrimaryBankKey = "CBU",
+                PaymentMethods = new[] { "WIRE" }
+            },
+            "GB" => new BankCountryConfigResponse
+            {
+                CountryCode = "GB",
+                CountryName = "United Kingdom",
+                Region = "Europe (Non-SEPA)",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = true,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                AccountNumberMandatory = true,
+                BankNumberMandatory = true,
+                BankNumberLabel = "Sort Code (6 digits)",
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "BACS", "CHAPS", "WIRE" }
+            },
+            "ES" => new BankCountryConfigResponse
+            {
+                CountryCode = "ES",
+                CountryName = "Spain",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD", "WIRE" }
+            },
+            "IT" => new BankCountryConfigResponse
+            {
+                CountryCode = "IT",
+                CountryName = "Italy",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD", "WIRE" }
+            },
+            "NL" => new BankCountryConfigResponse
+            {
+                CountryCode = "NL",
+                CountryName = "Netherlands",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD", "WIRE" }
+            },
+            "BE" => new BankCountryConfigResponse
+            {
+                CountryCode = "BE",
+                CountryName = "Belgium",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD", "WIRE" }
+            },
+            "PT" => new BankCountryConfigResponse
+            {
+                CountryCode = "PT",
+                CountryName = "Portugal",
+                Region = "SEPA",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "SEPA_DD", "WIRE" }
+            },
+            "CH" => new BankCountryConfigResponse
+            {
+                CountryCode = "CH",
+                CountryName = "Switzerland",
+                Region = "Europe (Non-SEPA)",
+                ShowIBAN = true,
+                ShowControlKey = false,
+                ShowBankNumber = false,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                IbanMandatory = true,
+                SwiftMandatory = true,
+                PrimaryBankKey = "IBAN",
+                PaymentMethods = new[] { "WIRE" }
+            },
+            "CA" => new BankCountryConfigResponse
+            {
+                CountryCode = "CA",
+                CountryName = "Canada",
+                Region = "North America",
+                ShowIBAN = false,
+                ShowControlKey = false,
+                ShowBankNumber = true,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                BankNumberMandatory = true,
+                SwiftMandatory = true,
+                AccountNumberMandatory = true,
+                BankNumberLabel = "Transit Number (5 digits) + Institution Number (3 digits)",
+                PrimaryBankKey = "TransitNumber",
+                PaymentMethods = new[] { "EFT", "WIRE" }
+            },
+            "BR" => new BankCountryConfigResponse
+            {
+                CountryCode = "BR",
+                CountryName = "Brazil",
+                Region = "Latin America",
+                ShowIBAN = false,
+                ShowControlKey = false,
+                ShowBankNumber = true,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                BankNumberMandatory = true,
+                SwiftMandatory = true,
+                AccountNumberMandatory = true,
+                BankNumberLabel = "Bank Code (3 digits) + Branch Code (4 digits)",
+                PrimaryBankKey = "BankCode",
+                PaymentMethods = new[] { "TED", "DOC", "WIRE" }
+            },
+            "MX" => new BankCountryConfigResponse
+            {
+                CountryCode = "MX",
+                CountryName = "Mexico",
+                Region = "Latin America",
+                ShowIBAN = false,
+                ShowControlKey = false,
+                ShowBankNumber = true,
+                ShowSwiftBIC = true,
+                ShowAccountNumber = true,
+                BankNumberMandatory = true,
+                SwiftMandatory = true,
+                AccountNumberMandatory = true,
+                BankNumberLabel = "CLABE (18 digits)",
+                PrimaryBankKey = "CLABE",
+                PaymentMethods = new[] { "SPEI", "WIRE" }
+            },
+            _ => throw new ArgumentException($"Country {countryCode} not configured in SAP. Configure in T012K or contact SAP administrator.")
+        };
+    }
 
     private List<SapVendorDetail> SeedMockData()
     {

@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\VendorMdm.Shared\VendorMdm.Shared.csproj" />
+    <ProjectReference Include="..\VendorMdm.Artifacts\VendorMdm.Artifacts.csproj" />
   </ItemGroup>
 
 </Project>
