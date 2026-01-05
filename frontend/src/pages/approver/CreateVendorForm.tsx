@@ -289,10 +289,10 @@ export const CreateVendorForm: React.FC = () => {
     }
 
     return (
-        <div className="max-w-4xl mx-auto py-8">
+        <div className="mx-auto max-w-7xl py-8 px-4 sm:px-6 md:px-8">
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 border-b-2 border-brand-500 pb-2 inline-block">Direct Vendor Creation</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 border-b-2 border-brand-500 pb-2 inline-block">Direct Vendor Creation</h1>
                     <p className="mt-4 text-gray-600 text-sm">
                         Create a new vendor record directly in the system.
                     </p>
