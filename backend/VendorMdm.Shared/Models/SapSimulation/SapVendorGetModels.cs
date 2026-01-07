@@ -31,6 +31,9 @@ public class SapVendorDetail
     public string Country { get; set; } = string.Empty;
     public bool Blocked { get; set; }
     public bool DeletionFlag { get; set; }
+    public string TaxCode1 { get; set; } = string.Empty;
+    public string TaxCode2 { get; set; } = string.Empty;
+    public string PermittedPayee { get; set; } = string.Empty;
     public SapGeneralData GeneralData { get; set; } = new();
     public List<SapBankAccount> BankAccounts { get; set; } = new();
     public SapCompanyCodeData CompanyCodeData { get; set; } = new();
@@ -44,11 +47,19 @@ public class SapGeneralData
     public string Title { get; set; } = string.Empty;  // Mr, Ms, Dr, etc.
     public string Name1 { get; set; } = string.Empty;  // SAP NAME1 field (35 chars)
     public string Name2 { get; set; } = string.Empty;  // SAP NAME2 field (35 chars)
+    public string Name3 { get; set; } = string.Empty;
+    public string Name4 { get; set; } = string.Empty;
     public string SearchTerm { get; set; } = string.Empty;  // SAP SORT1 field (20 chars)
     public string Street { get; set; } = string.Empty;
+    public string HouseNo { get; set; } = string.Empty;
+    public string Street2 { get; set; } = string.Empty;
+    public string Street3 { get; set; } = string.Empty;
+    public string Street4 { get; set; } = string.Empty;
     public string PostalCode { get; set; } = string.Empty;
     public string City { get; set; } = string.Empty;
     public string Country { get; set; } = string.Empty;
+    public string TaxNumber2 { get; set; } = string.Empty;
+    public string Fax { get; set; } = string.Empty;
     public string Region { get; set; } = string.Empty;
     public string Language { get; set; } = string.Empty;
     public string Telephone { get; set; } = string.Empty;

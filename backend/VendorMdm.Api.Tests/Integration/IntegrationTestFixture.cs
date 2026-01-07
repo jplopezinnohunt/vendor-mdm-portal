@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using Microsoft.Azure.Cosmos;
 using VendorMdm.Api.Tests.Helpers;
+using VendorMdm.Shared.Models.Sanctions;
 
 namespace VendorMdm.Api.Tests.Integration;
 
@@ -47,6 +48,13 @@ public class IntegrationTestFixture : IDisposable
         MockCosmosClient = MockHelpers.CreateMockCosmosClient();
         services.AddSingleton(MockCosmosClient.Object);
         
+        // Mock Sanctions Service
+        var mockSanctions = new Mock<ISanctionsScreeningService>();
+        mockSanctions
+            .Setup(s => s.ScreenEntityAsync(It.IsAny<VendorMdm.Shared.Models.Sanctions.ScreeningRequest>()))
+            .ReturnsAsync(new VendorMdm.Shared.Models.Sanctions.ScreeningResult { OverallRisk = VendorMdm.Shared.Models.Sanctions.RiskLevel.Clear });
+        services.AddSingleton(mockSanctions.Object);
+
         // Repositories & Services
         services.AddScoped<CosmosRepository>();
         services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();

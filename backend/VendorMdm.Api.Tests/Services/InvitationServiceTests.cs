@@ -23,10 +23,13 @@ public class InvitationServiceTests : TestBase
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
+        var mockSanctions = new Mock<ISanctionsScreeningService>();
+        mockSanctions.Setup(s => s.ScreenEntityAsync(It.IsAny<VendorMdm.Shared.Models.Sanctions.ScreeningRequest>()))
+            .ReturnsAsync(new VendorMdm.Shared.Models.Sanctions.ScreeningResult { OverallRisk = VendorMdm.Shared.Models.Sanctions.RiskLevel.Clear });
         
         var service = new InvitationService(
             context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockCosmosClient.Object);
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
         
         var request = new CreateInvitationRequest
         {
@@ -61,10 +64,11 @@ public class InvitationServiceTests : TestBase
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
+        var mockSanctions = new Mock<ISanctionsScreeningService>();
         
         var service = new InvitationService(
             context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockCosmosClient.Object);
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
             
         // Pre-seed an invitation
         context.VendorInvitations.Add(new VendorInvitation
@@ -98,10 +102,11 @@ public class InvitationServiceTests : TestBase
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
+        var mockSanctions = new Mock<ISanctionsScreeningService>();
         
         var service = new InvitationService(
             context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockCosmosClient.Object);
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
             
         var token = "valid-token";
         context.VendorInvitations.Add(new VendorInvitation
@@ -133,10 +138,11 @@ public class InvitationServiceTests : TestBase
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
+        var mockSanctions = new Mock<ISanctionsScreeningService>();
         
         var service = new InvitationService(
             context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockCosmosClient.Object);
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
             
         var token = "expired-token";
         context.VendorInvitations.Add(new VendorInvitation
@@ -160,5 +166,54 @@ public class InvitationServiceTests : TestBase
         // Verify status updated to Expired
         var invitation = await context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
         invitation.Status.Should().Be(InvitationStatus.Expired);
+        invitation.Status.Should().Be(InvitationStatus.Expired);
+    }
+
+    [Fact]
+    public async Task CreateInvitationAsync_WithInternalData_PersistsToAttributes()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext();
+        var logger = CreateMockLogger<InvitationService>();
+        var mockServiceBus = new Mock<IServiceBusService>();
+        var mockEmail = new Mock<IEmailService>();
+        var mockConfig = MockHelpers.CreateMockConfiguration();
+        var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
+        var mockSanctions = new Mock<ISanctionsScreeningService>();
+        mockSanctions.Setup(s => s.ScreenEntityAsync(It.IsAny<VendorMdm.Shared.Models.Sanctions.ScreeningRequest>()))
+            .ReturnsAsync(new VendorMdm.Shared.Models.Sanctions.ScreeningResult { OverallRisk = VendorMdm.Shared.Models.Sanctions.RiskLevel.Clear });
+        
+        var service = new InvitationService(
+            context, logger.Object, mockServiceBus.Object, 
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
+
+        var request = new CreateInvitationRequest
+        {
+            VendorLegalName = "Internal Vendor",
+            PrimaryContactEmail = "internal@vendor.com",
+            Currency = "USD",
+            SapLanguage = "FR",
+            TaxCode1 = "A1",
+            TaxCode2 = "B2",
+            PermittedPayee = "12345"
+        };
+
+        // Act
+        var result = await service.CreateInvitationAsync(
+            request, Guid.NewGuid(), "Admin");
+
+        // Assert
+        var invitation = await context.VendorInvitations
+            .FirstOrDefaultAsync(i => i.Id == result.InvitationId);
+        
+        invitation.Should().NotBeNull();
+        invitation.Attributes.Should().NotBeNullOrEmpty();
+        invitation.Attributes.Should().Contain("USD");
+        invitation.Attributes.Should().Contain("FR");
+        invitation.Attributes.Should().Contain("A1");
+        invitation.Attributes.Should().Contain("B2");
+        invitation.Attributes.Should().Contain("12345");
+        invitation.Attributes.Should().Contain("Currency");
+        invitation.Attributes.Should().Contain("SapLanguage");
     }
 }

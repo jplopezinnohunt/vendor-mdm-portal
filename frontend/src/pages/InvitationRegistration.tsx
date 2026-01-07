@@ -27,7 +27,9 @@ interface RegistrationFormData {
 export const InvitationRegistration: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
-    const { register, handleSubmit, setValue, getValues, watch, formState: { errors } } = useForm<RegistrationFormData>();
+    const { register, handleSubmit, setValue, getValues, watch, formState: { errors } } = useForm<RegistrationFormData>({
+        shouldUnregister: false
+    });
 
     const [validating, setValidating] = useState(true);
     const [validation, setValidation] = useState<InvitationValidation | null>(null);
@@ -146,6 +148,16 @@ export const InvitationRegistration: React.FC = () => {
             } else if (wizardStep === 3) {
                 // Submit Enrichment
                 await api.post(`/invitation/submit-enrichment/${token}`, data.attributes || {});
+
+                // Final Completion - Triggers Application Creation and Screening
+                await api.post(`/invitation/complete/${token}`, {
+                    companyName: data.companyName,
+                    taxId: data.taxId,
+                    contactName: data.contactName,
+                    email: data.email,
+                    attributes: data.attributes
+                });
+
                 setSubmitted(true);
             }
         } catch (error: any) {

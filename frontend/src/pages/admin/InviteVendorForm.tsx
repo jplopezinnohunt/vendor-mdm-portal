@@ -9,12 +9,19 @@ import { CheckCircle, ChevronRight, ChevronLeft, Layout, Settings, FileText, Mai
 
 interface InviteVendorFormData {
     vendorLegalName: string;
+    givenName?: string;
+    familyName?: string;
     primaryContactEmail: string;
     vendorType: string;
     accountGroup: string;
     expirationDays: number;
     companyCode: string;
     country: string;
+    currency: string;
+    sapLanguage: string;
+    taxCode1?: string;
+    taxCode2?: string;
+    permittedPayee?: string;
     dateOfBirth?: string;
     notes?: string;
 }
@@ -78,7 +85,14 @@ export const InviteVendorForm: React.FC = () => {
             accountGroup: 'INDV',
             companyCode: 'UNES',
             country: '',
-            expirationDays: 14
+            currency: 'EUR',
+            sapLanguage: 'EN',
+            taxCode1: '',
+            taxCode2: '',
+            permittedPayee: '',
+            expirationDays: 14,
+            givenName: '',
+            familyName: ''
         }
     });
 
@@ -90,10 +104,13 @@ export const InviteVendorForm: React.FC = () => {
 
     const handleValidationSequence = async () => {
         const data = watch();
-        const searchQuery = data.vendorLegalName;
+        // Construct search query based on type
+        const searchQuery = isIndividual
+            ? (data.familyName && data.givenName ? `${data.familyName} ${data.givenName}` : '')
+            : data.vendorLegalName;
 
         if (!searchQuery) {
-            alert('Please enter vendor legal name to perform the check');
+            alert('Please enter vendor name to perform the check');
             return;
         }
 
@@ -102,8 +119,8 @@ export const InviteVendorForm: React.FC = () => {
             // 1. SAP Duplicate Check
             const dupResponse = await api.post('sap/vendor/search', {
                 vendorType: isIndividual ? 'INDV' : 'COMP',
-                familyName: isIndividual ? data.vendorLegalName : undefined,
-                givenName: undefined,
+                familyName: isIndividual ? data.familyName : undefined,
+                givenName: isIndividual ? data.givenName : undefined,
                 companyName: !isIndividual ? data.vendorLegalName : undefined,
                 companyCode: data.companyCode || 'UNES',
                 searchThreshold: 0.75
@@ -160,6 +177,11 @@ export const InviteVendorForm: React.FC = () => {
     const onSubmit = async (data: InviteVendorFormData) => {
         setSubmitting(true);
         try {
+            // Concatenate name if individual
+            if (isIndividual && data.familyName && data.givenName) {
+                data.vendorLegalName = `${data.familyName.toUpperCase()} ${data.givenName}`;
+            }
+
             const response = await api.post('/invitation/create', data);
             setInvitationData(response.data);
             setSubmitted(true);
@@ -227,6 +249,9 @@ export const InviteVendorForm: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 border-b-2 border-brand-500 pb-2 inline-block">Invite New Vendor</h1>
                     <p className="mt-4 text-gray-600 text-sm">Initiate the secure onboarding flow for a new vendor partner.</p>
+                    <div className="text-xs text-red-500 font-mono mt-2 bg-red-50 p-1 border border-red-200">
+                        DEBUG: Type={selectedVendorType} IsInd={isIndividual ? 'YES' : 'NO'}
+                    </div>
                 </div>
 
                 {/* View Toggle */}
@@ -334,10 +359,23 @@ export const InviteVendorForm: React.FC = () => {
                 {(viewMode === 'full' || activeStep === 1) && categoryCommitted && (
                     <Card title="Main Data: Vendor Contact Information">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Vendor Legal Name *</label>
-                                <input {...register('vendorLegalName', { required: true })} disabled={validationPassed} className="w-full px-3 py-2 border rounded focus:ring-brand-500 focus:border-brand-500" placeholder="Acme International Ltd." />
-                            </div>
+                            {isIndividual ? (
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Family Name *</label>
+                                        <input {...register('familyName', { required: true })} disabled={validationPassed} className="w-full px-3 py-2 border rounded focus:ring-brand-500 focus:border-brand-500" placeholder="Family Name" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Given Name *</label>
+                                        <input {...register('givenName', { required: true })} disabled={validationPassed} className="w-full px-3 py-2 border rounded focus:ring-brand-500 focus:border-brand-500" placeholder="Given Name" />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Vendor Legal Name *</label>
+                                    <input {...register('vendorLegalName', { required: true })} disabled={validationPassed} className="w-full px-3 py-2 border rounded focus:ring-brand-500 focus:border-brand-500" placeholder="Acme International Ltd." />
+                                </div>
+                            )}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Primary Contact Email *</label>
                                 <input type="email" {...register('primaryContactEmail', { required: true })} disabled={validationPassed} className="w-full px-3 py-2 border rounded focus:ring-brand-500 focus:border-brand-500" placeholder="contact@vendor.com" />
@@ -369,7 +407,30 @@ export const InviteVendorForm: React.FC = () => {
                 {(viewMode === 'full' || activeStep === 2) && categoryCommitted && validationPassed && (
                     <Card title="Invitation Settings">
                         <div className="space-y-6">
-                            <div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Internal Currency *</label>
+                                    <select {...register('currency', { required: true })} className="w-full px-3 py-2 border rounded bg-white">
+                                        <option value="EUR">EUR - Euro</option>
+                                        <option value="USD">USD - US Dollar</option>
+                                        <option value="GBP">GBP - British Pound</option>
+                                        <option value="CHF">CHF - Swiss Franc</option>
+                                    </select>
+                                    <p className="text-xs text-gray-400 mt-1">Default payment currency for this vendor.</p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Communication Language *</label>
+                                    <select {...register('sapLanguage', { required: true })} className="w-full px-3 py-2 border rounded bg-white">
+                                        <option value="EN">English</option>
+                                        <option value="FR">French</option>
+                                        <option value="ES">Spanish</option>
+                                        <option value="AR">Arabic</option>
+                                    </select>
+                                    <p className="text-xs text-gray-400 mt-1">Language for SAP contract and letters.</p>
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-4">
                                 <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Expiration *</label>
                                 <select {...register('expirationDays', { required: true })} className="w-full px-3 py-2 border rounded bg-white">
                                     <option value="7">7 days</option>

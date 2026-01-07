@@ -1,0 +1,23 @@
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:5001...
+* Connected to 127.0.0.1 (127.0.0.1) port 5001
+> PUT /api/sap/vendor/10189999 HTTP/1.1
+> Host: 127.0.0.1:5001
+> User-Agent: curl/8.7.1
+> Accept: */*
+> Content-Type: application/json
+> Content-Length: 97
+> 
+} [97 bytes data]
+* upload completely sent off: 97 bytes
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Date: Tue, 06 Jan 2026 05:41:11 GMT
+< Server: Kestrel
+< Transfer-Encoding: chunked
+< 
+{ [299 bytes data]
+100   389    0   292  100    97   1911    634 --:--:-- --:--:-- --:--:--  2559
+* Connection #0 to host 127.0.0.1 left intact
+{"success":true,"vendorNumber":"10189999","message":"Vendor 10189999 updated successfully","warnings":[],"errors":[],"sapReturn":{"type":"S","id":"VK","number":"002","message":"Vendor 10189999 was changed","logNo":"","logMsgNo":"","messageV1":"","messageV2":"","messageV3":"","messageV4":""}}

@@ -6,6 +6,7 @@ using Microsoft.Azure.Cosmos;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Models; // DTOs and Cosmos entities
 using VendorMdm.Shared.Models; // SQL entities
+using VendorMdm.Shared.Models.Sanctions;
 using CosmosModels = VendorMdm.Shared.Models; // Alias for disambiguation
 
 namespace VendorMdm.Api.Services;
@@ -42,6 +43,7 @@ public class InvitationService : IInvitationService
         IServiceBusService serviceBusService,
         IEmailService emailService,
         IConfiguration configuration,
+        ISanctionsScreeningService sanctionsService,
         CosmosClient cosmosClient)
     {
         _context = context;
@@ -49,9 +51,12 @@ public class InvitationService : IInvitationService
         _serviceBusService = serviceBusService;
         _emailService = emailService;
         _configuration = configuration;
+        _sanctionsService = sanctionsService;
         _cosmosArtifactsContainer = cosmosClient.GetContainer("VendorMdm", "InvitationArtifacts");
         _cosmosEventsContainer = cosmosClient.GetContainer("VendorMdm", "DomainEvents");
     }
+
+    private readonly ISanctionsScreeningService _sanctionsService;
 
     public async Task<CreateInvitationResponse> CreateInvitationAsync(
         CreateInvitationRequest request, 
@@ -81,6 +86,22 @@ public class InvitationService : IInvitationService
                 $"A vendor application already exists for {request.PrimaryContactEmail}");
         }
 
+        // 3. Pre-Invitation Sanctions Screening
+        var screeningRequest = new VendorMdm.Shared.Models.Sanctions.ScreeningRequest
+        {
+            EntityName = request.VendorLegalName,
+            EntityType = request.VendorType == "Individual" ? "Person" : "Organization",
+            Address = new VendorMdm.Shared.Models.Sanctions.AddressInfo { Country = "US" } // Default for initial check
+        };
+
+        var screeningResult = await _sanctionsService.ScreenEntityAsync(screeningRequest);
+        if (screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.High || 
+            screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.Critical)
+        {
+            _logger.LogWarning("Blocked invitation for {Email} due to Sanctions Risk: {RiskLevel}", request.PrimaryContactEmail, screeningResult.OverallRisk);
+            throw new InvalidOperationException("High-risk match found in Sanctions Screening. Invitation cannot be sent.");
+        }
+
         // Generate secure token
         var token = GenerateSecureToken();
         var expiresAt = DateTime.UtcNow.AddDays(request.ExpirationDays);
@@ -102,6 +123,19 @@ public class InvitationService : IInvitationService
             Notes = request.Notes,
             CreatedAt = DateTime.UtcNow
         };
+
+        // Initialize Attributes with internal data
+        var initialAttributes = new Dictionary<string, object>();
+        if (!string.IsNullOrEmpty(request.Currency)) initialAttributes["Currency"] = request.Currency;
+        if (!string.IsNullOrEmpty(request.SapLanguage)) initialAttributes["SapLanguage"] = request.SapLanguage;
+        if (!string.IsNullOrEmpty(request.TaxCode1)) initialAttributes["TaxCode1"] = request.TaxCode1;
+        if (!string.IsNullOrEmpty(request.TaxCode2)) initialAttributes["TaxCode2"] = request.TaxCode2;
+        if (!string.IsNullOrEmpty(request.PermittedPayee)) initialAttributes["PermittedPayee"] = request.PermittedPayee;
+        
+        if (initialAttributes.Any())
+        {
+            invitation.Attributes = JsonSerializer.Serialize(initialAttributes);
+        }
 
         _context.VendorInvitations.Add(invitation);
         await _context.SaveChangesAsync();
@@ -742,8 +776,10 @@ public class InvitationService : IInvitationService
 
         invitation.Attributes = JsonSerializer.Serialize(attributes);
         invitation.CurrentStage = InvitationStage.Enriched;
-        invitation.Status = InvitationStatus.Completed;
-        invitation.CompletedAt = DateTime.UtcNow;
+        
+        // DO NOT mark as Completed yet. The Controller's CompleteInvitation endpoint must be called to create Application.
+        // invitation.Status = InvitationStatus.Completed;
+        // invitation.CompletedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return true;

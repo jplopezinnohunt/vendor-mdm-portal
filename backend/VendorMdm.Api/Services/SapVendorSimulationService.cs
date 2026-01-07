@@ -16,7 +16,7 @@ public class SapVendorSimulationService : ISapVendorService
     private readonly IbanValidator _ibanValidator;
     private readonly SwiftValidator _swiftValidator;
     private readonly SapNameValidator _nameValidator;
-    private readonly List<SapVendorDetail> _mockVendors;
+    private static List<SapVendorDetail> _mockVendors = SeedMockData();
 
     public SapVendorSimulationService(
         ILogger<SapVendorSimulationService> logger,
@@ -30,7 +30,6 @@ public class SapVendorSimulationService : ISapVendorService
         _ibanValidator = ibanValidator;
         _swiftValidator = swiftValidator;
         _nameValidator = nameValidator;
-        _mockVendors = SeedMockData();
     }
 
     public async Task<VendorSearchResponse> SearchVendorsAsync(VendorSearchRequest request)
@@ -121,6 +120,9 @@ public class SapVendorSimulationService : ISapVendorService
             Country = request.GeneralData.Country,
             Blocked = false,
             DeletionFlag = false,
+            // Simulate mapping root fields from internal logic or GeneralData
+            TaxCode1 = "STCD1-MOCK", 
+            PermittedPayee = "PAYEE-MOCK",
             GeneralData = request.GeneralData,
             BankAccounts = request.BankAccounts,
             CompanyCodeData = request.CompanyCodeData
@@ -558,7 +560,7 @@ public class SapVendorSimulationService : ISapVendorService
         };
     }
 
-    private List<SapVendorDetail> SeedMockData()
+    private static List<SapVendorDetail> SeedMockData()
     {
         // Seed 50 mock vendors for testing
         return new List<SapVendorDetail>
@@ -570,6 +572,9 @@ public class SapVendorSimulationService : ISapVendorService
                 AccountGroup = "INDV",
                 Country = "US",
                 Blocked = false,
+                TaxCode1 = "123-456-789", // Extended field
+                PermittedPayee = "10189999", // Self
+                TaxCode2 = "987654321", // Extended field
                 GeneralData = new SapGeneralData
                 {
                     Title = "Mr",
@@ -582,6 +587,9 @@ public class SapVendorSimulationService : ISapVendorService
                     Country = "US",
                     Email = "john.smith@example.com",
                     Telephone = "+1234567890",
+                    Fax = "+1234567891", // Extended field
+                    Name3 = "Middle", // Extended field
+                    Street2 = "Apt 4B", // Extended field
                     DateOfBirth = new DateTime(1980, 5, 15)
                 },
                 BankAccounts = new List<SapBankAccount>
@@ -617,6 +625,7 @@ public class SapVendorSimulationService : ISapVendorService
                     Title = "Ms",
                     Name1 = "DUPONT",
                     Name2 = "Marie",
+                    Name3 = "Louise", // Extended field
                     SearchTerm = "DUPONT",
                     Street = "45 Rue de la Paix",
                     PostalCode = "75001",

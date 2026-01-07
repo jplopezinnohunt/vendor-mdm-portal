@@ -257,20 +257,65 @@ export const DynamicRegistrationForm: React.FC<DynamicRegistrationFormProps> = (
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     <div className="md:col-span-2">
                         <Input
-                            label="Company Legal Name"
+                            label="Company Legal Name (Name 1)"
                             value={readOnlyData.vendorLegalName}
                             readOnly
                             className="bg-gray-50"
                             {...register('companyName')}
                         />
                     </div>
+                    {/* Extended Names */}
                     <div>
                         <Input
-                            label="Tax ID / Registration Number *"
+                            label="Name 2 (Continuation)"
+                            {...register('attributes.name2')}
+                            placeholder="e.g. Division or Trade Name"
+                        />
+                    </div>
+                    <div>
+                        <Input
+                            label="Name 3"
+                            {...register('attributes.name3')}
+                            placeholder="Additional name line"
+                        />
+                    </div>
+                    <div>
+                        <Input
+                            label="Name 4"
+                            {...register('attributes.name4')}
+                            placeholder="Additional name line"
+                        />
+                    </div>
+                    <div>
+                        <Input
+                            label="Search Term 1 *"
+                            {...register('attributes.searchTerm1', { required: 'Search term is required' })}
+                            error={errors.attributes?.searchTerm1?.message as string}
+                            placeholder="Short alias for searching"
+                        />
+                    </div>
+
+                    <div className="md:col-span-2 border-t pt-4 mt-2">
+                        <h4 className="text-sm font-medium text-gray-900 mb-4">Tax Identification</h4>
+                    </div>
+                    <div>
+                        <Input
+                            label="Tax Number 1 (Main Tax ID) *"
                             {...register('taxId', { required: 'Tax ID is required' })}
                             error={errors.taxId?.message as string}
-                            placeholder="Tax ID, VAT, or Registration #"
+                            placeholder="Main Tax ID / VAT"
                         />
+                    </div>
+                    <div>
+                        <Input
+                            label="Tax Number 2 (Optional)"
+                            {...register('attributes.taxNumber2')}
+                            placeholder="Secondary Registration No."
+                        />
+                    </div>
+
+                    <div className="md:col-span-2 border-t pt-4 mt-2">
+                        <h4 className="text-sm font-medium text-gray-900 mb-4">Primary Contact</h4>
                     </div>
                     <div>
                         <Input
@@ -289,18 +334,40 @@ export const DynamicRegistrationForm: React.FC<DynamicRegistrationFormProps> = (
                 <div className="space-y-8">
                     <section>
                         <h3 className="text-lg font-medium border-b pb-2 mb-4">Corporate Contact Information</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <Input label="Street Address *" {...register('attributes.street', { required: 'Street is required' })} />
+                        <div className="grid grid-cols-4 gap-4">
+                            <div className="col-span-1">
+                                <Input label="House No." {...register('attributes.address.houseNo')} placeholder="123" />
                             </div>
-                            <div>
-                                <Input label="City *" {...register('attributes.city', { required: 'City is required' })} />
+                            <div className="col-span-3">
+                                <Input label="Street Name *" {...register('attributes.address.streetName', { required: 'Street is required' })} error={errors.attributes?.address?.streetName?.message as string} placeholder="Main Street" />
                             </div>
-                            <div>
-                                <Input label="Country *" {...register('attributes.country', { required: 'Country is required' })} />
+                            <div className="col-span-4">
+                                <Input label="Street Name 2" {...register('attributes.address.streetName2')} placeholder="Building, Floor, Suite" />
                             </div>
-                            <div>
-                                <Input label="Phone Number *" {...register('attributes.phone', { required: 'Phone is required' })} />
+                            <div className="col-span-4">
+                                <Input label="Street Name 3" {...register('attributes.address.streetName3')} />
+                            </div>
+                            <div className="col-span-4">
+                                <Input label="Street Name 4" {...register('attributes.address.streetName4')} />
+                            </div>
+                            <div className="col-span-2">
+                                <Input label="Postal Code *" {...register('attributes.address.postalCode', { required: 'Postal Code is required' })} error={errors.attributes?.address?.postalCode?.message as string} />
+                            </div>
+                            <div className="col-span-2">
+                                <Input label="City *" {...register('attributes.city', { required: 'City is required' })} error={errors.attributes?.city?.message as string} />
+                            </div>
+                            <div className="col-span-4">
+                                <Input label="Country *" {...register('attributes.country', { required: 'Country is required' })} error={errors.attributes?.country?.message as string} />
+                            </div>
+
+                            <div className="col-span-4 border-t pt-4 mt-2">
+                                <h4 className="text-sm font-medium text-gray-900 mb-2">Communication</h4>
+                            </div>
+                            <div className="col-span-2">
+                                <Input label="Phone Number *" {...register('attributes.phone', { required: 'Phone is required' })} error={errors.attributes?.phone?.message as string} />
+                            </div>
+                            <div className="col-span-2">
+                                <Input label="Fax" {...register('attributes.fax')} />
                             </div>
                         </div>
                     </section>

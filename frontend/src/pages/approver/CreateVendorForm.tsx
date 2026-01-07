@@ -73,7 +73,7 @@ export const CreateVendorForm: React.FC = () => {
     const [activeStep, setActiveStep] = useState(0);
     const [viewMode, setViewMode] = useState<'wizard' | 'full'>('wizard');
 
-    const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, watch, setValue, trigger, formState: { errors } } = useForm({
         defaultValues: {
             name: '',
             acronym: '',
@@ -124,7 +124,8 @@ export const CreateVendorForm: React.FC = () => {
             registrationDate: '',
             bankBranch: '',
             attributes: {}
-        }
+        },
+        shouldUnregister: false // explicitly keep values when hidden
     });
 
     const selectedVendorType = watch('vendorType');
@@ -155,6 +156,14 @@ export const CreateVendorForm: React.FC = () => {
 
 
     const handleValidationSequence = async () => {
+        // Validate Main Data fields before validation logic
+        const fieldsToValidate = isIndividual
+            ? ['givenName', 'familyName']
+            : ['name', 'country'];
+
+        const valid = await trigger(fieldsToValidate as any);
+        if (!valid) return;
+
         const data = watch();
         const searchQuery = isIndividual ? `${data.familyName} ${data.givenName}` : data.name;
 
@@ -223,7 +232,45 @@ export const CreateVendorForm: React.FC = () => {
         performSanctionsScreening();
     };
 
-    const nextStep = () => setActiveStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+    const nextStep = async () => {
+        let valid = false;
+
+        if (activeStep === 0) {
+            // Category/Group/Company are manually managed states, but checked by button disabled state
+            if (selectedVendorType && watch('accountGroup') && watch('companyCode')) {
+                valid = true;
+            }
+        } else if (activeStep === 1) {
+            // Main Data
+            const fields = isIndividual
+                ? ['givenName', 'familyName']
+                : ['name', 'country'];
+            valid = await trigger(fields as any);
+            // Also rely on validationPassed state for this step
+            if (!validationPassed) {
+                valid = false;
+                // Ideally trigger validation sequence here or show error
+                alert('Please complete the Sanctions & Duplicate check first.');
+            }
+        } else if (activeStep === 2) {
+            // Profile
+            const fields = ['street1', 'city', 'country', 'email'];
+            if (isIndividual) {
+                fields.push('dateOfBirth', 'profession');
+            } else {
+                fields.push('legalStatus');
+            }
+            valid = await trigger(fields as any);
+        } else if (activeStep === 3) {
+            // Financial - trigger BankForm validation logic if possible or rely on required fields
+            valid = await trigger(['bankCountry', 'bankIban', 'bankSwift', 'currency']);
+        }
+
+        if (valid || activeStep === 0) { // Step 0 readiness is implicitly handled by button state
+            setActiveStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+        }
+    };
+
     const prevStep = () => setActiveStep((prev) => Math.max(prev - 1, 0));
 
     const onSubmit = async (data: any) => {

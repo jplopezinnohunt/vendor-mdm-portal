@@ -18,7 +18,7 @@ public class VendorController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Vendor>> CreateVendor([FromBody] Vendor vendor)
+    public async Task<ActionResult<Vendor>> CreateVendor([FromBody] Vendor vendor, [FromQuery] bool force = false)
     {
         if (!ModelState.IsValid)
         {
@@ -27,7 +27,7 @@ public class VendorController : ControllerBase
 
         try
         {
-            var createdVendor = await _service.CreateVendorAsync(vendor);
+            var createdVendor = await _service.CreateVendorAsync(vendor, force);
             return CreatedAtAction(nameof(GetVendor), new { id = createdVendor.Id }, createdVendor);
         }
         catch (Exception ex)

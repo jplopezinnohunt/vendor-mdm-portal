@@ -346,6 +346,34 @@ public class InvitationController : ControllerBase
             attributesDict["VendorType"] = invitation.VendorType;
             attributesDict["AccountGroup"] = invitation.AccountGroup;
             
+            attributesDict["SanctionsScore"] = screeningResult.OverallRisk;
+            attributesDict["VendorType"] = invitation.VendorType;
+            attributesDict["AccountGroup"] = invitation.AccountGroup;
+            
+            // Merge internal attributes from Invitation (Currency, SapLanguage) if not already present
+            if (!string.IsNullOrEmpty(invitation.Attributes))
+            {
+                var invAttributes = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes);
+                if (invAttributes != null)
+                {
+                    if (invAttributes.ContainsKey("Currency") && !attributesDict.ContainsKey("Currency"))
+                        attributesDict["Currency"] = invAttributes["Currency"];
+                    
+                    if (invAttributes.ContainsKey("SapLanguage") && !attributesDict.ContainsKey("SapLanguage"))
+                        attributesDict["SapLanguage"] = invAttributes["SapLanguage"];
+
+                    // Map additional internal fields
+                    if (invAttributes.ContainsKey("TaxCode1") && !attributesDict.ContainsKey("TaxCode1"))
+                        attributesDict["TaxCode1"] = invAttributes["TaxCode1"];
+
+                    if (invAttributes.ContainsKey("TaxCode2") && !attributesDict.ContainsKey("TaxCode2"))
+                        attributesDict["TaxCode2"] = invAttributes["TaxCode2"];
+
+                    if (invAttributes.ContainsKey("PermittedPayee") && !attributesDict.ContainsKey("PermittedPayee"))
+                        attributesDict["PermittedPayee"] = invAttributes["PermittedPayee"];
+                }
+            }
+
             application.Attributes = JsonSerializer.Serialize(attributesDict);
 
             _context.VendorApplications.Add(application);

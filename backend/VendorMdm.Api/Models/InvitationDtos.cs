@@ -11,8 +11,14 @@ public class CreateInvitationRequest
     public string? AccountGroup { get; set; } // Specific UNESCO Account Group
     public string? CompanyCode { get; set; } // UNESCO Entity (UNES, IIEP, etc.)
     public string? Country { get; set; } // Initial context country
+    public string? Currency { get; set; } // Order currency (Internal)
+    public string? SapLanguage { get; set; } // Communication language (Internal)
+    public string? TaxCode1 { get; set; } // Fiscal classification
+    public string? TaxCode2 { get; set; } // Secondary tax code
+    public string? PermittedPayee { get; set; } // SAP ID for alternative payee
     public DateTime? DateOfBirth { get; set; } // For physical person duplicate check context
     public string? Notes { get; set; }
+    public bool ForceCreation { get; set; } = false;
 }
 
 public class CreateInvitationResponse

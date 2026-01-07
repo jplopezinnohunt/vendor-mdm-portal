@@ -81,6 +81,53 @@ public class ReviewController : ControllerBase
         if (app.Status != "PendingReview")
             return BadRequest("Application is not pending review");
 
+        // 1. Apply Enrichment (Updates)
+        if (request.EnrichedAttributes != null && request.EnrichedAttributes.Any())
+        {
+            // Parse existing attributes
+            Dictionary<string, object> existingAttributes = new Dictionary<string, object>();
+            if (!string.IsNullOrEmpty(app.Attributes))
+            {
+                try
+                {
+                    existingAttributes = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(app.Attributes) 
+                                         ?? new Dictionary<string, object>();
+                }
+                catch
+                {
+                    // If parsing fails, start fresh or log warning
+                    _logger.LogWarning("Failed to parse existing attributes for App {Id}, overwriting.", id);
+                }
+            }
+
+            // Merge new attributes
+            foreach (var kvp in request.EnrichedAttributes)
+            {
+                // If the key maps to a core column, update the column directly
+                /* 
+                   Note: For now, we update attributes. 
+                   If specific core columns need update (like CompanyName), we can do it here. 
+                   e.g. if (kvp.Key == "companyName") app.CompanyName = kvp.Value.ToString();
+                */
+                if (kvp.Key.Equals("companyName", StringComparison.OrdinalIgnoreCase)) 
+                    app.CompanyName = kvp.Value.ToString() ?? app.CompanyName;
+                else if (kvp.Key.Equals("taxId", StringComparison.OrdinalIgnoreCase)) 
+                    app.TaxId = kvp.Value.ToString() ?? app.TaxId;
+                else if (kvp.Key.Equals("contactName", StringComparison.OrdinalIgnoreCase))
+                    app.ContactName = kvp.Value.ToString() ?? app.ContactName;
+                else if (kvp.Key.Equals("email", StringComparison.OrdinalIgnoreCase))
+                    app.ContactEmail = kvp.Value.ToString() ?? app.ContactEmail;
+                else
+                {
+                    // It's an extended attribute
+                    existingAttributes[kvp.Key] = kvp.Value;
+                }
+            }
+
+            // Serialize back
+            app.Attributes = System.Text.Json.JsonSerializer.Serialize(existingAttributes);
+        }
+
         app.Status = "Approved";
         app.UpdatedAt = DateTime.UtcNow;
         
@@ -100,7 +147,7 @@ public class ReviewController : ControllerBase
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Application {Id} approved by {Approver}", id, "CurrentUser"); 
+        _logger.LogInformation("Application {Id} approved by {Approver}. enriched fields: {Count}", id, "CurrentUser", request.EnrichedAttributes?.Count ?? 0); 
 
         return Ok(new { message = "Application approved", status = "Approved" });
     }
@@ -136,6 +183,7 @@ public class ReviewController : ControllerBase
 public class ApprovalRequest
 {
     public string? Comments { get; set; }
+    public Dictionary<string, object>? EnrichedAttributes { get; set; }
 }
 
 public class RejectionRequest

@@ -9,10 +9,19 @@ public static class MockHelpers
     public static Mock<CosmosClient> CreateMockCosmosClient()
     {
         var mockClient = new Mock<CosmosClient>();
+        var mockDatabase = new Mock<Database>();
         var mockContainer = new Mock<Container>();
         
-        // Mock GetContainer to return a mock container
+        // Mock GetDatabase
+        mockClient.Setup(c => c.GetDatabase(It.IsAny<string>()))
+            .Returns(mockDatabase.Object);
+
+        // Mock GetContainer (Direct from Client - commonly used)
         mockClient.Setup(c => c.GetContainer(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(mockContainer.Object);
+            
+        // Mock GetContainer (From Database - used in Repository)
+        mockDatabase.Setup(d => d.GetContainer(It.IsAny<string>()))
             .Returns(mockContainer.Object);
             
         // Mock upsert item to return a valid response
@@ -22,6 +31,10 @@ public static class MockHelpers
         // Mock create item
         mockContainer.Setup(c => c.CreateItemAsync(It.IsAny<object>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Mock<ItemResponse<object>>().Object);
+            
+        // Mock ReadItemAsync (Generic)
+        mockContainer.Setup(c => c.ReadItemAsync<object>(It.IsAny<string>(), It.IsAny<PartitionKey>(), It.IsAny<ItemRequestOptions>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new Mock<ItemResponse<object>>().Object);
             
         return mockClient;
     }
