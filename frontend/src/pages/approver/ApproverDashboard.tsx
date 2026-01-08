@@ -69,32 +69,38 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
             {
               id: 'CR-001',
               vendorId: 'V001',
-              requestType: 'BankUpdate',
-              status: ChangeRequestStatus.PendingReview,
+              requestType: 'BankUpdate' as RequestType,
+              status: ChangeRequestStatus.InReview,
               createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
               items: [
-                { fieldName: 'BankAccount', oldValue: '1234567890', newValue: '0987654321', isSensitive: true }
-              ]
+                { id: '1', tableName: 'LFBK', fieldName: 'BankAccount', oldValue: '1234567890', newValue: '0987654321', isSensitive: true }
+              ],
+              attachments: []
             },
             {
               id: 'CR-002',
               vendorId: 'V002',
-              requestType: 'AddressChange',
-              status: ChangeRequestStatus.PendingReview,
+              requestType: 'AddressChange' as RequestType,
+              status: ChangeRequestStatus.InReview,
               createdAt: new Date(Date.now() - 86400000).toISOString(),
+              updatedAt: new Date(Date.now() - 86400000).toISOString(),
               items: [
-                { fieldName: 'Address', oldValue: '123 Old St', newValue: '456 New Ave', isSensitive: false }
-              ]
+                { id: '2', tableName: 'LFA1', fieldName: 'Address', oldValue: '123 Old St', newValue: '456 New Ave', isSensitive: false }
+              ],
+              attachments: []
             },
             {
               id: 'CR-003',
               vendorId: 'V003',
-              requestType: 'ContactUpdate',
+              requestType: 'ContactUpdate' as RequestType,
               status: ChangeRequestStatus.Approved,
               createdAt: new Date(Date.now() - 172800000).toISOString(),
+              updatedAt: new Date(Date.now() - 172800000).toISOString(),
               items: [
-                { fieldName: 'Email', oldValue: 'old@example.com', newValue: 'new@example.com', isSensitive: false }
-              ]
+                { id: '3', tableName: 'LFA1', fieldName: 'Email', oldValue: 'old@example.com', newValue: 'new@example.com', isSensitive: false }
+              ],
+              attachments: []
             }
           ];
 
