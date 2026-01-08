@@ -56,6 +56,20 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   useEffect(() => {
+    // Check for persisted mock user first
+    const storedMockUser = localStorage.getItem('mockUser');
+    if (storedMockUser) {
+      try {
+        const mockUser = JSON.parse(storedMockUser);
+        setUser(mockUser);
+        setIsLoading(false);
+        return; // Skip Azure AD check if mock user exists
+      } catch (e) {
+        console.error('Failed to parse stored mock user', e);
+        localStorage.removeItem('mockUser');
+      }
+    }
+
     // Timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       if (isLoading) {
@@ -169,10 +183,14 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       }
     };
 
-    setUser(mockUsers[role]);
+    const mockUser = mockUsers[role];
+    setUser(mockUser);
     setIsLoading(false);
+    // Persist to localStorage so refresh doesn't lose the session
+    localStorage.setItem('mockUser', JSON.stringify(mockUser));
   };
   const logout = () => {
+    localStorage.removeItem('mockUser'); // Clear mock user session
     instance.logoutRedirect();
     setUser(null);
   };
