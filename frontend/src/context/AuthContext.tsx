@@ -5,7 +5,7 @@ import { InteractionStatus, InteractionRequiredAuthError } from "@azure/msal-bro
 import axios from 'axios';
 
 // User type mimicking claims from Azure AD B2C / Entra ID
-export type UserRole = 'Vendor' | 'Admin' | 'Approver';
+export type UserRole = 'Vendor' | 'Requestor' | 'VendorUnit' | 'BFM' | 'Admin' | 'Approver';
 
 export interface User {
   id: string;
@@ -130,6 +130,27 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
         email: 'test.vendor@unesco.org',
         role: 'Vendor' as UserRole,
         sapId: 'VENDOR001',
+        isImpersonated: false
+      },
+      'Requestor': {
+        id: 'mock-requestor-001',
+        name: 'Test Requestor User',
+        email: 'test.requestor@unesco.org',
+        role: 'Requestor' as UserRole,
+        isImpersonated: false
+      },
+      'VendorUnit': {
+        id: 'mock-vendorunit-001',
+        name: 'Test Vendor Unit Approver',
+        email: 'test.vendorunit@unesco.org',
+        role: 'VendorUnit' as UserRole,
+        isImpersonated: false
+      },
+      'BFM': {
+        id: 'mock-bfm-001',
+        name: 'Test BFM Approver',
+        email: 'test.bfm@unesco.org',
+        role: 'BFM' as UserRole,
         isImpersonated: false
       },
       'Approver': {

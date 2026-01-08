@@ -35,35 +35,44 @@ namespace VendorMdm.Api.Services
             // NOTE: Azure AD usually sends Group IDs (GUIDs). 
             // If the token is configured to emit Group Names, the value will be the name.
             // We assume the values below might appear in the 'groups' or 'roles' collection.
-            var groupClaims = principal.FindAll("groups").Select(c => c.Value).ToHashSet();
-            
-            // Also check 'roles' claim if App Roles are used
-            var roleClaims = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToHashSet();
-            
-            var newClaims = new List<Claim>();
-            bool hasInternalRole = false;
+            var groupClaims = principal.FindAll("groups").ToList();
+            var roles = new List<string>();
 
-            // Map Groups to Roles
-            if (groupClaims.Contains(GROUP_REQUESTOR) || roleClaims.Contains(GROUP_REQUESTOR))
+            foreach (var groupClaim in groupClaims)
             {
-                newClaims.Add(new Claim(ClaimTypes.Role, "Requestor"));
-                hasInternalRole = true;
+                var groupId = groupClaim.Value;
+
+                // Map specific Azure AD Groups to Roles
+                switch (groupId)
+                {
+                    case "UNESCO-MoUV-Vendor":
+                        roles.Add("Vendor");
+                        break;
+                    case "UNESCO-MoUV-Requestors":
+                        roles.Add("Requestor");
+                        break;
+                    case "UNESCO-MoUV-VendorUnit":
+                        roles.Add("VendorUnit");
+                        roles.Add("Approver"); // VendorUnit can approve
+                        break;
+                    case "UNESCO-MoUV-BFM":
+                        roles.Add("BFM");
+                        roles.Add("Approver"); // BFM can approve
+                        break;
+                    case "UNESCO-MoUV-Admins":
+                        roles.Add("Admin");
+                        roles.Add("Approver"); // Admins can approve
+                        break;
+                }
             }
-            if (groupClaims.Contains(GROUP_VENDOR_UNIT) || roleClaims.Contains(GROUP_VENDOR_UNIT))
+
+            // Default: If no internal group, assign Vendor role
+            if (roles.Count == 0)
             {
-                newClaims.Add(new Claim(ClaimTypes.Role, "VendorUnit"));
-                newClaims.Add(new Claim(ClaimTypes.Role, "Approver")); // VendorUnit implies Approver
-                hasInternalRole = true;
+                roles.Add("Vendor");
             }
-            if (groupClaims.Contains(GROUP_BFM) || roleClaims.Contains(GROUP_BFM))
-            {
-                newClaims.Add(new Claim(ClaimTypes.Role, "BFM"));
-                newClaims.Add(new Claim(ClaimTypes.Role, "Approver")); // BFM implies Approver
-                hasInternalRole = true;
-            }
-            if (groupClaims.Contains(GROUP_ADMIN) || roleClaims.Contains(GROUP_ADMIN))
-            {
-                newClaims.Add(new Claim(ClaimTypes.Role, "Admin"));
+
+            var newClaims = new List<Claim>();
                 newClaims.Add(new Claim(ClaimTypes.Role, "Approver")); // Admin implies Approver
                 hasInternalRole = true;
             }

@@ -108,23 +108,39 @@ export const Login = () => {
                 <button
                   onClick={() => handleMockLogin('Vendor')}
                   disabled={isLoading}
-                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50"
+                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50 text-sm"
                 >
                   Sign in as Vendor
                 </button>
 
                 <button
-                  onClick={() => handleMockLogin('Approver')}
+                  onClick={() => handleMockLogin('Requestor')}
                   disabled={isLoading}
-                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50"
+                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50 text-sm"
                 >
-                  Sign in as Approver
+                  Sign in as Requestor
+                </button>
+
+                <button
+                  onClick={() => handleMockLogin('VendorUnit')}
+                  disabled={isLoading}
+                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50 text-sm"
+                >
+                  Sign in as Vendor Unit Approver
+                </button>
+
+                <button
+                  onClick={() => handleMockLogin('BFM')}
+                  disabled={isLoading}
+                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50 text-sm"
+                >
+                  Sign in as BFM Approver
                 </button>
 
                 <button
                   onClick={() => handleMockLogin('Admin')}
                   disabled={isLoading}
-                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50"
+                  className="w-full bg-white hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded border border-gray-300 transition-colors disabled:opacity-50 text-sm"
                 >
                   Sign in as Administrator
                 </button>
