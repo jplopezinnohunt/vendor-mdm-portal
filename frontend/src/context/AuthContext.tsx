@@ -21,6 +21,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (role?: UserRole) => Promise<void>;
+  mockLogin: (role: UserRole) => Promise<void>;
   logout: () => void;
   getToken: () => Promise<string | null>;
   impersonate: (role: string, displayName?: string, email?: string) => Promise<void>;
@@ -113,9 +114,43 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
 
   const login = async (role?: UserRole) => {
     // We ignore role for Real Auth, effectively.
-    await instance.loginPopup(loginRequest);
+    try {
+      await instance.loginPopup(loginRequest);
+    } catch (e) {
+      console.error("Login failed", e);
+    }
   };
 
+  // Mock login for testing different roles without Azure AD
+  const mockLogin = async (role: UserRole) => {
+    const mockUsers = {
+      'Vendor': {
+        id: 'mock-vendor-001',
+        name: 'Test Vendor User',
+        email: 'test.vendor@unesco.org',
+        role: 'Vendor' as UserRole,
+        sapId: 'VENDOR001',
+        isImpersonated: false
+      },
+      'Approver': {
+        id: 'mock-approver-001',
+        name: 'Test Approver User',
+        email: 'test.approver@unesco.org',
+        role: 'Approver' as UserRole,
+        isImpersonated: false
+      },
+      'Admin': {
+        id: 'mock-admin-001',
+        name: 'Test Admin User',
+        email: 'test.admin@unesco.org',
+        role: 'Admin' as UserRole,
+        isImpersonated: false
+      }
+    };
+
+    setUser(mockUsers[role]);
+    setIsLoading(false);
+  };
   const logout = () => {
     instance.logoutRedirect();
     setUser(null);
@@ -150,6 +185,7 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       isAuthenticated: !!user,
       isLoading,
       login,
+      mockLogin,
       logout,
       getToken,
       impersonate,
