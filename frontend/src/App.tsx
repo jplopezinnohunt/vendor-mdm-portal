@@ -92,12 +92,12 @@ const App: React.FC = () => {
 
             {/* APPROVER ROUTES */}
             <Route path="approver/worklist" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Approver', 'Admin']}>
                 <ApproverDashboard mode="worklist" />
               </ProtectedRoute>
             } />
             <Route path="approver/history" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Approver', 'Admin']}>
                 <ApproverDashboard mode="history" />
               </ProtectedRoute>
             } />
