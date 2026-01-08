@@ -367,9 +367,20 @@ if (useSanctionsScreeningMock)
 }
 else
 {
-    // Register HttpClient for OpenSanctions API
-    builder.Services.AddHttpClient<ISanctionsScreeningService, SanctionsScreeningOpenSanctionsService>();
-    Console.WriteLine("✓ Sanctions Screening: REAL (OpenSanctions.org API - 300+ sources)");
+    var realProvider = builder.Configuration["Services:SanctionsScreening:RealProvider"];
+    
+    if (realProvider == "OfacSource")
+    {
+        // Register HttpClient for OFAC Source (downloading CSV)
+        builder.Services.AddHttpClient<ISanctionsScreeningService, SanctionsScreeningOfacSourceService>();
+        Console.WriteLine("✓ Sanctions Screening: REAL (US Treasury OFAC - Free Source)");
+    }
+    else
+    {
+        // Register HttpClient for OpenSanctions API (Default)
+        builder.Services.AddHttpClient<ISanctionsScreeningService, SanctionsScreeningOpenSanctionsService>();
+        Console.WriteLine("✓ Sanctions Screening: REAL (OpenSanctions.org API - 300+ sources)");
+    }
 }
 
 Console.WriteLine("═══════════════════════════════════════════════════════════");
