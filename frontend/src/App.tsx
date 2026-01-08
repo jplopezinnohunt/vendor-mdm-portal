@@ -109,17 +109,17 @@ const App: React.FC = () => {
               </ProtectedRoute>
             } />
             <Route path="approver/invite-vendor" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
                 <InviteVendorForm />
               </ProtectedRoute>
             } />
             <Route path="approver/create-vendor" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
                 <CreateVendorForm />
               </ProtectedRoute>
             } />
             <Route path="approver/update-vendor" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
                 <ChangeRequestForm />
               </ProtectedRoute>
             } />
