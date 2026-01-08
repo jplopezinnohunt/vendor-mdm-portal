@@ -30,7 +30,9 @@ export const Login = () => {
         case 'Admin':
           navigate('/admin/dashboard');
           break;
-        case 'Approver':
+        case 'VendorUnit':
+        case 'BFM':
+        case 'Requestor':
           navigate('/approver/worklist');
           break;
         case 'Vendor':

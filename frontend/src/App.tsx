@@ -39,8 +39,10 @@ const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     // Role mismatch redirect
-    if (user.role === 'Approver') return <Navigate to="/approver/worklist" replace />;
     if (user.role === 'Admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === 'Requestor' || user.role === 'VendorUnit' || user.role === 'BFM' || user.role === 'Approver') {
+      return <Navigate to="/approver/worklist" replace />;
+    }
     return <Navigate to="/profile" replace />;
   }
 
@@ -168,8 +170,13 @@ const RoleBasedRedirect = () => {
 
   if (isLoading) return null;
 
-  if (user?.role === 'Approver') return <Navigate to="/approver/worklist" replace />;
+  // Admin goes to admin dashboard
   if (user?.role === 'Admin') return <Navigate to="/admin/dashboard" replace />;
+
+  // Requestor, VendorUnit, BFM go to approver worklist
+  if (user?.role === 'Requestor' || user?.role === 'VendorUnit' || user?.role === 'BFM' || user?.role === 'Approver') {
+    return <Navigate to="/approver/worklist" replace />;
+  }
 
   // Default to Vendor profile
   return <Navigate to="/profile" replace />;
