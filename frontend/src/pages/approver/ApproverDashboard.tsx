@@ -308,7 +308,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => navigate('/approver/update-vendor')}
+                onClick={() => navigate('/approver/select-vendor')}
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />

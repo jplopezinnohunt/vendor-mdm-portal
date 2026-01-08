@@ -41,7 +41,7 @@ const APPROVER_NAV = [
     { name: 'Request History', href: '/approver/history', icon: FileText },
     { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: Mail },
     { name: 'Create Vendor', href: '/approver/create-vendor', icon: UserPlus },
-    { name: 'Update Vendor', href: '/approver/update-vendor', icon: FileText },
+    { name: 'Update Vendor', href: '/approver/select-vendor', icon: FileText },
 ];
 
 const ADMIN_NAV = [

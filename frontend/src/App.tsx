@@ -14,6 +14,7 @@ import { InvitationRegistration } from './pages/InvitationRegistration';
 import { ApproverDashboard } from './pages/approver/ApproverDashboard';
 import { RequestReview } from './pages/approver/RequestReview';
 import { OnboardingReview } from './pages/approver/OnboardingReview';
+import { VendorSelectionList } from './pages/approver/VendorSelectionList';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { InviteVendorForm } from './pages/admin/InviteVendorForm';
 import { InvitationManagement } from './pages/admin/InvitationManagement';
@@ -120,7 +121,12 @@ const App: React.FC = () => {
                 <CreateVendorForm />
               </ProtectedRoute>
             } />
-            <Route path="approver/update-vendor" element={
+            <Route path="approver/select-vendor" element={
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
+                <VendorSelectionList />
+              </ProtectedRoute>
+            } />
+            <Route path="approver/update-vendor/:vendorId" element={
               <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
                 <ChangeRequestForm />
               </ProtectedRoute>
