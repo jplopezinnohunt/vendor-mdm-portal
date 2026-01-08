@@ -31,7 +31,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
   const { instance, accounts, inProgress } = useMsal();
-  const account = useAccount(accounts[0] || {});
+  const account = accounts[0] || undefined;
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -55,6 +55,14 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   useEffect(() => {
+    // Timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('[AuthContext] Loading timeout - setting isLoading to false');
+        setIsLoading(false);
+      }
+    }, 3000);
+
     const fetchProfile = async () => {
       if (account && inProgress === InteractionStatus.None) {
         setIsLoading(true);
@@ -99,7 +107,9 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
     };
 
     fetchProfile();
-  }, [account, inProgress, instance]);
+
+    return () => clearTimeout(timeout);
+  }, [account, inProgress]);
 
   const login = async (role?: UserRole) => {
     // We ignore role for Real Auth, effectively.
@@ -138,7 +148,7 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
     <AuthContext.Provider value={{
       user,
       isAuthenticated: !!user,
-      isLoading: isLoading || inProgress !== InteractionStatus.None,
+      isLoading,
       login,
       logout,
       getToken,
