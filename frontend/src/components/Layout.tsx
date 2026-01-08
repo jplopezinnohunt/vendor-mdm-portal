@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
 import { UserNav } from './user-nav';
 import { ServiceStatusPanel } from './ServiceStatusPanel';
+import { ImpersonationBanner } from './ImpersonationBanner';
 
 export const MainLayout: React.FC = () => {
   return (
@@ -15,6 +16,7 @@ export const MainLayout: React.FC = () => {
 
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col">
+          <ImpersonationBanner />
           {/* Top Navigation Bar */}
           <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm">
             {/* Top-Left: Toggle + App Branding */}

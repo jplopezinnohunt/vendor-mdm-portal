@@ -1,205 +1,107 @@
 import React, { useState } from 'react';
-import { useAuth, UserRole } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Building2, ArrowRight, ShieldCheck, UserCog, Sparkles, Database, Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, ArrowRight, Sparkles, Building2 } from 'lucide-react';
 import { VersionInfo } from '../components/VersionInfo';
-import EmailServiceBanner from '../components/EmailServiceBanner';
 
 export const Login: React.FC = () => {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [loginRole, setLoginRole] = useState<UserRole | null>(null);
 
   React.useEffect(() => {
-    if (isAuthenticated) navigate('/profile');
+    if (isAuthenticated) {
+      navigate('/profile');
+    }
   }, [isAuthenticated, navigate]);
 
-  const handleLogin = async (role: UserRole = 'Vendor') => {
+  const handleLogin = async () => {
     setIsLoggingIn(true);
-    setLoginRole(role);
-
-    // Simulates the Azure AD / Corporate ID login flow
-    await login(role);
-
-    setIsLoggingIn(false);
-    navigate('/profile');
+    try {
+      await login();
+      // Redirect will happen automatically or via useEffect
+    } catch (error) {
+      console.error("Login failed", error);
+      setIsLoggingIn(false);
+    }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Animated Gradient Background */}
-      <div className="absolute inset-0 bg-gradient-animated opacity-10"></div>
+    <div className="min-h-screen relative overflow-hidden bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* Background Elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-white opacity-40"></div>
+        <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-400 mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-24 right-0 w-96 h-96 rounded-full bg-purple-400 mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+      </div>
 
-      {/* Decorative Elements */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-      <div className="absolute top-0 right-0 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-      <div className="absolute bottom-0 left-1/2 w-96 h-96 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      <div className="relative sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white/80 backdrop-blur-lg py-8 px-4 shadow-2xl sm:rounded-2xl sm:px-10 border border-white/50">
 
-      <div className="relative flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 min-h-screen">
-        {/* Header Section */}
-        <div className="text-center max-w-3xl mx-auto mb-12 animate-fade-in">
-          <div className="inline-flex items-center justify-center p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl mb-6 shadow-lg">
-            <Sparkles className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight sm:text-6xl mb-4">
-            <span className="text-gradient">Partner</span> with Us
-          </h1>
-          <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Welcome to the centralized vendor management system. Please select an option below to
-            proceed with your application or manage your existing profile.
-          </p>
-
-          {/* Service Status Indicator */}
-          <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md border border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 bg-yellow-500 rounded-full animate-pulse"></div>
-              <span className="text-xs font-medium text-gray-600">Mock Authentication</span>
+          <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8">
+            <div className="inline-flex items-center justify-center p-3 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg mb-4">
+              <Building2 className="h-8 w-8 text-white" />
             </div>
-            <span className="text-gray-300">|</span>
-            <div className="flex items-center gap-2">
-              <Database className="h-3 w-3 text-gray-400" />
-              <span className="text-xs text-gray-500">Backend: Offline</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Email Service Status Banner */}
-        <div className="max-w-3xl w-full mx-auto mb-8">
-          <EmailServiceBanner />
-        </div>
-
-        {/* Main Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl w-full mb-16">
-          {/* New Vendor Option */}
-          <div className="card-premium p-8 group animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-              <div className="relative">
-                <div className="h-16 w-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-shadow">
-                  <UserPlus className="h-8 w-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">New Vendor?</h2>
-                <p className="text-gray-600 mb-8 h-12 leading-relaxed">
-                  Submit your application to become an authorized supplier.
-                </p>
-                <Link
-                  to="/register"
-                  className="inline-flex items-center text-blue-600 font-semibold hover:text-blue-700 text-lg group/link"
-                >
-                  Start Application
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover/link:translate-x-1" />
-                </Link>
-
-                {/* Service Indicator */}
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <div className="h-1.5 w-1.5 bg-blue-500 rounded-full"></div>
-                    <span>Form Validation: Client-side</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Existing Vendor Option */}
-          <div className="card-premium p-8 group animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-green-400 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
-              <div className="relative">
-                <div className="h-16 w-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:shadow-xl transition-shadow">
-                  <Building2 className="h-8 w-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">Existing Vendor?</h2>
-                <p className="text-gray-600 mb-8 h-12 leading-relaxed">
-                  Log in to update your company details, tax info, and services.
-                </p>
-                <button
-                  onClick={() => handleLogin('Vendor')}
-                  disabled={isLoggingIn && loginRole === 'Vendor'}
-                  className="inline-flex items-center text-green-600 font-semibold hover:text-green-700 text-lg group/link bg-transparent border-none p-0 cursor-pointer focus:outline-none disabled:opacity-50"
-                >
-                  {isLoggingIn && loginRole === 'Vendor' ? (
-                    <>
-                      <div className="h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Authenticating...
-                    </>
-                  ) : (
-                    <>
-                      Access Portal
-                      <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover/link:translate-x-1" />
-                    </>
-                  )}
-                </button>
-
-                {/* Service Indicator */}
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <div className="h-1.5 w-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
-                    <span>Auth: Mock (localStorage)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Internal Access Section */}
-        <div className="max-w-xl w-full glass rounded-2xl p-6 shadow-xl animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <ShieldCheck className="h-4 w-4 text-gray-400" />
-            <p className="text-center text-xs text-gray-500 uppercase tracking-wider font-semibold">
-              Internal System Access (Demo)
+            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+              Vendor Portal
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              Secure access for Suppliers and Staff
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => handleLogin('Approver')}
-              disabled={isLoggingIn && loginRole === 'Approver'}
-              className="flex items-center justify-center px-4 py-2.5 text-sm text-gray-700 hover:text-brand-600 transition-colors bg-white rounded-lg shadow-sm hover:shadow-md border border-gray-200 disabled:opacity-50"
-            >
-              {isLoggingIn && loginRole === 'Approver' ? (
-                <div className="h-4 w-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-              ) : (
-                <ShieldCheck className="h-4 w-4 mr-2" />
-              )}
-              Log in as Approver
-            </button>
-
-            <button
-              onClick={() => handleLogin('Admin')}
-              disabled={isLoggingIn && loginRole === 'Admin'}
-              className="flex items-center justify-center px-4 py-2.5 text-sm text-gray-700 hover:text-brand-600 transition-colors bg-white rounded-lg shadow-sm hover:shadow-md border border-gray-200 disabled:opacity-50"
-            >
-              {isLoggingIn && loginRole === 'Admin' ? (
-                <div className="h-4 w-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mr-2"></div>
-              ) : (
-                <UserCog className="h-4 w-4 mr-2" />
-              )}
-              Log in as Administrator
-            </button>
-          </div>
-
-          {/* Service Indicators for Internal Access */}
-          <div className="mt-4 pt-4 border-t border-gray-200/50 flex items-center justify-center gap-4 text-xs text-gray-500">
-            <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 bg-yellow-500 rounded-full animate-pulse"></div>
-              <span>Mock Roles</span>
+          <div className="space-y-6">
+            <div>
+              <button
+                onClick={handleLogin}
+                disabled={isLoggingIn}
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed group"
+              >
+                {isLoggingIn ? (
+                  <span className="flex items-center">
+                    <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Connecting...
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    Sign in with UNESCO Account
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                )}
+              </button>
             </div>
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 bg-gray-400 rounded-full"></div>
-              <span>No Azure AD</span>
+
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">
+                    Trusted by
+                  </span>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-3">
+                <div className="flex justify-center items-center gap-2 text-gray-500 text-xs uppercase tracking-wider font-semibold">
+                  <ShieldCheck className="h-4 w-4" />
+                  Azure Active Directory
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-12 text-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
-          <div className="text-sm text-gray-500 mb-2">
-            &copy; {new Date().getFullYear()} Vendor Master Data Portal. Secured by Azure AD.
-          </div>
+        <div className="mt-8 text-center">
           <VersionInfo />
         </div>
       </div>
@@ -211,18 +113,8 @@ export const Login: React.FC = () => {
           50% { transform: translate(-20px, 20px) scale(0.9); }
           75% { transform: translate(50px, 50px) scale(1.05); }
         }
-        
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
       `}</style>
     </div>
   );
