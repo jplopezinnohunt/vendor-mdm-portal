@@ -92,20 +92,28 @@ Max-Age: 28800 seconds (8 hours)
 
 **User Roles:**
 
-| Role | Permissions | Azure AD Group |
-| --- | --- | --- |
-| **Requestor** | Create/edit own requests, view own worklist | UNESCO-MoUV-Requestors |
-| **Vendor Unit** | Approve requests, view all submissions | UNESCO-MoUV-VendorUnit |
-| **BFM Approver** | High-value approvals, override rejections | UNESCO-MoUV-BFM |
-| **Administrator** | Full system access, user management | UNESCO-MoUV-Admins |
+| Role | Permissions | Azure AD Group | Frontend Routes |
+| --- | --- | --- | --- |
+| **Vendor** | View/edit own profile, submit change requests | UNESCO-MoUV-Vendors | `/profile`, `/requests` |
+| **Requestor** | Create/edit vendor requests, view own worklist | UNESCO-MoUV-Requestors | `/approver/worklist`, `/approver/history` |
+| **Vendor Unit** | Approve vendor requests, view all submissions | UNESCO-MoUV-VendorUnit | `/approver/*` |
+| **BFM** | High-value approvals, override rejections | UNESCO-MoUV-BFM | `/approver/*` |
+| **Approver** | General approval authority | UNESCO-MoUV-Approvers | `/approver/*` |
+| **Administrator** | Full system access, user management | UNESCO-MoUV-Admins | `/admin/*`, `/approver/*` |
+
+> [!NOTE]
+> **Frontend Implementation**: See [Frontend Authentication](./frontend-authentication.md) for details on how these roles are enforced in the React application using the `ProtectedRoute` component.
+
+> [!NOTE]
+> **Development/Testing**: Mock authentication is available for all roles. See [Frontend Authentication - Mock Login](./frontend-authentication.md#mock-authentication-development) for details.
 
 **Claims-Based Authorization Example:**
 
 ```csharp
-[Authorize(Roles = "Requestor,VendorUnit,BFM,Administrator")]
+[Authorize(Roles = "Requestor,VendorUnit,BFM,Approver,Administrator")]
 public class VendorController : Controller
 {
-    [Authorize(Roles = "VendorUnit,BFM,Administrator")]
+    [Authorize(Roles = "VendorUnit,BFM,Approver,Administrator")]
     public IActionResult ApproveRequest(int id)
     {
         // Only approvers can access
