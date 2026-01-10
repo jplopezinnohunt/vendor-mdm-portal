@@ -14,6 +14,7 @@ import { InvitationRegistration } from './pages/InvitationRegistration';
 import { ApproverDashboard } from './pages/approver/ApproverDashboard';
 import { RequestReview } from './pages/approver/RequestReview';
 import { OnboardingReview } from './pages/approver/OnboardingReview';
+import { VendorSelectionList } from './pages/approver/VendorSelectionList';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { InviteVendorForm } from './pages/admin/InviteVendorForm';
 import { InvitationManagement } from './pages/admin/InvitationManagement';
@@ -39,8 +40,10 @@ const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     // Role mismatch redirect
-    if (user.role === 'Approver') return <Navigate to="/approver/worklist" replace />;
     if (user.role === 'Admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === 'Requestor' || user.role === 'VendorUnit' || user.role === 'BFM' || user.role === 'Approver') {
+      return <Navigate to="/approver/worklist" replace />;
+    }
     return <Navigate to="/profile" replace />;
   }
 
@@ -89,12 +92,12 @@ const App: React.FC = () => {
 
             {/* APPROVER ROUTES */}
             <Route path="approver/worklist" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Approver', 'Admin']}>
                 <ApproverDashboard mode="worklist" />
               </ProtectedRoute>
             } />
             <Route path="approver/history" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Approver', 'Admin']}>
                 <ApproverDashboard mode="history" />
               </ProtectedRoute>
             } />
@@ -109,17 +112,22 @@ const App: React.FC = () => {
               </ProtectedRoute>
             } />
             <Route path="approver/invite-vendor" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
                 <InviteVendorForm />
               </ProtectedRoute>
             } />
             <Route path="approver/create-vendor" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
                 <CreateVendorForm />
               </ProtectedRoute>
             } />
-            <Route path="approver/update-vendor" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+            <Route path="approver/select-vendor" element={
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
+                <VendorSelectionList />
+              </ProtectedRoute>
+            } />
+            <Route path="approver/update-vendor/:vendorId" element={
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'BFM', 'Admin']}>
                 <ChangeRequestForm />
               </ProtectedRoute>
             } />
@@ -168,8 +176,13 @@ const RoleBasedRedirect = () => {
 
   if (isLoading) return null;
 
-  if (user?.role === 'Approver') return <Navigate to="/approver/worklist" replace />;
+  // Admin goes to admin dashboard
   if (user?.role === 'Admin') return <Navigate to="/admin/dashboard" replace />;
+
+  // Requestor, VendorUnit, BFM go to approver worklist
+  if (user?.role === 'Requestor' || user?.role === 'VendorUnit' || user?.role === 'BFM' || user?.role === 'Approver') {
+    return <Navigate to="/approver/worklist" replace />;
+  }
 
   // Default to Vendor profile
   return <Navigate to="/profile" replace />;

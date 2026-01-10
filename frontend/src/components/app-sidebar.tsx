@@ -41,7 +41,7 @@ const APPROVER_NAV = [
     { name: 'Request History', href: '/approver/history', icon: FileText },
     { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: Mail },
     { name: 'Create Vendor', href: '/approver/create-vendor', icon: UserPlus },
-    { name: 'Update Vendor', href: '/approver/update-vendor', icon: FileText },
+    { name: 'Update Vendor', href: '/approver/select-vendor', icon: FileText },
 ];
 
 const ADMIN_NAV = [
@@ -57,19 +57,17 @@ export function AppSidebar() {
 
     // Determine navigation based on role
     let navigation = VENDOR_NAV;
-    if (user?.role === 'Approver') {
-        navigation = APPROVER_NAV;
-    } else if (user?.role === 'Admin') {
-        navigation = ADMIN_NAV;
-    }
+    let roleLabel = 'Vendor Account';
 
-    // Get role label
-    const roleLabel =
-        user?.role === 'Vendor'
-            ? 'Vendor Account'
-            : user?.role === 'Admin'
-                ? 'System Administrator'
-                : 'Internal Approver';
+    if (user?.role === 'Admin') {
+        navigation = ADMIN_NAV;
+        roleLabel = 'System Administrator';
+    } else if (user?.role === 'Requestor' || user?.role === 'VendorUnit' || user?.role === 'BFM' || user?.role === 'Approver') {
+        navigation = APPROVER_NAV;
+        roleLabel = user?.role === 'Requestor' ? 'Requestor' :
+            user?.role === 'VendorUnit' ? 'Vendor Unit Approver' :
+                user?.role === 'BFM' ? 'BFM Approver' : 'Internal Approver';
+    }
 
     return (
         <TooltipProvider>

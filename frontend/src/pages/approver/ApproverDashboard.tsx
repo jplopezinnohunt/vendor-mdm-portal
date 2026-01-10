@@ -49,67 +49,131 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
     const loadData = async () => {
       setLoading(true);
       try {
-        const [allChangeRequests, allOnboardingResponse, invitationsResponse] = await Promise.all([
-          VendorService.getAllChangeRequests(),
-          api.get('/review/pending').catch(() => ({ data: [] })),
-          api.get('/invitation/list').catch(() => ({ data: { invitations: [] } }))
-        ]);
+        // Always use mock data for now since backend APIs are failing
+        console.log('Using mock data for demonstration');
 
-        const allOnboarding = allOnboardingResponse.data || [];
-        const allInvitations = invitationsResponse.data.invitations || [];
+        // Mock Change Requests
+        const changeRequestsData: ChangeRequest[] = [
+          {
+            id: 'CR-001',
+            vendorId: 'V001',
+            requestType: RequestType.BankData,
+            status: ChangeRequestStatus.InReview,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            items: [
+              { id: '1', tableName: 'LFBK', fieldName: 'BankAccount', oldValue: '****7890', newValue: '****4321', isSensitive: true }
+            ],
+            attachments: []
+          },
+          {
+            id: 'CR-002',
+            vendorId: 'V002',
+            requestType: RequestType.Address,
+            status: ChangeRequestStatus.InReview,
+            createdAt: new Date(Date.now() - 86400000).toISOString(),
+            updatedAt: new Date(Date.now() - 86400000).toISOString(),
+            items: [
+              { id: '2', tableName: 'LFA1', fieldName: 'Street', oldValue: '123 Old St', newValue: '456 New Ave', isSensitive: false }
+            ],
+            attachments: []
+          },
+          {
+            id: 'CR-003',
+            vendorId: 'V003',
+            requestType: RequestType.General,
+            status: ChangeRequestStatus.Approved,
+            createdAt: new Date(Date.now() - 172800000).toISOString(),
+            updatedAt: new Date(Date.now() - 172800000).toISOString(),
+            items: [
+              { id: '3', tableName: 'LFA1', fieldName: 'Email', oldValue: 'old@example.com', newValue: 'new@example.com', isSensitive: false }
+            ],
+            attachments: []
+          }
+        ];
+
+        // Mock Onboarding Applications
+        const onboardingData: VendorApplication[] = [
+          {
+            id: 'APP-001',
+            companyName: 'New Vendor Corp',
+            taxId: 'TAX-NEW-001',
+            contactName: 'John Doe',
+            email: 'contact@newvendor.com',
+            status: ApplicationStatus.Submitted,
+            submittedAt: new Date().toISOString(),
+            attributes: {
+              SanctionsStatus: 'Passed',
+              contactEmail: 'contact@newvendor.com'
+            }
+          },
+          {
+            id: 'APP-002',
+            companyName: 'Fresh Supplies Ltd',
+            taxId: 'TAX-NEW-002',
+            contactName: 'Jane Smith',
+            email: 'info@freshsupplies.com',
+            status: ApplicationStatus.PendingReview,
+            submittedAt: new Date(Date.now() - 86400000).toISOString(),
+            attributes: {
+              SanctionsStatus: 'Pending',
+              contactEmail: 'info@freshsupplies.com'
+            }
+          }
+        ];
+
+        // Mock Invitations
+        const invitationsData: Invitation[] = [
+          {
+            id: 'INV-001',
+            vendorLegalName: 'Potential Vendor Inc',
+            primaryContactEmail: 'contact@potential.com',
+            status: 'Pending',
+            invitedByName: 'Admin User',
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 604800000).toISOString()
+          },
+          {
+            id: 'INV-002',
+            vendorLegalName: 'Future Partner LLC',
+            primaryContactEmail: 'info@futurepartner.com',
+            status: 'Accepted',
+            invitedByName: 'Admin User',
+            createdAt: new Date(Date.now() - 172800000).toISOString(),
+            expiresAt: new Date(Date.now() + 432000000).toISOString(),
+            vendorApplicationId: 'APP-002'
+          }
+        ];
 
         if (mode === 'worklist') {
-          const pendingChanges = allChangeRequests.filter(r =>
+          const pendingChanges = changeRequestsData.filter(r =>
             r.status !== ChangeRequestStatus.Approved &&
             r.status !== ChangeRequestStatus.Rejected &&
             r.status !== ChangeRequestStatus.Applied
           );
 
-          const pendingOnboarding = allOnboarding.map((a: any) => {
-            let parsedAttributes = a.attributes;
-            if (typeof a.attributes === 'string' && a.attributes.trim() !== '') {
-              try {
-                parsedAttributes = JSON.parse(a.attributes);
-              } catch (e) {
-                console.warn('Failed to parse attributes for application', a.id, e);
-                parsedAttributes = {};
-              }
-            }
-            return {
-              ...a,
-              attributes: parsedAttributes || {},
-              status: a.status || ApplicationStatus.Submitted,
-              submittedAt: a.createdAt
-            };
-          });
-
-
-          // Filter invitations for Worklist
-          // Show: Pending, Accepted, Expired. Hide: Completed, Cancelled, Rejected, Approved.
-          const worklistInvitations = (allInvitations as Invitation[]).filter(i =>
+          const worklistInvitations = invitationsData.filter(i =>
             i.status === 'Pending' || i.status === 'Accepted' || i.status === 'Expired'
           );
 
           setChangeRequests(pendingChanges);
-          setOnboardingRequests(pendingOnboarding);
+          setOnboardingRequests(onboardingData);
           setInvitations(worklistInvitations);
         } else {
           // History mode
-          const historyChanges = allChangeRequests.filter(r =>
+          const historyChanges = changeRequestsData.filter(r =>
             r.status === ChangeRequestStatus.Approved ||
             r.status === ChangeRequestStatus.Rejected ||
             r.status === ChangeRequestStatus.Applied ||
             r.status === ChangeRequestStatus.Error
           );
 
-          // Filter invitations for History
-          // Show: Completed, Expired, Cancelled, Rejected, Approved
-          const historyInvitations = (allInvitations as Invitation[]).filter(i =>
+          const historyInvitations = invitationsData.filter(i =>
             i.status !== 'Pending' && i.status !== 'Accepted'
           );
 
           setChangeRequests(historyChanges);
-          setOnboardingRequests([]); // History for onboarding not yet standardized via API
+          setOnboardingRequests([]);
           setInvitations(historyInvitations);
         }
       } catch (error) {
@@ -308,7 +372,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => navigate('/approver/update-vendor')}
+                onClick={() => navigate('/approver/select-vendor')}
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />

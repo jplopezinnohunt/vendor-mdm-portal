@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Identity.Web;
 using VendorMdm.Shared.Models;
 using VendorMdm.Shared.Mapping;
+using VendorMdm.Api.Middleware;
+using Microsoft.AspNetCore.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,6 +62,9 @@ Console.WriteLine($"Configured Mode: {dataSourceMode}");
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// RBAC: Claims Transformation (Maps Groups -> Roles)
+builder.Services.AddTransient<IClaimsTransformation, ClaimsTransformationService>();
 
 // Authentication & Authorization
 // Only enable Azure AD authentication if ClientId is configured
@@ -419,6 +424,7 @@ app.UseRouting();
 if (!string.IsNullOrEmpty(azureAdClientId))
 {
     app.UseAuthentication();
+    app.UseMiddleware<ImpersonationMiddleware>();
 }
 
 app.UseAuthorization();
