@@ -73,16 +73,11 @@ namespace VendorMdm.Api.Services
             }
 
             var newClaims = new List<Claim>();
-                newClaims.Add(new Claim(ClaimTypes.Role, "Approver")); // Admin implies Approver
-                hasInternalRole = true;
-            }
-
-            // Vendor Logic: If authenticated but NO internal group found, assign Vendor role
-            // This covers the "Vendor Role... act as per invitation" requirement. 
-            // They are authenticated users without internal privileges.
-            if (!hasInternalRole)
+            
+            // Add all mapped roles
+            foreach (var role in roles)
             {
-                 newClaims.Add(new Claim(ClaimTypes.Role, "Vendor"));
+                newClaims.Add(new Claim(ClaimTypes.Role, role));
             }
 
             // Mark as processed
