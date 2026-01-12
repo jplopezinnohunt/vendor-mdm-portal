@@ -409,11 +409,18 @@ app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 app.UseRouting();
 
+
 // Only use authentication if it was configured
 if (!string.IsNullOrEmpty(azureAdClientId))
 {
     app.UseAuthentication();
     app.UseMiddleware<ImpersonationMiddleware>();
+}
+
+// 2026-01-10: Support Mock Auth Header in Local Dev
+if (app.Environment.IsDevelopment())
+{
+    app.UseMiddleware<MockAuthMiddleware>();
 }
 
 app.UseAuthorization();

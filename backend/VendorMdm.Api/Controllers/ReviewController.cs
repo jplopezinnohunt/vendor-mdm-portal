@@ -63,9 +63,16 @@ public class ReviewController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetReviewDetails(Guid id)
     {
+        _logger.LogInformation("GetReviewDetails called for {Id}", id);
         var app = await _context.VendorApplications.FindAsync(id);
-        if (app == null) return NotFound();
+        
+        if (app == null) 
+        {
+            _logger.LogWarning("GetReviewDetails: Application {Id} not found", id);
+            return NotFound();
+        }
 
+        _logger.LogInformation("GetReviewDetails: Application found. Attributes length: {Len}", app.Attributes?.Length ?? 0);
         return Ok(app);
     }
 

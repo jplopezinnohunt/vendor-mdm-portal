@@ -56,7 +56,6 @@ const COMPANY_CODE_OPTIONS = [
 const STEPS = [
     { id: 'selection', title: 'Selection', icon: Settings },
     { id: 'main-data', title: 'Main Data', icon: Mail },
-    { id: 'settings', title: 'Settings', icon: ShieldCheck },
     { id: 'review', title: 'Review', icon: FileText },
 ];
 
@@ -144,7 +143,15 @@ export const InviteVendorForm: React.FC = () => {
 
     const performSanctionsScreening = async () => {
         const data = watch();
-        const searchQuery = data.vendorLegalName;
+        // Construct name correctly for individuals vs companies
+        const searchQuery = isIndividual
+            ? (data.familyName && data.givenName ? `${data.familyName} ${data.givenName}` : '')
+            : data.vendorLegalName;
+
+        if (!searchQuery) {
+            alert('Cannot perform sanctions check: Vendor name is missing');
+            return;
+        }
 
         setIsChecking(true);
         try {
@@ -158,7 +165,7 @@ export const InviteVendorForm: React.FC = () => {
             setValidationPassed(true);
 
             if (viewMode === 'wizard') {
-                setActiveStep(2); // Move to Settings Step
+                setActiveStep(2); // Move to Review Step
             }
         } catch (error: any) {
             console.error('Sanctions screening failed:', error);
@@ -182,12 +189,54 @@ export const InviteVendorForm: React.FC = () => {
                 data.vendorLegalName = `${data.familyName.toUpperCase()} ${data.givenName}`;
             }
 
-            const response = await api.post('/invitation/create', data);
+            // Sanitize payload: ASP.NET Core dislikes empty strings for nullable DateTime/numbers
+            const payload = {
+                ...data,
+                expirationDays: Number(data.expirationDays),
+                dateOfBirth: data.dateOfBirth || null,
+                taxCode1: data.taxCode1 || null,
+                taxCode2: data.taxCode2 || null,
+                permittedPayee: data.permittedPayee || null,
+                notes: data.notes || null,
+                accountGroup: data.accountGroup || null,
+                companyCode: data.companyCode || null
+            };
+
+
+
+            const response = await api.post('/invitation/create', payload);
             setInvitationData(response.data);
             setSubmitted(true);
         } catch (error: any) {
             console.error('Failed to create invitation:', error);
-            alert(error.userMessage || 'Failed to create invitation');
+
+            // Handle server error redirect explicitly
+            if (error.isServerError && error.serverDetails) {
+                navigate('/500', { state: error.serverDetails });
+                return;
+            }
+
+            // Safe error handling for Alert
+            try {
+                const errData = error.response?.data || {};
+                // Prioritize problem details properties
+                const msg = errData.detail || errData.message || errData.error || errData.title || error.message || 'Failed to create invitation';
+
+                let finalMsg = msg;
+
+                // If 400 Bad Request, dump the validation errors if available
+                if (error.response?.status === 400 && errData.errors) {
+                    finalMsg += `\n\nValidation Errors:\n${JSON.stringify(errData.errors, null, 2)}`;
+                } else if (!msg && Object.keys(errData).length > 0) {
+                    finalMsg += `\n\nPayload: ${JSON.stringify(errData, null, 2)}`;
+                }
+
+                const stack = errData.stack ? `\n\nDebug Info:\n${errData.stack.substring(0, 200)}...` : '';
+                alert(`Error: ${finalMsg}${stack}`);
+            } catch (alertError) {
+                alert('An error occurred, and we failed to process the error message. check console.');
+                console.error('Error processing alert:', alertError);
+            }
         } finally {
             setSubmitting(false);
         }
@@ -221,6 +270,18 @@ export const InviteVendorForm: React.FC = () => {
                         </div>
                         <h2 className="text-3xl font-bold text-gray-900 mb-4">Invitation Ready!</h2>
 
+                        {invitationData.emailSent === false && (
+                            <div className="mb-6 mx-auto max-w-lg bg-amber-50 border border-amber-200 rounded-md p-4 flex items-start text-left">
+                                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                                <div className="ml-3">
+                                    <h3 className="text-sm font-medium text-amber-800">Email Warning</h3>
+                                    <div className="mt-1 text-sm text-amber-700">
+                                        <p>{invitationData.emailError || "The invitation was created, but the email could not be sent. Please copy the link below and send it manually."}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <div className="mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 text-left">Secure Link</label>
                             <div className="flex gap-2">
@@ -249,9 +310,7 @@ export const InviteVendorForm: React.FC = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 border-b-2 border-brand-500 pb-2 inline-block">Invite New Vendor</h1>
                     <p className="mt-4 text-gray-600 text-sm">Initiate the secure onboarding flow for a new vendor partner.</p>
-                    <div className="text-xs text-red-500 font-mono mt-2 bg-red-50 p-1 border border-red-200">
-                        DEBUG: Type={selectedVendorType} IsInd={isIndividual ? 'YES' : 'NO'}
-                    </div>
+
                 </div>
 
                 {/* View Toggle */}
@@ -264,6 +323,8 @@ export const InviteVendorForm: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {/* Debug removed */}
 
             {viewMode === 'wizard' && (
                 <div className="mb-12">
@@ -401,66 +462,56 @@ export const InviteVendorForm: React.FC = () => {
                     </Card>
                 )}
 
-                {/* Remove standalone SAP and Sanctions steps from wizard/full view */}
-
-                {/* Step 2: Settings */}
+                {/* Step 2: Review (Formerly Step 3) */}
                 {(viewMode === 'full' || activeStep === 2) && categoryCommitted && validationPassed && (
-                    <Card title="Invitation Settings">
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Internal Currency *</label>
-                                    <select {...register('currency', { required: true })} className="w-full px-3 py-2 border rounded bg-white">
-                                        <option value="EUR">EUR - Euro</option>
-                                        <option value="USD">USD - US Dollar</option>
-                                        <option value="GBP">GBP - British Pound</option>
-                                        <option value="CHF">CHF - Swiss Franc</option>
-                                    </select>
-                                    <p className="text-xs text-gray-400 mt-1">Default payment currency for this vendor.</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Communication Language *</label>
-                                    <select {...register('sapLanguage', { required: true })} className="w-full px-3 py-2 border rounded bg-white">
-                                        <option value="EN">English</option>
-                                        <option value="FR">French</option>
-                                        <option value="ES">Spanish</option>
-                                        <option value="AR">Arabic</option>
-                                    </select>
-                                    <p className="text-xs text-gray-400 mt-1">Language for SAP contract and letters.</p>
-                                </div>
-                            </div>
-
-                            <div className="border-t pt-4">
-                                <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Expiration *</label>
-                                <select {...register('expirationDays', { required: true })} className="w-full px-3 py-2 border rounded bg-white">
-                                    <option value="7">7 days</option>
-                                    <option value="14">14 days (Recommended)</option>
-                                    <option value="30">30 days</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Internal Notes (Optional)</label>
-                                <textarea {...register('notes')} rows={3} className="w-full px-3 py-2 border rounded focus:ring-brand-500 focus:border-brand-500" placeholder="Add internal context for this invitation..." />
-                            </div>
-                        </div>
-                    </Card>
-                )}
-
-                {/* Step 3: Review */}
-                {(viewMode === 'full' || activeStep === 3) && categoryCommitted && validationPassed && (
                     <Card title="Review & Finalize">
                         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
                             <p className="text-sm text-blue-700">Summary of the invitation profile. Please review before issuing the link.</p>
                         </div>
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
-                            <div><span className="text-[10px] font-bold text-gray-400 uppercase block tracking-widest">Name</span><span className="font-bold">{watch('vendorLegalName')}</span></div>
-                            <div><span className="text-[10px] font-bold text-gray-400 uppercase block tracking-widest">Email</span><span className="font-bold">{watch('primaryContactEmail')}</span></div>
-                            <div><span className="text-[10px] font-bold text-gray-400 uppercase block tracking-widest">Country</span><span className="font-bold">{watch('country')}</span></div>
-                            <div><span className="text-[10px] font-bold text-gray-400 uppercase block tracking-widest">Expires In</span><span className="font-bold">{watch('expirationDays')} days</span></div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            {/* Vendor Information */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Vendor Information</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div><span className="text-gray-500 block text-xs">Name</span><span className="font-bold">{isIndividual ? `${watch('familyName')} ${watch('givenName')}` : watch('vendorLegalName')}</span></div>
+                                    <div><span className="text-gray-500 block text-xs">Email</span><span className="font-bold">{watch('primaryContactEmail')}</span></div>
+                                    <div><span className="text-gray-500 block text-xs">Country</span><span className="font-bold">{watch('country')}</span></div>
+                                </div>
+                            </div>
+
+                            {/* Classification */}
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Classification</h4>
+                                <div className="space-y-2 text-sm">
+                                    <div><span className="text-gray-500 block text-xs">Type</span><span className="font-bold">{watch('vendorType')}</span></div>
+                                    <div><span className="text-gray-500 block text-xs">Account Group</span><span className="font-bold">{watch('accountGroup')}</span></div>
+                                    <div><span className="text-gray-500 block text-xs">Entity</span><span className="font-bold">{watch('companyCode')}</span></div>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="mt-6 border-t pt-4">
-                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Validation Summary</h4>
+                        <div className="border-t pt-6 space-y-6">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Additional Configuration</h4>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Expiration *</label>
+                                    <select {...register('expirationDays', { required: true })} className="w-full px-3 py-2 border rounded bg-white focus:ring-brand-500 focus:border-brand-500">
+                                        <option value="7">7 days</option>
+                                        <option value="14">14 days (Recommended)</option>
+                                        <option value="30">30 days</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-1 uppercase tracking-wider">Internal Notes (Optional)</label>
+                                    <textarea {...register('notes')} rows={3} className="w-full px-3 py-2 border rounded focus:ring-brand-500 focus:border-brand-500" placeholder="Add internal context for this invitation..." />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 border-t pt-4">
+                            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Checks Summary</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className={`p-3 rounded border ${checkResults && checkResults.length > 0 ? 'bg-orange-50 border-orange-100' : 'bg-green-50 border-green-100'}`}>
                                     <div className="flex items-center gap-2 mb-1">

@@ -27,6 +27,8 @@ public class CreateInvitationResponse
     public string InvitationToken { get; set; } = string.Empty;
     public string InvitationLink { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
+    public bool EmailSent { get; set; } = true;
+    public string? EmailError { get; set; }
 }
 
 public class ValidateInvitationResponse
@@ -38,6 +40,7 @@ public class ValidateInvitationResponse
     public string? VendorType { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public string? CurrentStage { get; set; }
+    public Dictionary<string, object> Attributes { get; set; } = new();
 }
 
 public class InvitationListItem
@@ -46,10 +49,12 @@ public class InvitationListItem
     public string VendorLegalName { get; set; } = string.Empty;
     public string PrimaryContactEmail { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public string CurrentStage { get; set; } = string.Empty;
     public string InvitedByName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime ExpiresAt { get; set; }
     public Guid? VendorApplicationId { get; set; }
+    public bool EmailSent { get; set; } = true;
 }
 
 public class InvitationListResponse
@@ -72,4 +77,18 @@ public class CompleteInvitationRequest
 public class MfaVerifyRequest
 {
     public string Code { get; set; } = string.Empty;
+}
+
+public class VerifyMfaResponse
+{
+    public bool Success { get; set; }
+    public string? Message { get; set; }
+    public string? CurrentStage { get; set; }
+    public Dictionary<string, object> Attributes { get; set; } = new();
+    
+    // Include full details needed for wizard restoration
+    public string? VendorLegalName { get; set; }
+    public string? PrimaryContactEmail { get; set; }
+    public string? VendorType { get; set; }
+    public DateTime? ExpiresAt { get; set; }
 }

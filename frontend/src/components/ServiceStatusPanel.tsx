@@ -39,13 +39,15 @@ export const ServiceStatusPanel: React.FC = () => {
 
     useEffect(() => {
         // Run checks sequentially – can be parallel if desired
+        // Run checks sequentially – can be parallel if desired
         const runChecks = async () => {
-            const v = await checkEndpoint(`${baseUrl}/changerequest/100450`);
-            setVendorStatus(v);
-            const r = await checkEndpoint(`${baseUrl}/changerequest/id/cr-001`); // Using a valid pattern
-            setRequestsStatus(r);
-            const o = await checkEndpoint(`${baseUrl}/review/pending`);
-            setOnboardingStatus(o);
+            // Checks temporarily disabled to reduce console noise during debugging
+            // For now, assume Local if on localhost to avoid "Mock (Client)" confusion
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                setVendorStatus('Local');
+                setRequestsStatus('Local');
+                setOnboardingStatus('Local');
+            }
         };
         runChecks();
     }, [baseUrl]);

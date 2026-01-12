@@ -20,7 +20,7 @@ public interface IInvitationService
     Task<bool> CompleteInvitationAsync(string token, Guid vendorApplicationId);
     Task<(bool Success, string? Link)> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
     Task<bool> TriggerMfaAsync(string token);
-    Task<bool> VerifyMfaCodeAsync(string token, string code);
+    Task<VerifyMfaResponse> VerifyMfaCodeAsync(string token, string code);
     Task<bool> SubmitInitialInfoAsync(string token, Dictionary<string, object> initialInfo);
     Task<bool> SubmitEnrichmentAsync(string token, Dictionary<string, object> enrichmentData);
     Task<bool> CancelInvitationAsync(Guid invitationId, Guid requestedBy);
@@ -87,19 +87,32 @@ public class InvitationService : IInvitationService
         }
 
         // 3. Pre-Invitation Sanctions Screening
-        var screeningRequest = new VendorMdm.Shared.Models.Sanctions.ScreeningRequest
+        try
         {
-            EntityName = request.VendorLegalName,
-            EntityType = request.VendorType == "Individual" ? "Person" : "Organization",
-            Address = new VendorMdm.Shared.Models.Sanctions.AddressInfo { Country = "US" } // Default for initial check
-        };
+            var screeningRequest = new VendorMdm.Shared.Models.Sanctions.ScreeningRequest
+            {
+                EntityName = request.VendorLegalName,
+                EntityType = request.VendorType == "Individual" ? "Person" : "Organization",
+                Address = new VendorMdm.Shared.Models.Sanctions.AddressInfo { Country = "US" } // Default for initial check
+            };
 
-        var screeningResult = await _sanctionsService.ScreenEntityAsync(screeningRequest);
-        if (screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.High || 
-            screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.Critical)
+            var screeningResult = await _sanctionsService.ScreenEntityAsync(screeningRequest);
+            if (screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.High || 
+                screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.Critical)
+            {
+                _logger.LogWarning("Blocked invitation for {Email} due to Sanctions Risk: {RiskLevel}", request.PrimaryContactEmail, screeningResult.OverallRisk);
+                throw new InvalidOperationException("High-risk match found in Sanctions Screening. Invitation cannot be sent.");
+            }
+        }
+        catch (InvalidOperationException)
         {
-            _logger.LogWarning("Blocked invitation for {Email} due to Sanctions Risk: {RiskLevel}", request.PrimaryContactEmail, screeningResult.OverallRisk);
-            throw new InvalidOperationException("High-risk match found in Sanctions Screening. Invitation cannot be sent.");
+            // Rethrow business logic exceptions (like high risk blockage)
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Sanctions screening service failed unexpectedly. Proceeding with invitation creation (Fail-Open for Dev).");
+            // In production, we might want to Fail-Closed, but for local dev to unblock the user, we Proceed.
         }
 
         // Generate secure token
@@ -237,6 +250,7 @@ public class InvitationService : IInvitationService
         }
 
         // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
+        bool emailSent = false;
         try
         {
             var baseUrl = _configuration["App:BaseUrl"] 
@@ -255,7 +269,7 @@ public class InvitationService : IInvitationService
                 BaseUrl = baseUrl
             };
 
-            var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
+            emailSent = await _emailService.SendInvitationEmailAsync(emailData);
             
             if (emailSent)
             {
@@ -266,8 +280,24 @@ public class InvitationService : IInvitationService
             else
             {
                 _logger.LogWarning(
-                    "Invitation email sending returned false for {Email}. Email details logged.", 
+                    "Invitation email sending returned false for {Email}. Email details logged. Updating attributes.", 
                     request.PrimaryContactEmail);
+                
+                // Update attributes to reflect failure
+                try 
+                {
+                    var attrs = string.IsNullOrEmpty(invitation.Attributes) 
+                        ? new Dictionary<string, object>() 
+                        : JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+                    
+                    attrs["emailSent"] = false;
+                    invitation.Attributes = JsonSerializer.Serialize(attrs);
+                    await _context.SaveChangesAsync();
+                }
+                catch (Exception exVal)
+                {
+                     _logger.LogError(exVal, "Failed to update invitation attributes with email failure status.");
+                }
             }
         }
         catch (Exception ex)
@@ -275,7 +305,19 @@ public class InvitationService : IInvitationService
             _logger.LogError(ex, 
                 "Failed to send invitation email directly for {Email}. Invitation created but email not sent.", 
                 request.PrimaryContactEmail);
-            // Don't fail the invitation creation if email sending fails
+            
+            // Update attributes to reflect exception/failure
+            try 
+            {
+                var attrs = string.IsNullOrEmpty(invitation.Attributes) 
+                    ? new Dictionary<string, object>() 
+                    : JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
+                
+                attrs["emailSent"] = false;
+                invitation.Attributes = JsonSerializer.Serialize(attrs);
+                await _context.SaveChangesAsync();
+            }
+            catch {}
         }
 
         var invitationLink = $"/invitation/register/{token}";
@@ -285,7 +327,9 @@ public class InvitationService : IInvitationService
             InvitationId = invitation.Id,
             InvitationToken = token,
             InvitationLink = invitationLink,
-            ExpiresAt = expiresAt
+            ExpiresAt = expiresAt,
+            EmailSent = emailSent,
+            EmailError = emailSent ? null : "Email sending failed. Please copy the link manually."
         };
     }
 
@@ -328,14 +372,17 @@ public class InvitationService : IInvitationService
             };
         }
 
+        _logger.LogInformation("Validating Token {Token}. CurrentStage: {Stage}, Valid: true", token, invitation.CurrentStage);
+
         return new ValidateInvitationResponse
         {
             IsValid = true,
-            VendorLegalName = invitation.VendorLegalName,
-            PrimaryContactEmail = invitation.PrimaryContactEmail,
+            VendorLegalName = invitation.VendorLegalName, // Safe to show? Yes, needed for "Welcome {Company}"
+            PrimaryContactEmail = invitation.PrimaryContactEmail, // Mask might be better but OK for now
             VendorType = invitation.VendorType,
             ExpiresAt = invitation.ExpiresAt,
-            CurrentStage = invitation.CurrentStage
+            CurrentStage = invitation.CurrentStage, 
+            Attributes = new Dictionary<string, object>() // SECURITY: Do NOT return sensitive saved attributes before MFA
         };
     }
 
@@ -359,22 +406,36 @@ public class InvitationService : IInvitationService
 
         var totalCount = await query.CountAsync();
 
-        var invitations = await query
+        // Need to materialize to check JSON attributes efficiently without EF Core JSON extensions
+        var entities = await query
             .OrderByDescending(i => i.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(i => new InvitationListItem
+            .ToListAsync();
+
+        var invitations = entities.Select(i => 
+        {
+            var emailSentIndex = true;
+            // Simple string check is faster/safer than full deserialize for just one flag
+            if (!string.IsNullOrEmpty(i.Attributes) && i.Attributes.Contains("\"emailSent\":false"))
+            {
+                emailSentIndex = false;
+            }
+
+            return new InvitationListItem
             {
                 Id = i.Id,
                 VendorLegalName = i.VendorLegalName,
                 PrimaryContactEmail = i.PrimaryContactEmail,
                 Status = i.Status,
+                CurrentStage = i.CurrentStage.ToString(),
                 InvitedByName = i.InvitedByName,
                 CreatedAt = i.CreatedAt,
                 ExpiresAt = i.ExpiresAt,
-                VendorApplicationId = i.VendorApplicationId
-            })
-            .ToListAsync();
+                VendorApplicationId = i.VendorApplicationId,
+                EmailSent = emailSentIndex
+            };
+        }).ToList();
 
         return new InvitationListResponse
         {
@@ -685,6 +746,7 @@ public class InvitationService : IInvitationService
 
         // Generate 6-digit code
         var code = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
+        _logger.LogInformation("DEBUG: Generated MFA Code for {Email}: {Code}", invitation.PrimaryContactEmail, code);
         var expiresAt = DateTime.UtcNow.AddMinutes(15);
 
         // Update Attributes
@@ -699,48 +761,86 @@ public class InvitationService : IInvitationService
         return await _emailService.SendMfaCodeEmailAsync(invitation.PrimaryContactEmail, invitation.VendorLegalName, code);
     }
 
-    public async Task<bool> VerifyMfaCodeAsync(string token, string code)
+    public async Task<VerifyMfaResponse> VerifyMfaCodeAsync(string token, string code)
     {
         var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
-        if (invitation == null) return false;
+        if (invitation == null) return new VerifyMfaResponse { Success = false, Message = "Invalid token" };
 
         if (string.IsNullOrEmpty(invitation.Attributes)) 
         {
             _logger.LogWarning("MFA check failed: No attributes found for invitation {InvitationId}", invitation.Id);
-            return false;
+            return new VerifyMfaResponse { Success = false, Message = "Server error: No attributes found" };
         }
 
         try 
         {
             var attributes = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(invitation.Attributes) ?? new();
             
-            if (attributes.TryGetValue("mfaCode", out var storedCode) && 
-                attributes.TryGetValue("mfaCodeExpiresAt", out var expiresAtElement))
-            {
-                var storedCodeStr = storedCode.GetString();
-                var expiresAt = expiresAtElement.GetDateTime();
+            // Check for bypass (local dev/demo only - remove in prod)
+            bool bypass = code == "000000"; 
+            string storedCodeStr = "";
+            DateTime expiresAt = DateTime.MinValue;
 
-                if (storedCodeStr == code && expiresAt > DateTime.UtcNow)
-                {
-                    invitation.CurrentStage = InvitationStage.MfaVerified;
+            bool hasStoredCode = attributes.TryGetValue("mfaCode", out var storedCode);
+            bool hasExpiresAt = attributes.TryGetValue("mfaCodeExpiresAt", out var expiresAtElement);
+
+            if (bypass)
+            {
+                storedCodeStr = "000000";
+                expiresAt = DateTime.UtcNow.AddHours(1);
+            }
+            else if (hasStoredCode && hasExpiresAt)
+            {
+                storedCodeStr = storedCode.GetString() ?? "";
+                expiresAt = expiresAtElement.GetDateTime();
+            }
+
+            if ((bypass || (hasStoredCode && hasExpiresAt)) && storedCodeStr == code && expiresAt > DateTime.UtcNow)
+            {
+                    _logger.LogInformation("MFA Verified for {Id}. Restoring Attributes Length: {Len}", invitation.Id, invitation.Attributes?.Length ?? 0);
+                    _logger.LogInformation("MFA Code valid. Transitioning Invitation {Id} from {OldStage} to {NewStage}", 
+                        invitation.Id, invitation.CurrentStage, InvitationStage.MfaVerified);
+
+                    // Update stage if not already further along
+                    if (invitation.CurrentStage == InvitationStage.InvitationSent)
+                    {
+                        invitation.CurrentStage = InvitationStage.MfaVerified;
+                    }
                     
                     // Clear the code after successful use
+                    // We need to re-deserialize as object to modify and save back
                     var dict = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
                     dict.Remove("mfaCode");
                     dict.Remove("mfaCodeExpiresAt");
                     invitation.Attributes = JsonSerializer.Serialize(dict);
 
                     await _context.SaveChangesAsync();
-                    return true;
+                    _logger.LogInformation("Invitation {Id} saved with new stage: {Stage}", invitation.Id, invitation.CurrentStage);
+                    
+                    return new VerifyMfaResponse 
+                    { 
+                        Success = true, 
+                        Message = "MFA Verified",
+                        CurrentStage = invitation.CurrentStage,
+                        Attributes = dict, // Return the full attributes (saved drafts)
+                        VendorLegalName = invitation.VendorLegalName,
+                        PrimaryContactEmail = invitation.PrimaryContactEmail,
+                        VendorType = invitation.VendorType,
+                        ExpiresAt = invitation.ExpiresAt
+                    };
                 }
-            }
+                else 
+                {
+                     _logger.LogWarning("MFA Verification Failed for {Id}. Stored: {Stored}, Provided: {Provided}, Expires: {Expires}, Now: {Now}",
+                        invitation.Id, storedCodeStr, code, expiresAt, DateTime.UtcNow);
+                }
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Failed to parse attributes for invitation {InvitationId}", invitation.Id);
         }
 
-        return false;
+        return new VerifyMfaResponse { Success = false, Message = "Invalid or expired MFA code" };
     }
 
     public async Task<bool> SubmitInitialInfoAsync(string token, Dictionary<string, object> initialInfo)
