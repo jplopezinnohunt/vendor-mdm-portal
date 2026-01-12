@@ -19,7 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 // --- AZURE KEY VAULT CONFIGURATION ---
 // Load secrets from Azure Key Vault if configured (for production/staging)
 var keyVaultUrl = builder.Configuration["KeyVault:VaultUrl"];
-if (!string.IsNullOrEmpty(keyVaultUrl) && !builder.Environment.IsDevelopment())
+if (!string.IsNullOrEmpty(keyVaultUrl))
 {
     try
     {
