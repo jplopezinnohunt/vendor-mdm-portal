@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { VendorService } from '../../services/vendorService';
 import { ChangeRequest, ChangeRequestStatus, VendorApplication, ApplicationStatus, RequestType } from '../../types';
 import { Card, StatusBadge, Button, Modal } from '../../components/ui/Elements';
-import { CheckSquare, UserPlus, FileText, Search, Filter, Plus, Send, Clock, Mail, CheckCircle, XCircle, Ban, RefreshCw, Copy } from 'lucide-react';
+import { CheckSquare, UserPlus, FileText, Search, Filter, Plus, Send, Clock, Mail, CheckCircle, XCircle, Ban, RefreshCw, Copy, AlertTriangle } from 'lucide-react';
 import { api } from '../../services/api';
 
 interface Invitation {
@@ -15,6 +15,8 @@ interface Invitation {
   createdAt: string;
   expiresAt: string;
   vendorApplicationId?: string;
+  emailSent?: boolean;
+  currentStage?: string;
 }
 
 interface ApproverDashboardProps {
@@ -49,101 +51,58 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
     const loadData = async () => {
       setLoading(true);
       try {
-        // Always use mock data for now since backend APIs are failing
-        console.log('Using mock data for demonstration');
-
-        // Mock Change Requests
-        const changeRequestsData: ChangeRequest[] = [
-          {
-            id: 'CR-001',
-            vendorId: 'V001',
-            requestType: RequestType.BankData,
-            status: ChangeRequestStatus.InReview,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            items: [
-              { id: '1', tableName: 'LFBK', fieldName: 'BankAccount', oldValue: '****7890', newValue: '****4321', isSensitive: true }
-            ],
-            attachments: []
-          },
-          {
-            id: 'CR-002',
-            vendorId: 'V002',
-            requestType: RequestType.Address,
-            status: ChangeRequestStatus.InReview,
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 86400000).toISOString(),
-            items: [
-              { id: '2', tableName: 'LFA1', fieldName: 'Street', oldValue: '123 Old St', newValue: '456 New Ave', isSensitive: false }
-            ],
-            attachments: []
-          },
-          {
-            id: 'CR-003',
-            vendorId: 'V003',
-            requestType: RequestType.General,
-            status: ChangeRequestStatus.Approved,
-            createdAt: new Date(Date.now() - 172800000).toISOString(),
-            updatedAt: new Date(Date.now() - 172800000).toISOString(),
-            items: [
-              { id: '3', tableName: 'LFA1', fieldName: 'Email', oldValue: 'old@example.com', newValue: 'new@example.com', isSensitive: false }
-            ],
-            attachments: []
-          }
-        ];
-
-        // Mock Onboarding Applications
-        const onboardingData: VendorApplication[] = [
-          {
-            id: 'APP-001',
-            companyName: 'New Vendor Corp',
-            taxId: 'TAX-NEW-001',
-            contactName: 'John Doe',
-            email: 'contact@newvendor.com',
-            status: ApplicationStatus.Submitted,
-            submittedAt: new Date().toISOString(),
-            attributes: {
-              SanctionsStatus: 'Passed',
-              contactEmail: 'contact@newvendor.com'
+        // Fetch real data from APIs
+        let invitationsData: Invitation[] = [];
+        try {
+          const invRes = await api.get('/invitation/list');
+          invitationsData = invRes.data.invitations;
+        } catch (e) {
+          console.error('Failed to fetch invitations, using mock fallback', e);
+          invitationsData = [
+            {
+              id: 'INV-MOCK-1',
+              vendorLegalName: 'Mock Vendor (API Failed)',
+              primaryContactEmail: 'mock@example.com',
+              status: 'Pending',
+              invitedByName: 'System',
+              createdAt: new Date().toISOString(),
+              expiresAt: new Date(Date.now() + 86400000).toISOString(),
+              emailSent: false
             }
-          },
-          {
-            id: 'APP-002',
-            companyName: 'Fresh Supplies Ltd',
-            taxId: 'TAX-NEW-002',
-            contactName: 'Jane Smith',
-            email: 'info@freshsupplies.com',
-            status: ApplicationStatus.PendingReview,
-            submittedAt: new Date(Date.now() - 86400000).toISOString(),
-            attributes: {
-              SanctionsStatus: 'Pending',
-              contactEmail: 'info@freshsupplies.com'
-            }
-          }
-        ];
+          ];
+        }
 
-        // Mock Invitations
+        // Fetch Pending Onboarding Applications (Reviews)
+        let onboardingData: VendorApplication[] = [];
+        try {
+          const reviewRes = await api.get('/review/pending');
+          onboardingData = reviewRes.data.map((item: any) => ({
+            id: item.id,
+            companyName: item.companyName,
+            taxId: item.taxId || 'N/A',
+            contactName: item.contactName,
+            email: item.contactEmail,
+            status: 'Submitted', // Normalize to Submitted for UI
+            submittedAt: item.createdAt,
+            sanctionCheckStatus: item.attributes?.SanctionsStatus || 'Pending',
+            attributes: item.attributes
+          }));
+        } catch (e) {
+          console.error('Failed to fetch pending reviews', e);
+        }
+
+        // Initialize missing data to prevent ReferenceError
+        const changeRequestsData: ChangeRequest[] = [];
+
+        /*
+        // Mock Invitations (Disabled)
         const invitationsData: Invitation[] = [
           {
             id: 'INV-001',
-            vendorLegalName: 'Potential Vendor Inc',
-            primaryContactEmail: 'contact@potential.com',
-            status: 'Pending',
-            invitedByName: 'Admin User',
-            createdAt: new Date().toISOString(),
-            expiresAt: new Date(Date.now() + 604800000).toISOString()
-          },
-          {
-            id: 'INV-002',
-            vendorLegalName: 'Future Partner LLC',
-            primaryContactEmail: 'info@futurepartner.com',
-            status: 'Accepted',
-            invitedByName: 'Admin User',
-            createdAt: new Date(Date.now() - 172800000).toISOString(),
-            expiresAt: new Date(Date.now() + 432000000).toISOString(),
-            vendorApplicationId: 'APP-002'
+             // ...
           }
-        ];
+        ]; 
+        */
 
         if (mode === 'worklist') {
           const pendingChanges = changeRequestsData.filter(r =>
@@ -169,7 +128,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
           );
 
           const historyInvitations = invitationsData.filter(i =>
-            i.status !== 'Pending' && i.status !== 'Accepted'
+            i.status !== 'Pending' && i.status !== 'Accepted' && i.status !== 'Expired'
           );
 
           setChangeRequests(historyChanges);
@@ -256,7 +215,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
     </select>
   );
 
-  const getInvitationStatusBadge = (status: string) => {
+  const getInvitationStatusBadge = (inv: Invitation) => {
     const badges = {
       Pending: {
         icon: Clock,
@@ -282,17 +241,50 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
         icon: Ban,
         className: 'bg-red-100 text-red-800',
         label: 'Cancelled'
+      },
+      // Virtual Statuses for Dashboard
+      InProgress: {
+        icon: RefreshCw,
+        className: 'bg-indigo-100 text-indigo-800',
+        label: 'In Progress'
+      },
+      Enriched: {
+        icon: CheckSquare,
+        className: 'bg-purple-100 text-purple-800',
+        label: 'Vendor Submitted'
       }
     };
 
-    const badge = badges[status as keyof typeof badges] || badges.Pending;
+    let badgeKey = inv.status;
+
+    // Override status based on CurrentStage if Pending or MfaVerified
+    if (inv.status === 'Pending' || (inv.status as any) === 'MfaVerified') {
+      if (inv.currentStage === 'InitialInfoCompleted' || inv.currentStage === 'Enriched' || inv.currentStage === 'MfaVerified') {
+        badgeKey = 'InProgress';
+      }
+      if (inv.currentStage === 'Enriched') {
+        badgeKey = 'Enriched';
+      }
+    }
+
+    const badge = badges[badgeKey as keyof typeof badges] || badges.Pending;
     const Icon = badge.icon;
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
-        <Icon className="h-3 w-3" />
-        {badge.label}
-      </span>
+      <div className="flex items-center gap-2">
+        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.className}`}>
+          <Icon className="h-3 w-3" />
+          {badge.label}
+        </span>
+        {inv.emailSent === false && (
+          <div className="group relative">
+            <AlertTriangle className="h-4 w-4 text-red-500 cursor-help" />
+            <div className="absolute bottom-full mb-2 hidden group-hover:block w-48 bg-gray-900 text-white text-xs rounded p-2 z-10">
+              Email delivery failed. Please resend or copy link manually.
+            </div>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -588,7 +580,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                             <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">{inv.vendorLegalName}</td>
                             <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{inv.primaryContactEmail}</td>
                             <td className="whitespace-nowrap px-6 py-4 text-sm">
-                              {getInvitationStatusBadge(inv.status)}
+                              {getInvitationStatusBadge(inv)}
                             </td>
                             <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                               {new Date(inv.createdAt).toLocaleDateString()}

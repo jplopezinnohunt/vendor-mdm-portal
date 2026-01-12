@@ -23,8 +23,8 @@ export default function EmailServiceBanner() {
             return;
         }
 
-        // Fetch from backend API (localhost:5001)
-        fetch('http://localhost:5001/api/health/email-service')
+        // Fetch from backend API (via Vite proxy)
+        fetch('/api/health/email-service')
             .then((res) => {
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return res.json();

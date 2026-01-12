@@ -62,7 +62,7 @@ public class InvitationController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating invitation");
-            return StatusCode(500, new { error = "Failed to create invitation" });
+            return StatusCode(500, new { error = "Failed to create invitation", detail = ex.Message, stack = ex.StackTrace });
         }
     }
 
@@ -76,6 +76,8 @@ public class InvitationController : ControllerBase
         try
         {
             var query = _context.VendorInvitations.AsQueryable();
+            var totalCount = await _context.VendorInvitations.CountAsync();
+            _logger.LogInformation("ListInvitations called. Total invitations in DB: {Count}. Status filter: {Status}", totalCount, status);
 
             // Filter by status if provided
             if (!string.IsNullOrEmpty(status))
@@ -96,7 +98,10 @@ public class InvitationController : ControllerBase
                     expiresAt = i.ExpiresAt,
                     vendorType = i.VendorType,
                     accountGroup = i.AccountGroup,
-                    vendorApplicationId = i.VendorApplicationId
+                    vendorApplicationId = i.VendorApplicationId,
+                    currentStage = i.CurrentStage,
+                    // Check attributes for email failure flag
+                    emailSent = i.Attributes != null && !i.Attributes.Contains("\"emailSent\":false") // Simple check avoids full parsing for list
                 })
                 .ToListAsync();
 
@@ -201,8 +206,8 @@ public class InvitationController : ControllerBase
         try
         {
             var result = await _invitationService.VerifyMfaCodeAsync(token, request.Code);
-            if (!result) return BadRequest(new { error = "Invalid or expired MFA code" });
-            return Ok(new { message = "MFA verified" });
+            if (!result.Success) return BadRequest(new { error = result.Message });
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -462,7 +467,20 @@ public class InvitationController : ControllerBase
             var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
             if (invitation != null)
             {
+                _logger.LogInformation("SaveDraft: Linking Invitation {InvId} to App {AppId}. Attributes Count: {Count}", 
+                    invitation.Id, application.Id, request.Attributes?.Count ?? 0);
+
+                if (request.Attributes != null && request.Attributes.Count > 0)
+                {
+                    var debugJson = JsonSerializer.Serialize(request.Attributes);
+                    _logger.LogInformation("SaveDraft: Saving attributes: {Json}", debugJson);
+                }
+
                 invitation.VendorApplicationId = application.Id;
+                
+                // CRITICAL FIX: Save attributes to invitation for restoration via VerifyMfa
+                invitation.Attributes = JsonSerializer.Serialize(request.Attributes); 
+
                 // Update status to Accepted to indicate work has started, but not Completed
                 if (invitation.Status == InvitationStatus.Pending)
                 {

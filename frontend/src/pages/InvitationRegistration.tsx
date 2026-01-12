@@ -13,7 +13,7 @@ interface InvitationValidation {
     primaryContactEmail?: string;
     expiresAt?: string;
     vendorType?: string;
-    currentStage?: string;
+    attributes?: Record<string, any>;
 }
 
 interface RegistrationFormData {
@@ -27,7 +27,7 @@ interface RegistrationFormData {
 export const InvitationRegistration: React.FC = () => {
     const { token } = useParams<{ token: string }>();
     const navigate = useNavigate();
-    const { register, handleSubmit, setValue, getValues, watch, formState: { errors } } = useForm<RegistrationFormData>({
+    const { register, handleSubmit, setValue, getValues, watch, reset, formState: { errors } } = useForm<RegistrationFormData>({
         shouldUnregister: false
     });
 
@@ -53,38 +53,22 @@ export const InvitationRegistration: React.FC = () => {
                 setValidating(true);
                 const response = await api.get<InvitationValidation>(`/invitation/validate/${token}`);
                 setValidation(response.data);
+                console.log('Validating Token Response:', response.data);
 
                 if (response.data.isValid) {
-                    // Sync wizard step with backend stage
-                    if (response.data.currentStage === 'InvitationSent') {
-                        setWizardStep(1); // Need MFA
-                        if (!mfaAutoSent.current) {
-                            mfaAutoSent.current = true;
-                            triggerMfa();
-                        }
-                    } else if (response.data.currentStage === 'MfaVerified') {
-                        setWizardStep(2); // Initial Info
-                        setMfaVerified(true);
-                    } else if (response.data.currentStage === 'InitialInfoCompleted') {
-                        setWizardStep(3); // Enrichment
-                        setMfaVerified(true);
+                    // ALWAYS enforce MFA on fresh load, regardless of currentStage.
+                    // Access gating is now "Session" based (Step 1 is mandatory).
+                    setWizardStep(1);
+
+                    // Auto-trigger MFA code email if entering fresh
+                    if (!mfaAutoSent.current) {
+                        mfaAutoSent.current = true;
+                        triggerMfa();
                     }
 
-                    // Pre-fill form if data is returned
-                    if (response.data.vendorLegalName) {
-                        setValue('companyName', response.data.vendorLegalName);
-                        // ... name splitting logic ...
-                        if (response.data.vendorType === 'Physical') {
-                            const nameParts = response.data.vendorLegalName.split(' ');
-                            if (nameParts.length >= 2) {
-                                setValue('attributes.givenName', nameParts[0]);
-                                setValue('attributes.familyName', nameParts.slice(1).join(' '));
-                            } else {
-                                setValue('attributes.givenName', response.data.vendorLegalName);
-                            }
-                        }
-                    }
-                    if (response.data.primaryContactEmail) setValue('email', response.data.primaryContactEmail);
+                    // Note: We DO NOT populate form or skip MFA here anymore.
+                    // Sensitive data (attributes) is no longer returned by ValidateInvitation.
+                    // It will be returned by VerifyMfa.
                 }
             } catch (error: any) {
                 console.error('Validation failed:', error);
@@ -112,9 +96,45 @@ export const InvitationRegistration: React.FC = () => {
     const handleVerifyMfa = async () => {
         try {
             setVerifyingMfa(true);
-            await api.post(`/invitation/verify-mfa/${token}`, { code: mfaCode });
+            const response = await api.post<InvitationValidation>(`/invitation/verify-mfa/${token}`, { code: mfaCode });
+
+            // Response now contains the attributes and stage info
+            const data = response.data;
+            console.log("MFA Verified. Restoration Data:", data);
+
+            // 1. Restore Form Data (Attributes)
+            if (data.attributes) {
+                try {
+                    const savedData = data.attributes;
+
+                    // Map known fields
+                    if (savedData.givenName) setValue('attributes.givenName', savedData.givenName);
+                    if (savedData.familyName) setValue('attributes.familyName', savedData.familyName);
+
+                    // Iterate and set all attributes for dynamic fields
+                    Object.keys(savedData).forEach(key => {
+                        setValue(`attributes.${key}`, savedData[key]);
+                    });
+                } catch (e) {
+                    console.error("Failed to parse saved attributes", e);
+                }
+            }
+
+            // 2. Restore Core Fields (if available in response)
+            if (data.vendorLegalName) setValue('companyName', data.vendorLegalName);
+            if (data.primaryContactEmail) setValue('email', data.primaryContactEmail);
+
+            // 3. Determine Wizard Step based on Restored Stage
             setMfaVerified(true);
-            setWizardStep(2);
+
+            if (data.currentStage === 'InitialInfoCompleted') {
+                setWizardStep(3); // Enrich
+            } else if (data.currentStage === 'Enriched') {
+                setWizardStep(3); // Stay on Enrichment to review/submit
+            } else {
+                setWizardStep(2); // Default to Initial Info
+            }
+
         } catch (error: any) {
             alert(error.response?.data?.error || 'Invalid MFA code');
         } finally {

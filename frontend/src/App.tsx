@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { NotFound } from './pages/NotFound';
+import { Unauthorized } from './pages/Unauthorized';
+import { FutureFeature } from './pages/FutureFeature';
 import { AuthProvider, useAuth, UserRole } from './context/AuthContext';
 import { MainLayout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
@@ -11,6 +13,7 @@ import { RequestHistory } from './pages/RequestHistory';
 import { Login } from './pages/Login';
 import { VendorRegistration } from './pages/VendorRegistration';
 import { InvitationRegistration } from './pages/InvitationRegistration';
+import { ServerError } from './pages/ServerError';
 import { ApproverDashboard } from './pages/approver/ApproverDashboard';
 import { RequestReview } from './pages/approver/RequestReview';
 import { OnboardingReview } from './pages/approver/OnboardingReview';
@@ -102,12 +105,12 @@ const App: React.FC = () => {
               </ProtectedRoute>
             } />
             <Route path="approver/requests/:id" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Approver', 'Admin', 'BFM', 'VendorUnit', 'Requestor']}>
                 <RequestReview />
               </ProtectedRoute>
             } />
             <Route path="approver/onboarding/:id" element={
-              <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
+              <ProtectedRoute allowedRoles={['Approver', 'Admin', 'BFM', 'VendorUnit', 'Requestor']}>
                 <OnboardingReview />
               </ProtectedRoute>
             } />
@@ -162,6 +165,9 @@ const App: React.FC = () => {
           </Route>
 
           {/* Catch all */}
+          <Route path="/401" element={<Unauthorized />} />
+          <Route path="/500" element={<ServerError />} />
+          <Route path="/coming-soon" element={<FutureFeature />} />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
