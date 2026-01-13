@@ -1,4 +1,10 @@
 # Project Best Practices & Golden Rules
+**"The Constitution of the Codebase"**
+
+This document acts as the **Root Authority** for all development. It defines the immutable principles.
+*   **For UI Details:** See [UI Design Standards](./ui_design_standards.md) (Enforced by Rule 3).
+*   **For Feature Specs:** See individual `.md` files in `docs/specs/` (Enforced by Rule 0).
+*   **For AI Agents:** See [AGENTS.md](./AGENTS.md) (Enforced by Rule 13).
 
 ## 0. Enforceability
 **"No Spec without Compliance"**
@@ -6,16 +12,15 @@
 *   **The Protocol**: Use the **Refusal Protocol**. If asked to "just fix it" without a Spec/Plan, the Agent/Developer must say:
     > *"I cannot proceed to Execution. We must first define the Specification and Verification Plan as per the project rules."*
 
-## 1. Visible Debugging (Console-to-UI)
-**The Concept:**
-AI Agents and visual testing tools cannot open Chrome DevTools. If an error occurs that is only printed to the console, the agent is blind to it.
+## 1. Full Stack Observability (Trace & visualize)
+**"If it's not Traced, it didn't happen."**
 
-**The Rule:**
-All frontend applications MUST include a **Debug Console Overlay** in Development/Test environments.
-- **Requirement:** Catch `window.onerror`, `unhandledrejection`, and `console.error`.
-- **Display:** Render these errors in a high z-index, distinct visual container (e.g., Red Box) on top of the UI.
-- **Goal:** Ensure any crash produces a **visible artifact** in screenshots/videos, allowing the agent to self-diagnose failures immediately.
-- **In Azure/Prod:** Must be activatable via URL parameter (e.g., `?debug=true`) so the agent can debug deployed environments without exposing errors to public users.
+*   **Rationale:** "Visible Debugging" (Console Overlay) is good for local UI, but insufficient for distributed cloud systems.
+*   **The Rule:**
+    1.  **Frontend-to-Backend Tracing:** Every API call from the React Frontend MUST propagate W3C Trace Context headers (`traceparent`).
+    2.  **OpenTelemetry Standard:** Use OTLP (OpenTelemetry Protocol) for all telemetry.
+    3.  **Structured Logging:** Log with standard attributes (`user.id`, `tenant.id`, `request.type`). No unstructured text dumps.
+    4.  **Local Debug Overlay:** The Frontend MUST still render critical errors (`window.onerror`) in a Red Box Overlay for visual agents, but MUST also display the `TraceId` for correlation.
 
 ## 2. Data Modeling: The Hybrid Rule
 **"Structured Identity, Semi-Structured Attributes."**
@@ -27,15 +32,15 @@ All frontend applications MUST include a **Debug Console Overlay** in Developmen
 
 *   **Anti-Pattern:** Adding a column `preferred_color` to the root table. (Put it in `attributes` JSONB).
 
-## 3. Principle-Driven UI Implementation
-**"Consistency is Credibility"**
+## 3. Inclusive UX & Accessibility
+**"Accessible by Design, Not Audit"**
 *   **Full Standard:** [docs/ui_design_standards.md](./ui_design_standards.md)
-*   **The Golden Rule:** Never hardcode styles. Use the **Component Library** and **12-Column Grid**.
+*   **The Golden Rule:** WCAG 2.2 AA Compliance is non-negotiable.
 *   **Key Principles:**
-    1.  **Uniformity:** Adhere to the design system tokens.
-    2.  **Proximity:** Group related data visually.
-    3.  **Feedback:** <400ms response to all actions.
-    4.  **Aesthetics:** Premium feel is a functional requirement.
+    1.  **Focus Visibility:** "Focus Not Obscured". Custom focus rings must be high-contrast and never hidden.
+    2.  **Target Size:** Minimum 24x24px clickable area for all interactive elements (Mobile/Touch ready).
+    3.  **Cognitive Load:** Use "Consistent Help" patterns. Error messages must be descriptive.
+    4.  **Aesthetics:** Premium feel is a functional requirement (Rule 3.4).
 
 ## 4. Infrastructure: Azure is Truth
 *   **Source of Truth:** The running Azure environment is the master.
@@ -64,23 +69,27 @@ All frontend applications MUST include a **Debug Console Overlay** in Developmen
 *   **Flow:** `External API` -> `Adapter (Map to CDM)` -> `Core Service` -> `Database`.
 *   **Storage:** The database schema reflects the *CDM*, not the external system's schema.
 
-## 8. Security & Authentication
-**"Zero Trust & Identity First"**
-*   **Source of Truth:** Azure Active Directory (Entra ID). No local user tables for authentication.
-*   **RBAC:** Role-Based Access Control is enforced at the API Middleware level.
+## 8. Security & Supply Chain Trust
+**"Zero Trust & Verify Source"**
+*   **Source of Truth:** Azure Active Directory (Entra ID). No local user tables.
+*   **Supply Chain:**
+    *   **SBOM:** Every build artifact MUST generate a Software Bill of Materials.
+    *   **Lockfiles:** `package-lock.json` MUST be committed and immutable in CI.
+    *   **Strict Dependencies:** No `latest` tags. Pin specific versions.
 *   **Secrets:**
     *   **Local:** User Secrets (`dotnet user-secrets`), never `appsettings.json`.
     *   **Azure:** Key Vault Managed Identity.
     *   **Frontend:** Never store secrets in React.
 
-## 9. API Simulation & Mocking
-**"Work Offline, Deploy Online"**
-*   **Pattern:** All external dependencies (SAP, Email, Storage) must be behind an Interface (`IVendorIntegrationService`).
-*   **Implementation:**
-    *   `MockVendorIntegrationService`: Returns static JSON/Faker data for local dev/testing.
-    *   `RealVendorIntegrationService`: Calls the actual HTTP endpoint.
-*   **Switching:** Controlled by `appsettings.UseMocks: true/false`.
-*   **Rule:** If you add a new Service, you **MUST** implement the Mock version first.
+## 9. Simulation First (No Hardcoding)
+**"Simulate Behavior, Don't Comment Out"**
+*   **The Problem:** Commented-out code blocks (e.g., `// TODO: Call SAP`) or hardcoded returns (`return true;`) create tech debt and untestable holes in the workflow.
+*   **The Rule:** If a dependency (e.g., SAP, Email) is not ready:
+    1.  Define the **Interface** (e.g., `ISapService`).
+    2.  Create a **Simulation Service** (e.g., `SapSimulationService`) that implements realistic behavior (logs actions, returns success/failure objects, mimics latency).
+    3.  Write the **Consumer Code** fully, as if the real service exists.
+*   **Switching:** Use `appsettings.UseMocks: true` to inject the simulation.
+*   **Result:** The application flow is fully functional and testable from Day 1.
 
 ## 10. Global Event-Driven Architecture
 **"Async by Design, Sync by Necessity"**
@@ -100,3 +109,25 @@ All frontend applications MUST include a **Debug Console Overlay** in Developmen
 *   **Deployment:**
     *   **Frontend:** Auto-deploy via GitHub Actions on merge.
     *   **Backend:** Manual Azure CLI deploy from local `feature` branch for verification, then merge.
+
+## 12. State Management: Atomic, Strict, & Unconditional
+**"Robustness via Separation of Concerns"**
+*   **Concept:** The Backend owns the *State Machine*. The Frontend owns the *User Experience*.
+*   **Rule A (Backend): Atomic Transitions**:
+    *   Triggering an action (e.g. `SubmitEnrichment`) MUST atomically perform all side effects (e.g. `CreateApplication`) in one transaction.
+    *   **Strict Enforcement:** The Backend MUST throw an error if a transition is attempted from an invalid state (e.g., Approving a "Draft"). Never rely solely on the UI to hide buttons.
+*   **Rule B (Frontend): Unconditional Transitions**:
+    *   If an API call returns `200 OK`, the UI MUST unconditionally transition to the next screen (e.g., Dashboard).
+    *   *Why?* Because Rule A guarantees the state is valid. The UI does not need to double-check.
+*   **Rule C (Verification): The "Transition Code Check"**:
+    *   Every complex state transition MUST be verified by a dedicated `tests/verification/verify_transition_X.sh` script.
+    *   This script acts as the "Code Check" logic gate before release.
+
+## 13. AI-Native Context
+**"The Codebase is the Prompt"**
+*   **Rationale:** AI agents co-develop this system. The code structure must be optimized for machine understanding.
+*   **The Rule:**
+    1.  **`AGENTS.md` is Mandatory:** A root-level file explicitly instructing agents on project structure, conventions, and "Do Not Touches".
+    2.  **Context Isolation:** Prefer "Vertical Slice" architecture to minimize tokens required to understand a feature.
+    3.  **Semantic Naming:** Directory/file names must describe *intent* (e.g., `features/onboarding/`) not just type.
+    4.  **Self-Documentation:** Complex logic must include "Why" comments targeting AI reasoning.

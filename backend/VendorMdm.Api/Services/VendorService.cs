@@ -80,6 +80,7 @@ public class VendorService : IVendorService
                 throw new InvalidOperationException("High-risk match found in Sanctions Screening. Vendor cannot be created.");
             }
         }
+
         
         // ------------------------------------
 
@@ -93,7 +94,7 @@ public class VendorService : IVendorService
         _logger.LogInformation("Vendor created in SQL: {Id}", vendor.Id);
 
         // 2. Functional Log (Cosmos Artifact)
-        try 
+        try   
         {
             await _cosmosRepository.SaveArtifactAsync(vendor.Id.ToString(), vendor);
         }

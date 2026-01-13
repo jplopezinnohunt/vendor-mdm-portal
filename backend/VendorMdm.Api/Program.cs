@@ -12,7 +12,11 @@ using Microsoft.Identity.Web;
 using VendorMdm.Shared.Models;
 using VendorMdm.Shared.Mapping;
 using VendorMdm.Api.Middleware;
+using VendorMdm.Api.Middleware;
 using Microsoft.AspNetCore.Authentication;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,6 +66,18 @@ Console.WriteLine($"Configured Mode: {dataSourceMode}");
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// --- OBSERVABILITY (Rule 1) ---
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddSource("VendorMdm.Api")
+        .ConfigureResource(resource => resource.AddService("VendorMdm.Api"))
+        .AddAspNetCoreInstrumentation()
+        .AddOtlpExporter())
+    .WithMetrics(metrics => metrics
+        .ConfigureResource(resource => resource.AddService("VendorMdm.Api"))
+        .AddAspNetCoreInstrumentation()
+        .AddOtlpExporter());
 
 // RBAC: Claims Transformation (Maps Groups -> Roles)
 builder.Services.AddTransient<IClaimsTransformation, ClaimsTransformationService>();
@@ -267,7 +283,16 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 
 // 4. Custom Services
 builder.Services.AddScoped<CosmosRepository>();
-builder.Services.AddScoped<IServiceBusService, ServiceBusService>();
+if (useLocalEmulators)
+{
+    builder.Services.AddScoped<IServiceBusService, ServiceBusSimulationService>();
+    Console.WriteLine("✓ Service Bus: MOCK (Simulation logging only)");
+}
+else
+{
+    builder.Services.AddScoped<IServiceBusService, ServiceBusService>();
+    Console.WriteLine("✓ Service Bus: REAL (Azure Service Bus)");
+}
 builder.Services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
 builder.Services.AddHttpClient(); // For EmailService HTTP client
 builder.Services.AddScoped<IEmailService, EmailService>();

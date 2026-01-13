@@ -5,6 +5,7 @@ import { Button, Card } from '../../components/ui/Elements';
 import { DuplicateDetectionModal } from '../../components/DuplicateDetectionModal';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { DuplicateVendor, InvitationResponse, SanctionsResult } from '../../types/vendor';
 import { CheckCircle, ChevronRight, ChevronLeft, Layout, Settings, FileText, Mail, ShieldCheck, Copy, Search, AlertTriangle, ShieldAlert, User, Globe } from 'lucide-react';
 
 interface InviteVendorFormData {
@@ -64,7 +65,7 @@ export const InviteVendorForm: React.FC = () => {
     const { user } = useAuth();
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [invitationData, setInvitationData] = useState<any>(null);
+    const [invitationData, setInvitationData] = useState<InvitationResponse | null>(null);
     const [copied, setCopied] = useState(false);
 
     // Flow states
@@ -72,8 +73,8 @@ export const InviteVendorForm: React.FC = () => {
     const [activeStep, setActiveStep] = useState(0);
     const [viewMode, setViewMode] = useState<'wizard' | 'full'>('wizard');
     const [isChecking, setIsChecking] = useState(false);
-    const [checkResults, setCheckResults] = useState<any[] | null>(null);
-    const [sanctionsResult, setSanctionsResult] = useState<any>(null);
+    const [checkResults, setCheckResults] = useState<DuplicateVendor[] | null>(null);
+    const [sanctionsResult, setSanctionsResult] = useState<SanctionsResult | null>(null);
     const [validationPassed, setValidationPassed] = useState(false);
     const [showDupModal, setShowDupModal] = useState(false);
     const [validationTimestamp, setValidationTimestamp] = useState<string | null>(null);

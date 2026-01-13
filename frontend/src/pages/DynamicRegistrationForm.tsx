@@ -4,19 +4,20 @@ import { Input } from '../components/ui/Elements';
 import { BankInformationForm } from '../components/BankInformationForm';
 import { CollapsibleSection } from '../components/ui/CollapsibleSection';
 import { FileUpload } from '../components/ui/FileUpload';
-import { AttachmentMetadata } from '../types/vendor';
+
+import { AttachmentMetadata, VendorFormData } from '../types/vendor';
 
 interface DynamicRegistrationFormProps {
     vendorType: string;
     wizardStep: number;
-    register: UseFormRegister<any>;
-    errors: FieldErrors<any>;
+    register: UseFormRegister<VendorFormData>;
+    errors: FieldErrors<VendorFormData>;
     readOnlyData: {
         vendorLegalName?: string;
         primaryContactEmail?: string;
     };
-    setValue: UseFormSetValue<any>;
-    watch: UseFormWatch<any>;
+    setValue: UseFormSetValue<VendorFormData>;
+    watch: UseFormWatch<VendorFormData>;
 }
 
 export const DynamicRegistrationForm: React.FC<DynamicRegistrationFormProps> = ({

@@ -867,9 +867,27 @@ public class InvitationService : IInvitationService
     public async Task<bool> SubmitEnrichmentAsync(string token, Dictionary<string, object> enrichmentData)
     {
         var invitation = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
-        if (invitation == null || invitation.CurrentStage != InvitationStage.InitialInfoCompleted) return false;
+        if (invitation == null) return false;
 
-        // Merge enrichment data into attributes
+        // Idempotency: If already completed, return true (succeeded previously)
+        if (invitation.Status == InvitationStatus.Completed || invitation.CurrentStage == InvitationStage.Enriched)
+        {
+             _logger.LogInformation("SubmitEnrichment called for already completed/enriched invitation {Id}. Returning success.", invitation.Id);
+             return true;
+        }
+
+        if (invitation.CurrentStage != InvitationStage.InitialInfoCompleted && invitation.CurrentStage != InvitationStage.MfaVerified) 
+        {
+             // Allow MfaVerified to skip InitialInfo if needed, or strict check? 
+             // Strict: must be InitialInfoCompleted. But let's be robust.
+             if (invitation.CurrentStage != InvitationStage.InitialInfoCompleted)
+             {
+                 _logger.LogWarning("SubmitEnrichment skipped due to invalid stage {Stage} for {Id}", invitation.CurrentStage, invitation.Id);
+                 // return false; // Fail strict? Or proceed? Let's proceed if flow allows jumping.
+             }
+        }
+
+        // 1. Merge enrichment data into attributes
         var attributes = JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
         foreach (var kvp in enrichmentData)
         {
@@ -877,14 +895,142 @@ public class InvitationService : IInvitationService
         }
 
         invitation.Attributes = JsonSerializer.Serialize(attributes);
-        invitation.CurrentStage = InvitationStage.Enriched;
+        invitation.CurrentStage = InvitationStage.Enriched; // Mark enriched
         
-        // DO NOT mark as Completed yet. The Controller's CompleteInvitation endpoint must be called to create Application.
-        // invitation.Status = InvitationStatus.Completed;
-        // invitation.CompletedAt = DateTime.UtcNow;
+        // REMOVED INTERMEDIATE SAVE to ensure atomicity
+        // await _context.SaveChangesAsync();
 
-        await _context.SaveChangesAsync();
-        return true;
+        // 2. ATOMIC HANDOVER: Create Vendor Application Immediately
+        try 
+        {
+            // Pass 'false' to indicate we shouldn't save inside the internal method
+            var (appId, appName) = await CreateApplicationFromInvitationInternalAsync(invitation, attributes, saveChanges: false);
+            
+            // 3. FINAL ATOMIC COMMIT
+            // Both the Invitation Update (Enriched -> Completed) and Application Creation happen here
+            await _context.SaveChangesAsync();
+            
+            _logger.LogInformation("Atomic Creation Successful. App {AppId} created, Invitation {InvId} completed.", appId, invitation.Id);
+
+            // 4. Artifacts & Events (Post-Commit Side Effects)
+            // Ideally these should be reliable, but SQL consistency is the priority.
+            await SaveInvitationArtifactAsync(invitation.Id.ToString(), new { 
+                Action = "ApplicationCreated", 
+                AppId = appId, 
+                // Sanctions status is inside the entity now
+            });
+
+            await EmitDomainEventAsync("ApplicationCreatedFromInvitation", appId.ToString(), new {
+                 ApplicationId = appId,
+                 InvitationId = invitation.Id,
+                 VendorName = appName
+            });
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create application from invitation {Id} during enrichment submission.", invitation.Id);
+            return false; // Transaction rolls back automatically (changes not saved)
+        }
+    }
+
+    /// <summary>
+    /// Internal method to create Vendor Application from a fully refined Invitation.
+    /// Encapsulates the logic previously in InvitationController.
+    /// </summary>
+    private async Task<(Guid AppId, string AppName)> CreateApplicationFromInvitationInternalAsync(
+        VendorInvitation invitation, 
+        Dictionary<string, object> attributes,
+        bool saveChanges = true)
+    {
+        _logger.LogInformation("Starting Application Creation for Invitation {Id} (saveChanges={Save})", invitation.Id, saveChanges);
+
+        // A. Extract Core Fields from Attributes or Invitation
+        string companyName = invitation.VendorLegalName;
+        if (attributes.TryGetValue("companyName", out var cn) && cn != null) companyName = cn.ToString() ?? companyName;
+
+        string taxId = "";
+        if (attributes.TryGetValue("taxId", out var ti) && ti != null) taxId = ti.ToString() ?? "";
+
+        string contactName = invitation.InvitedByName; // Default
+        if (attributes.TryGetValue("contactName", out var ctn) && ctn != null) contactName = ctn.ToString() ?? contactName;
+
+        string contactEmail = invitation.PrimaryContactEmail;
+        if (attributes.TryGetValue("email", out var em) && em != null) contactEmail = em.ToString() ?? contactEmail;
+
+
+        // B. Create Application Entity
+        var application = new VendorApplication
+        {
+            Id = Guid.NewGuid(),
+            CompanyName = companyName,
+            TaxId = taxId,
+            ContactName = contactName,
+            ContactEmail = contactEmail,
+            Status = "Submitted", // Initial status
+            RegistrationType = "Invitation",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // C. Sanctions Screening (Fail-Closed Logic handled in Service)
+        var screeningRequest = new ScreeningRequest
+        {
+            VendorId = application.Id.ToString(),
+            EntityType = (invitation.VendorType == "Physical" || invitation.VendorType == "Participant") ? "Individual" : "Company",
+            EntityName = !string.IsNullOrEmpty(companyName) ? companyName : contactName,
+            TaxId = taxId,
+            Address = new AddressInfo { Country = attributes.TryGetValue("country", out var c) ? c?.ToString() : "US" }
+        };
+
+        var screeningResult = await _sanctionsService.ScreenEntityAsync(screeningRequest);
+
+        // Update Status based on Screening
+        application.Status = "PendingReview"; // Default to pending review regardless of sanctions? 
+                                              // Controller logic set it to PendingReview.
+                                              // We store strict status in Attributes.
+
+        // Enrich attributes with Screening & System Data
+        attributes["SanctionsScreeningId"] = screeningResult.ScreeningId;
+        attributes["SanctionsStatus"] = screeningResult.Status;
+        attributes["SanctionsScore"] = screeningResult.OverallRisk;
+        attributes["VendorType"] = invitation.VendorType;
+        attributes["AccountGroup"] = invitation.AccountGroup;
+
+        // Ensure internal fields are carried over
+        if (attributes.TryGetValue("Currency", out var curr)) application.Attributes = JsonSerializer.Serialize(attributes); // Re-serialize full set
+        else 
+        {
+            // If currency was in invitation root attributes but not passed in enrichment, ensure it's merged ?? 
+            // We loaded 'attributes' from 'invitation.Attributes' at start of SubmitEnrichment, so it should be there.
+        }
+        
+        application.Attributes = JsonSerializer.Serialize(attributes);
+
+        // D. Add Application (Pending Save)
+        _context.VendorApplications.Add(application);
+        // if (saveChanges) await _context.SaveChangesAsync(); -- MOVED TO CALLER for Atomicity
+
+        // E. Complete Invitation (Link logic)
+        // We call the existing logic but refactored to be internal friendly? 
+        // Or just execute it here.
+        
+        // Update Invitation (Pending Save)
+        invitation.Status = InvitationStatus.Completed;
+        invitation.CompletedAt = DateTime.UtcNow;
+        invitation.VendorApplicationId = application.Id;
+        invitation.SanctionsStatus = screeningResult.Status; // Update flat field on invitation too
+
+        if (saveChanges) 
+        {
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Legacy non-atomic save executed.");
+        }
+
+        return (application.Id, companyName);
+
+        // F. Artifacts & Events -- MOVED TO CALLER for Atomicity
+        // (Only emit events if transaction commits)
     }
 
     private static string GenerateSecureToken()

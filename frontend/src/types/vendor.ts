@@ -94,5 +94,41 @@ export interface VendorFormData {
     companyCode?: string;
 
     // Extended attributes
+    // Extended attributes
     attributes: VendorApplicationAttributes;
+}
+
+/**
+ * Duplicate vendor check result
+ */
+export interface DuplicateVendor {
+    vendorName: string;
+    dateOfBirth?: string;
+    sapId: string;
+    reqId?: string;
+    country: string;
+    companyCode: string;
+    accountGroup: string;
+    sapStatus: string;  // "Valid", "Blocked", "Deleted"
+    blocked: boolean;
+    matchScore: number;  // 0.0 to 1.0
+}
+
+/**
+ * Response from invitation creation API
+ */
+export interface InvitationResponse {
+    invitationLink: string;
+    expiresAt: string;
+    emailSent: boolean;
+    emailError?: string;
+}
+
+/**
+ * Result from sanctions screening
+ */
+export interface SanctionsResult {
+    status: 'MatchFound' | 'Clear' | string;
+    overallRisk: 'Critical' | 'High' | 'Medium' | 'Low' | string;
+    [key: string]: any; // Allow for other fields
 }

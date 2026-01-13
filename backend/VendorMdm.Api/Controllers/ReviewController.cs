@@ -87,7 +87,8 @@ public class ReviewController : ControllerBase
     {
         try 
         {
-            await _applicationService.ApproveApplicationAsync(id, request.EnrichedAttributes, request.ForceSanctionsOverride);
+            var approverId = User.Identity?.Name ?? "System";
+            await _applicationService.ApproveApplicationAsync(id, request.EnrichedAttributes, request.ForceSanctionsOverride, approverId);
             return Ok(new { message = "Application approved", status = "Approved" });
         }
         catch (InvalidOperationException ex)
@@ -114,7 +115,8 @@ public class ReviewController : ControllerBase
     {
         try
         {
-            await _applicationService.RejectApplicationAsync(id, request.Reason);
+            var approverId = User.Identity?.Name ?? "System";
+            await _applicationService.RejectApplicationAsync(id, request.Reason, approverId);
             return Ok(new { message = "Application rejected", status = "Rejected" });
         }
         catch (KeyNotFoundException)

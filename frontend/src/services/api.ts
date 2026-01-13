@@ -25,14 +25,22 @@ api.interceptors.request.use((config) => {
       console.error('Failed to parse mock user for header', e);
     }
   } else if (import.meta.env.DEV) {
-    // Fallback for Local Dev: If no mock user set (e.g. using Azure Login button locally), 
-    // default to Admin to allow Backend access.
+    // Fallback for Local Dev: If no mock user set
     console.warn('Dev Mode: Injecting fallback X-Mock-User: Admin');
     config.headers['X-Mock-User'] = 'Admin';
   }
 
-  // const token = await msalInstance.acquireTokenSilent(...)
-  // config.headers.Authorization = `Bearer ${token}`;
+  // Rule 1: OpenTelemetry Propagation
+  // Generate a random traceparent if not present to ensure backend can correlate.
+  // Format: 00-{traceId(32chars)}-{spanId(16chars)}-{traceFlags(01)}
+  const traceId = Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
+  const spanId = Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, '0')).join('');
+  const traceFlags = '01'; // Sampled
+
+  if (!config.headers['traceparent']) {
+    config.headers['traceparent'] = `00-${traceId}-${spanId}-${traceFlags}`;
+  }
+
   return config;
 });
 
