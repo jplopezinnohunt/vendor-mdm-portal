@@ -52,7 +52,10 @@ These rules are non-negotiable and must be applied to every task. This file cons
 - **Structure:** Follow existing folder structure (do not introduce new top-level folders).
 - **Functions:** Prefer small, focused functions. Extract utilities.
 - **Docs:** Public functions/APIs MUST have DocStrings/JSDoc summarizing inputs/outputs.
-- **Verification Scripts:** Every feature MUST have a `tests/verification/verify_task_X.sh` script.
+- **Verification Scripts:**
+  - Every feature MUST have a `tests/verification/verify_task_X.sh` script.
+  - **Auth Requirement:** Scripts MUST include Auth Headers (e.g., `X-Mock-User` or Bearer) to prove security context.
+  - **Robustness:** Verify **Behavior** (HTTP 200, Log entries), not just precise code syntax (grep).
 
 ## 7. Canonical Data Model ("Hexagonal")
 - **Pattern:** Strict Ports & Adapters.
@@ -68,8 +71,9 @@ These rules are non-negotiable and must be applied to every task. This file cons
 - **Permissions:** Do not run destructive commands (rm, drop db) without explicit confirmation.
 
 ## 9. Simulation First ("Simulate, Don't Comment")
-- **Rule:** Never comment out dependencies (e.g., `// Call SAP`).
-- **Pattern:** Use Interfaces (`ISapService`) and Simulation implementations (`SapSimulationService`).
+- **Scope:** Applies to **Business Logic** (SAP) AND **Infrastructure** (Service Bus, Blob Storage, Key Vault).
+- **Rule:** Never comment out dependencies (e.g., `// Call SAP`). Never connect to Real Cloud Resources in Local/Dev mode without explicit overrides.
+- **Pattern:** Use Interfaces (`ISapService`, `IServiceBus`) and Simulation implementations (`SapSimulationService`).
 - **Switching:** Toggle via `appsettings` (e.g., `UseMocks: true`).
 
 ## 10. Event-Driven Architecture ("Async by Default")
