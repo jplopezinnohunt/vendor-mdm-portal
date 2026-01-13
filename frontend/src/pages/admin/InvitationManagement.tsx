@@ -23,7 +23,7 @@ export const InvitationManagement: React.FC = () => {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [filter, setFilter] = useState<string>('');
     const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
-    const [resentLink, setResentLink] = useState<{ id: string, link: string } | null>(null);
+    const [resentLink, setResentLink] = useState<{ id: string, link: string, emailSent: boolean } | null>(null);
     const navigate = useNavigate();
 
     const loadInvitations = async () => {
@@ -60,7 +60,8 @@ export const InvitationManagement: React.FC = () => {
         try {
             const response = await api.post(`/invitation/resend/${id}`);
             const link = `${window.location.origin}${response.data.invitationLink}`;
-            setResentLink({ id, link });
+            const emailSent = response.data.emailSent;
+            setResentLink({ id, link, emailSent });
             loadInvitations();
         } catch (error: any) {
             console.error('Failed to resend invitation:', error);
@@ -279,10 +280,10 @@ export const InvitationManagement: React.FC = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex flex-col">
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${invitation.vendorType === 'Company' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' :
-                                                            invitation.vendorType === 'Physical' ? 'bg-orange-50 text-orange-700 border-orange-100' :
-                                                                invitation.vendorType === 'Meeting' ? 'bg-purple-50 text-purple-700 border-purple-100' :
-                                                                    invitation.vendorType === 'Participant' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                                        'bg-gray-50 text-gray-700 border-gray-100'
+                                                        invitation.vendorType === 'Physical' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                                                            invitation.vendorType === 'Meeting' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                                                                invitation.vendorType === 'Participant' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                                                    'bg-gray-50 text-gray-700 border-gray-100'
                                                         }`}>
                                                         {invitation.vendorType}
                                                     </span>
@@ -428,15 +429,31 @@ export const InvitationManagement: React.FC = () => {
                 <Modal
                     isOpen={!!resentLink}
                     onClose={() => setResentLink(null)}
-                    title="Invitation Resent Successfully"
+                    title={resentLink?.emailSent ? "Invitation Resent Successfully" : "Invitation Generated - Email Failed"}
                     footer={
                         <Button onClick={() => setResentLink(null)}>Done</Button>
                     }
                 >
                     <div className="space-y-4">
-                        <p className="text-sm text-gray-600 text-left">
-                            A new invitation has been sent. You can also manually copy the link below:
-                        </p>
+                        {resentLink?.emailSent ? (
+                            <p className="text-sm text-gray-600 text-left">
+                                A new invitation has been sent. You can also manually copy the link below:
+                            </p>
+                        ) : (
+                            <div className="bg-orange-50 border-l-4 border-orange-400 p-4">
+                                <div className="flex">
+                                    <div className="flex-shrink-0">
+                                        <Mail className="h-5 w-5 text-orange-400" />
+                                    </div>
+                                    <div className="ml-3">
+                                        <p className="text-sm text-orange-700">
+                                            The invitation was generated but the <strong>email could not be sent</strong>.
+                                            Please copy and send the link manually to the vendor.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md border border-gray-200">
                             <code className="text-xs text-brand-700 break-all flex-1">{resentLink?.link}</code>
                             <button

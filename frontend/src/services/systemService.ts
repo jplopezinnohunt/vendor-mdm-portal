@@ -35,6 +35,7 @@ export interface ServiceBusConfig {
 export interface EmailConfig {
     mode: string;
     isConfigured: boolean;
+    isConnected: boolean;
     smtpHost?: string;
     fromEmail?: string;
     statusMessage?: string;

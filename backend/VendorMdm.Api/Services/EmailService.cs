@@ -90,6 +90,14 @@ public class EmailService : IEmailService
 
             // Fallback: Log email (for local development)
             LogEmail(email, subject, data, isMfa, mfaCode);
+            
+            // If in production/Azure and we reached here, it means real sending failed
+            if (!_useLocalEmulators)
+            {
+                _logger.LogWarning("Email sending failed in Production environment. Fallback to logging.");
+                return false;
+            }
+            
             return true;
         }
         catch (Exception ex)
@@ -98,6 +106,81 @@ public class EmailService : IEmailService
             LogEmail(email, subject, data, isMfa, mfaCode);
             return false;
         }
+    }
+
+    /// <summary>
+    /// Test connectivity to the configured email service
+    /// </summary>
+    public async Task<bool> TestConnectionAsync()
+    {
+        // For local development with emulators, we consider the "console" service always up
+        if (_useLocalEmulators)
+        {
+            _logger.LogInformation("TestConnection: Local emulators enabled, returning success.");
+            return true;
+        }
+
+        // 1. Check Azure Function if configured
+        var functionUrl = _configuration["EmailService:FunctionUrl"];
+        if (!string.IsNullOrEmpty(functionUrl) && !functionUrl.Contains("localhost"))
+        {
+            try
+            {
+                _logger.LogInformation("Testing Azure Function connectivity: {Url}", functionUrl);
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(5);
+                
+                // Use OPTIONS or GET to check availability
+                var response = await httpClient.GetAsync(functionUrl);
+                
+                // We accept 405 (Method Not Allowed) because we're doing a GET on a POST endpoint usually,
+                // but it confirms the endpoint is reachable.
+                if (response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.MethodNotAllowed || response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    _logger.LogInformation("Azure Function reachable (Status: {StatusCode})", response.StatusCode);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("Azure Function health check failed: {Message}", ex.Message);
+            }
+        }
+
+        // 2. Check SMTP if enabled
+        var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
+        if (smtpEnabled)
+        {
+            try
+            {
+                var smtpHost = _configuration["EmailService:Smtp:Host"] 
+                    ?? _configuration["EmailService__Smtp__Host"];
+                var smtpPort = _configuration.GetValue<int>("EmailService:Smtp:Port", 587);
+
+                if (string.IsNullOrEmpty(smtpHost))
+                {
+                    _logger.LogWarning("SMTP enabled but Host is empty.");
+                    return false;
+                }
+
+                _logger.LogInformation("Testing SMTP connectivity: {Host}:{Port}", smtpHost, smtpPort);
+                using (var client = new SmtpClient())
+                {
+                    client.Timeout = 5000;
+                    await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+                    var isConnected = client.IsConnected;
+                    await client.DisconnectAsync(true);
+                    return isConnected;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning("SMTP health check failed: {Message}", ex.Message);
+            }
+        }
+
+        _logger.LogError("Email health check failed: No valid sending method reachable.");
+        return false;
     }
 
     /// <summary>
@@ -404,7 +487,7 @@ public class EmailService : IEmailService
         // Use Console.WriteLine for better visibility in development
         Console.WriteLine("");
         Console.WriteLine("═══════════════════════════════════════════════════════════");
-        Console.WriteLine("📧 INVITATION EMAIL (LOCAL DEV - EMAIL SENT)");
+        Console.WriteLine("📧 INVITATION EMAIL (SIMULATION MODE - NO EMAIL SENT)");
         Console.WriteLine("═══════════════════════════════════════════════════════════");
         Console.WriteLine($"To: {data.Email}");
         Console.WriteLine($"Subject: Action Required: Invitation to Register as Vendor with {companyName}");

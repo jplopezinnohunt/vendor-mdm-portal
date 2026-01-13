@@ -131,3 +131,12 @@ This document acts as the **Root Authority** for all development. It defines the
     2.  **Context Isolation:** Prefer "Vertical Slice" architecture to minimize tokens required to understand a feature.
     3.  **Semantic Naming:** Directory/file names must describe *intent* (e.g., `features/onboarding/`) not just type.
     4.  **Self-Documentation:** Complex logic must include "Why" comments targeting AI reasoning.
+
+## 14. Dependency Health Awareness
+**"Know thy Neighbors"**
+*   **The Problem:** Systems often fail silently when external dependencies (Email, SAP, Storage) are down, leading to fragmented state and poor user experience.
+*   **The Rule:**
+    1.  **Connectivity Probes:** Every external service client MUST implement a `TestConnectionAsync` method that performs a real connectivity check (ping, OPTIONS request, or port connection).
+    2.  **Health Expose:** Proactive connectivity status MUST be exposed via the `/api/system/data-sources` or `/api/health` endpoints.
+    3.  **UI Fail-Fast:** The Frontend MUST query these statuses and proactively warn the user *before* they initiate a workflow that depends on a failing service.
+    4.  **No False Positives:** If a service call fails, the Backend MUST return a clear error code (503 Service Unavailable) or flag (e.g., `emailSent: false`), and never silently "fallback" to logging in production.

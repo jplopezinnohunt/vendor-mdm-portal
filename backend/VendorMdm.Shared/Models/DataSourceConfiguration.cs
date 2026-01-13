@@ -138,10 +138,12 @@ public class EmailConfig
     /// </summary>
     public string Mode { get; set; } = "Unknown";
     
-    /// <summary>
-    /// Whether email service is configured
-    /// </summary>
     public bool IsConfigured { get; set; }
+    
+    /// <summary>
+    /// Whether email service is currently connected/online
+    /// </summary>
+    public bool IsConnected { get; set; }
     
     /// <summary>
     /// SMTP host if using SMTP

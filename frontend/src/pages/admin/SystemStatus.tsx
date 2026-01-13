@@ -266,7 +266,7 @@ export const SystemStatus: React.FC = () => {
                         <div className="ml-4 flex-1">
                             <div className="flex items-center justify-between">
                                 <h3 className="text-lg font-semibold text-gray-900">Email Service</h3>
-                                {getStatusIcon(config.email.isConfigured, config.email.mode)}
+                                {getStatusIcon(config.email.isConnected, config.email.mode)}
                             </div>
                             <div className="mt-3 space-y-2">
                                 <div className="flex justify-between text-sm">

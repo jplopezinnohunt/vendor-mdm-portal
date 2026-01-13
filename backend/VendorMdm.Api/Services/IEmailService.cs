@@ -14,6 +14,11 @@ public interface IEmailService
     /// Sends an MFA verification code to a vendor
     /// </summary>
     Task<bool> SendMfaCodeEmailAsync(string email, string vendorName, string code);
+
+    /// <summary>
+    /// Tests the connection to the email service.
+    /// </summary>
+    Task<bool> TestConnectionAsync();
 }
 
 /// <summary>

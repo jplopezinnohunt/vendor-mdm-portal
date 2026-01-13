@@ -18,7 +18,7 @@ public interface IInvitationService
     Task<VendorInvitation?> GetInvitationByTokenAsync(string token);
     Task<InvitationListResponse> GetInvitationsAsync(int page = 1, int pageSize = 20, string? status = null);
     Task<bool> CompleteInvitationAsync(string token, Guid vendorApplicationId);
-    Task<(bool Success, string? Link)> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
+    Task<(bool Success, string? Link, bool EmailSent)> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
     Task<bool> TriggerMfaAsync(string token);
     Task<VerifyMfaResponse> VerifyMfaCodeAsync(string token, string code);
     Task<bool> SubmitInitialInfoAsync(string token, Dictionary<string, object> initialInfo);
@@ -529,14 +529,14 @@ public class InvitationService : IInvitationService
         return true;
     }
 
-    public async Task<(bool Success, string? Link)> ResendInvitationAsync(Guid invitationId, Guid requestedBy)
+    public async Task<(bool Success, string? Link, bool EmailSent)> ResendInvitationAsync(Guid invitationId, Guid requestedBy)
     {
         var invitation = await _context.VendorInvitations
             .FirstOrDefaultAsync(i => i.Id == invitationId);
 
         if (invitation == null || invitation.Status == InvitationStatus.Completed)
         {
-            return (false, null);
+            return (false, null, false);
         }
 
         // Generate new token and extend expiration
@@ -580,6 +580,7 @@ public class InvitationService : IInvitationService
         }
 
         // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
+        bool emailSent = false;
         try
         {
             var baseUrl = _configuration["App:BaseUrl"] 
@@ -598,7 +599,7 @@ public class InvitationService : IInvitationService
                 BaseUrl = baseUrl
             };
 
-            var emailSent = await _emailService.SendInvitationEmailAsync(emailData);
+            emailSent = await _emailService.SendInvitationEmailAsync(emailData);
             
             if (emailSent)
             {
@@ -628,7 +629,7 @@ public class InvitationService : IInvitationService
             invitationId, requestedBy);
 
         var link = $"/invitation/register/{invitation.InvitationToken}";
-        return (true, link);
+        return (true, link, emailSent);
     }
 
     public async Task<bool> CancelInvitationAsync(Guid invitationId, Guid requestedBy)

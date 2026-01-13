@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
 using VendorMdm.Shared.Models;
 using Microsoft.Azure.Cosmos;
+using VendorMdm.Api.Services;
 
 namespace VendorMdm.Api.Controllers;
 
@@ -18,16 +19,19 @@ public class SystemController : ControllerBase
     private readonly ILogger<SystemController> _logger;
     private readonly SqlDbContext _dbContext;
     private readonly CosmosClient? _cosmosClient;
+    private readonly IEmailService _emailService;
 
     public SystemController(
         IConfiguration configuration,
         ILogger<SystemController> logger,
         SqlDbContext dbContext,
+        IEmailService emailService,
         CosmosClient? cosmosClient = null)
     {
         _configuration = configuration;
         _logger = logger;
         _dbContext = dbContext;
+        _emailService = emailService;
         _cosmosClient = cosmosClient;
     }
 
@@ -45,7 +49,7 @@ public class SystemController : ControllerBase
                 Database = await GetDatabaseStatusAsync(),
                 Cosmos = await GetCosmosStatusAsync(),
                 ServiceBus = GetServiceBusStatus(),
-                Email = GetEmailStatus(),
+                Email = await GetEmailStatusAsync(),
                 LastChecked = DateTime.UtcNow
             };
 
@@ -328,7 +332,7 @@ public class SystemController : ControllerBase
         return config;
     }
 
-    private EmailConfig GetEmailStatus()
+    private async Task<EmailConfig> GetEmailStatusAsync()
     {
         var config = new EmailConfig();
         
@@ -401,6 +405,13 @@ public class SystemController : ControllerBase
                     config.IsConfigured = false;
                     config.StatusMessage = "Email service not configured";
                 }
+            }
+
+            // Check real connectivity
+            config.IsConnected = await _emailService.TestConnectionAsync();
+            if (!config.IsConnected && config.IsConfigured)
+            {
+                config.StatusMessage = "Service configured but connection failed";
             }
         }
         catch (Exception ex)
