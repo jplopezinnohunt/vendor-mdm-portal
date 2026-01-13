@@ -73,7 +73,7 @@ These rules are non-negotiable and must be applied to every task. This file cons
 ## 9. Simulation First ("Simulate, Don't Comment")
 - **Scope:** Applies to **Business Logic** (SAP) AND **Infrastructure** (Service Bus, Blob Storage, Key Vault).
 - **Rule:** Never comment out dependencies (e.g., `// Call SAP`). Never connect to Real Cloud Resources in Local/Dev mode without explicit overrides.
-- **Pattern:** Use Interfaces (`ISapService`, `IServiceBus`) and Simulation implementations (`SapSimulationService`).
+- **Pattern:** Use Interfaces (`ISapService`, `IServiceBus`) and Simulation implementations for ALL external dependencies.
 - **Switching:** Toggle via `appsettings` (e.g., `UseMocks: true`).
 
 ## 10. Event-Driven Architecture ("Async by Default")
