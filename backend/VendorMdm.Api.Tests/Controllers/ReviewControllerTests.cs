@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using VendorMdm.Api.Controllers;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Models;
+using VendorMdm.Api.Services;
 using VendorMdm.Shared.Models;
 using Xunit;
 
@@ -18,6 +20,7 @@ namespace VendorMdm.Api.Tests.Controllers
     {
         private readonly SqlDbContext _context;
         private readonly Mock<ILogger<ReviewController>> _loggerMock;
+        private readonly Mock<IVendorApplicationService> _vendorServiceMock;
         private readonly ReviewController _controller;
 
         public ReviewControllerTests()
@@ -28,7 +31,8 @@ namespace VendorMdm.Api.Tests.Controllers
 
             _context = new SqlDbContext(options);
             _loggerMock = new Mock<ILogger<ReviewController>>();
-            _controller = new ReviewController(_context, _loggerMock.Object);
+            _vendorServiceMock = new Mock<IVendorApplicationService>();
+            _controller = new ReviewController(_context, _vendorServiceMock.Object, _loggerMock.Object);
         }
 
         [Fact]
@@ -68,30 +72,32 @@ namespace VendorMdm.Api.Tests.Controllers
             };
 
             // Act
+            _vendorServiceMock.Setup(x => x.ApproveApplicationAsync(It.IsAny<Guid>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<string>()))
+                .Returns(Task.CompletedTask);
+
+            // Set ControllerContext to avoid NullReference on User.Identity
+            _controller.ControllerContext = new ControllerContext 
+            { 
+                HttpContext = new DefaultHttpContext() 
+            };
+
+            // Act
             var result = await _controller.ApproveApplication(appId, request);
 
             // Assert
-            var actionResult = Assert.IsType<OkObjectResult>(result);
+            // Controller returns Ok(...) which is OkObjectResult. 
+            // OkObjectResult inherits from ObjectResult.
+            // If it returns 500, it returns ObjectResult. 
+            // We check for 200 first.
+            var objectResult = Assert.IsAssignableFrom<ObjectResult>(result);
+            Assert.Equal(200, objectResult.StatusCode);
             
-            var updatedApp = await _context.VendorApplications.FindAsync(appId);
-            Assert.NotNull(updatedApp);
-            Assert.Equal("Approved", updatedApp.Status);
-            
-            // Check core field update
-            Assert.Equal("New Name", updatedApp.CompanyName);
-            
-            // Check attributes merge
-            var updatedAttributes = JsonSerializer.Deserialize<Dictionary<string, object>>(updatedApp.Attributes);
-            Assert.NotNull(updatedAttributes);
-            
-            Assert.True(updatedAttributes.ContainsKey("taxCode1"));
-            Assert.Equal("10", updatedAttributes["taxCode1"].ToString());
-            
-            Assert.True(updatedAttributes.ContainsKey("accountGroup"));
-            Assert.Equal("INDV", updatedAttributes["accountGroup"].ToString());
-            
-            Assert.True(updatedAttributes.ContainsKey("existingKey"));
-            Assert.Equal("updatedValue", updatedAttributes["existingKey"].ToString());
+            _vendorServiceMock.Verify(x => x.ApproveApplicationAsync(
+                appId, 
+                It.Is<Dictionary<string, object>>(d => d["companyName"].ToString() == "New Name" && d.ContainsKey("taxCode1")),
+                false, 
+                "System" // User.Identity is null in test so defaults to System
+            ), Times.Once);
         }
     }
 }
