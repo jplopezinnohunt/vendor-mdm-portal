@@ -51,3 +51,7 @@ _migration_staging/
 
 # Test Results
 TestResults/
+
+# Temporary Directory
+temp/
+tmp/

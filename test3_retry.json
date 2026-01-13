@@ -1,20 +1,0 @@
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:5001...
-* Connected to 127.0.0.1 (127.0.0.1) port 5001
-> GET /api/sap/vendor/10189999?companyCode=UNES HTTP/1.1
-> Host: 127.0.0.1:5001
-> User-Agent: curl/8.7.1
-> Accept: */*
-> 
-* Request completely sent off
-< HTTP/1.1 200 OK
-< Content-Type: application/json; charset=utf-8
-< Date: Tue, 06 Jan 2026 05:41:11 GMT
-< Server: Kestrel
-< Transfer-Encoding: chunked
-< 
-{ [968 bytes data]
-100   956    0   956    0     0  25657      0 --:--:-- --:--:-- --:--:-- 25837
-* Connection #0 to host 127.0.0.1 left intact
-{"success":true,"errorMessage":null,"vendor":{"sapId":"10189999","legalName":"SMITH John","accountGroup":"INDV","country":"US","blocked":false,"deletionFlag":false,"taxCode1":"123-456-789","taxCode2":"987654321","permittedPayee":"10189999","generalData":{"title":"","name1":"","name2":"","name3":"","name4":"UpdatedName4","searchTerm":"","street":"","houseNo":"","street2":"Building C","street3":"","street4":"","postalCode":"","city":"","country":"","taxNumber2":"","fax":"+99999","region":"","language":"","telephone":"","email":"","dateOfBirth":null,"nationality":""},"bankAccounts":[{"bankCountry":"US","bankKey":"","bankAccount":"1234567890","iban":null,"swift":"CHASUS33","accountHolder":"John Smith","bankName":"Chase Bank","currency":"USD","routingNumber":"021000021","accountType":null}],"companyCodeData":{"companyCode":"UNES","reconciliationAccount":"1110010000","paymentTerms":"Z001","paymentMethods":[],"currency":"USD","paymentBlock":false}}}
