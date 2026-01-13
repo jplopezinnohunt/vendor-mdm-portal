@@ -286,6 +286,7 @@ builder.Services.AddScoped<IFundService, FundService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IVendorService, VendorService>();
+builder.Services.AddScoped<IVendorApplicationService, VendorApplicationService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 
 // ═══════════════════════════════════════════════════════════════

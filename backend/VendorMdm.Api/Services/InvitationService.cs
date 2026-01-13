@@ -111,8 +111,8 @@ public class InvitationService : IInvitationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Sanctions screening service failed unexpectedly. Proceeding with invitation creation (Fail-Open for Dev).");
-            // In production, we might want to Fail-Closed, but for local dev to unblock the user, we Proceed.
+            _logger.LogError(ex, "Sanctions screening service failed unexpectedly. enforcing Fail-Closed policy.");
+            throw new InvalidOperationException("Sanctions screening is temporarily unavailable. Please try again later.", ex);
         }
 
         // Generate secure token
@@ -777,7 +777,9 @@ public class InvitationService : IInvitationService
             var attributes = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(invitation.Attributes) ?? new();
             
             // Check for bypass (local dev/demo only - remove in prod)
-            bool bypass = code == "000000"; 
+            // SECURITY FIX: Wrapped in IsDevelopment check
+            bool isDev = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+            bool bypass = isDev && code == "000000"; 
             string storedCodeStr = "";
             DateTime expiresAt = DateTime.MinValue;
 
