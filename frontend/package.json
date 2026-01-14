@@ -7,6 +7,7 @@
     "generate:version": "node generate-version.js",
     "dev": "npm run generate:version && vite",
     "build": "npm run generate:version && vite build",
+    "lint": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {

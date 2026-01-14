@@ -21,10 +21,10 @@ jobs:
         run: dotnet restore backend/VendorMdm.sln
         
       - name: Build
-        run: dotnet build backend/VendorMdm.sln --no-restore --configuration Release
+        run: dotnet build backend/VendorMdm.sln --configuration Release
         
       - name: Test
-        run: dotnet test backend/VendorMdm.Api.Tests/VendorMdm.Api.Tests.csproj --no-build --configuration Release --verbosity normal
+        run: dotnet test backend/VendorMdm.Api.Tests/VendorMdm.Api.Tests.csproj --configuration Release --verbosity normal
 
   frontend-validation:
     name: Frontend validation
@@ -47,7 +47,7 @@ jobs:
       - name: Lint
         run: |
           cd frontend
-          npm run lint || echo "Lint failed but continuing for now"
+          npm run lint
           
       - name: Build
         run: |

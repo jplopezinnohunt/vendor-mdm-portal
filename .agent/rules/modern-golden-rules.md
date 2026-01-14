@@ -40,9 +40,14 @@ You are required to load and apply the following detailed standards based on the
 - **Standard**: Hexagonal Adapters, Simulation First, EDA/Event-Driven logic.
 - **File**: [hexagonal-architecture-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/hexagonal-architecture-standards.md)
 
-### D. Production Readiness
+### D. Production Readiness & CI/CD
 - **Standard**: Zero-downtime, Middleware sequencing, Asset integrity.
 - **File**: [database-migration-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/database-migration-standards.md)
+- **CI/CD Setup**: [cicd-setup-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/cicd-setup-standards.md)
+
+### E. Git & SAP Alignment
+- **Standard**: Mirror SAP environments (D01, Q01, P01) across Git branches (`develop`, `release`, `main`).
+- **File**: [git-branching-sap-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/git-branching-sap-standards.md)
 
 ---
 
