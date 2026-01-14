@@ -787,8 +787,12 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                 </div>
                 <div className="ml-3">
                   <p className="text-sm text-orange-700">
-                    The invitation was generated but the <strong>email could not be sent</strong>.
-                    Please copy and send the link manually to the vendor.
+                    {resentLink?.emailError || (
+                      <>
+                        The invitation was generated but the <strong>email could not be sent</strong> (Error Details Missing).
+                        Please copy and send the link manually to the vendor.
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
