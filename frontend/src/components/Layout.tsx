@@ -10,21 +10,17 @@ import { ImpersonationBanner } from './ImpersonationBanner';
 
 export const MainLayout: React.FC = () => {
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="relative flex min-h-screen w-full">
+    <SidebarProvider
+      defaultOpen={true}
+      style={{
+        '--sidebar-width': '16rem',
+        '--sidebar-width-icon': '3rem',
+      } as React.CSSProperties}
+    >
+      <div className="flex min-h-screen w-full">
         <AppSidebar />
 
-        {/* Main content that shifts based on sidebar state */}
-        <main
-          className="flex-1 flex flex-col min-w-0 bg-background transition-all duration-200 ease-linear
-            md:ml-0
-            peer-data-[state=expanded]:md:ml-[var(--sidebar-width)]
-            peer-data-[state=collapsed]:md:ml-[var(--sidebar-width-icon)]"
-          style={{
-            '--sidebar-width': '16rem',
-            '--sidebar-width-icon': '3rem'
-          } as React.CSSProperties}
-        >
+        <div className="flex-1 flex flex-col">
           <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-white px-4 shadow-sm">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
@@ -45,14 +41,14 @@ export const MainLayout: React.FC = () => {
 
           <ImpersonationBanner />
 
-          <div className="flex-1 p-4">
+          <main className="flex-1 p-4 overflow-auto">
             <Outlet />
-          </div>
+          </main>
 
           <footer className="border-t bg-white p-4">
             <ServiceStatusPanel />
           </footer>
-        </main>
+        </div>
       </div>
     </SidebarProvider>
   );
