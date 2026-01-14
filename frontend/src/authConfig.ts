@@ -13,7 +13,7 @@ export const msalConfig: Configuration = {
         storeAuthStateInCookie: false, // Set this to "true" if you are having issues on IE11 or Edge
     },
     system: {
-        allowNativeBroker: false // Disables WAM Broker
+        // MSAL v3/4 system options
     }
 };
 

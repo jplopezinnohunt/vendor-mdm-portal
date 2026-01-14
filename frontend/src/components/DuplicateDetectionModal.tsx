@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle, ExternalLink, User, Globe, Hash, Info, Eye, GitCompare } from 'lucide-react';
-import { Button } from './Elements';
+import { Button } from './ui/Elements';
 import { VendorComparisonModal } from './VendorComparisonModal';
 import { VendorDetailModal } from './VendorDetailModal';
 

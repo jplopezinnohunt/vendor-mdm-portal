@@ -28,6 +28,7 @@ interface VendorComparisonModalProps {
         accountGroup: string;
         sapStatus: string;
         blocked: boolean;
+        [key: string]: any;
     };
 }
 
@@ -142,14 +143,14 @@ export const VendorComparisonModal: React.FC<VendorComparisonModalProps> = ({
                     {/* Comparison Rows */}
                     <div className="space-y-0">
                         {comparisons.map((comp, idx) => (
-                            <ComparisonRow key={idx} data={comp} />
+                            <div key={idx}><ComparisonRow data={comp} /></div>
                         ))}
                     </div>
 
                     {/* Status Banner */}
                     <div className={`mt-6 p-4 rounded-lg border-l-4 ${existingVendor.sapStatus === 'Blocked'
-                            ? 'bg-red-50 border-red-500'
-                            : 'bg-green-50 border-green-500'
+                        ? 'bg-red-50 border-red-500'
+                        : 'bg-green-50 border-green-500'
                         }`}>
                         <div className="flex items-start gap-3">
                             <div className="flex-1">

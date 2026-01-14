@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { Button } from '../components/ui/Elements';
+import { Button } from '../src/components/ui/Elements';
 
 // Declare global variables for Jest to fix missing type errors
 declare var describe: any;
@@ -18,7 +18,7 @@ describe('Button Component', () => {
   test('shows loading spinner when isLoading is true', () => {
     render(<Button isLoading>Submit</Button>);
     // Tailwind spinner implementation creates an svg
-    expect(document.querySelector('svg')).toBeInTheDocument(); 
+    expect(document.querySelector('svg')).toBeInTheDocument();
     expect(screen.getByRole('button')).toBeDisabled();
   });
 

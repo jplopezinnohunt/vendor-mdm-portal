@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { Button, Card } from '../../components/ui/Elements';
@@ -257,6 +257,7 @@ export const InviteVendorForm: React.FC = () => {
     };
 
     const copyInvitationLink = () => {
+        if (!invitationData) return;
         const fullLink = `${window.location.origin}${invitationData.invitationLink}`;
         navigator.clipboard.writeText(fullLink);
         setCopied(true);

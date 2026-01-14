@@ -14,6 +14,7 @@ interface InvitationValidation {
     expiresAt?: string;
     vendorType?: string;
     attributes?: Record<string, any>;
+    currentStage?: string;
 }
 
 interface RegistrationFormData {
