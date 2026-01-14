@@ -161,6 +161,23 @@ public class SanctionsScreeningOfacSourceService : ISanctionsScreeningService
         };
     }
 
+    public async Task<bool> TestConnectionAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Testing OFAC SDN List source connectivity");
+            // Use a HEAD request to check availability of the source file
+            using var request = new HttpRequestMessage(HttpMethod.Head, _sourceUrl);
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OFAC SDN List connectivity check failed");
+            return false;
+        }
+    }
+
     private async Task EnsureListLoadedAsync()
     {
         if (_cachedEntries.Any() && DateTime.UtcNow - _lastUpdate < _cacheDuration)

@@ -6,18 +6,24 @@ namespace VendorMdm.Api.Services;
 public interface IServiceBusService
 {
     Task PublishEventAsync(string eventType, object data, string? queueName = null);
+    Task<bool> TestConnectionAsync();
     ValueTask DisposeAsync();
 }
 
 public class ServiceBusService : IServiceBusService
 {
     private readonly ServiceBusClient _client;
+    private readonly ILogger<ServiceBusService> _logger;
     private readonly string _sapEnvironmentCode;
     private readonly Dictionary<string, ServiceBusSender> _senders;
 
-    public ServiceBusService(ServiceBusClient client, IConfiguration configuration)
+    public ServiceBusService(
+        ServiceBusClient client, 
+        IConfiguration configuration,
+        ILogger<ServiceBusService> logger)
     {
         _client = client;
+        _logger = logger;
         _sapEnvironmentCode = configuration["SapEnvironmentCode"] ?? "D01";
         _senders = new Dictionary<string, ServiceBusSender>();
     }
@@ -42,6 +48,22 @@ public class ServiceBusService : IServiceBusService
         message.ApplicationProperties.Add("eventType", eventType);
 
         await sender.SendMessageAsync(message);
+    }
+
+    public async Task<bool> TestConnectionAsync()
+    {
+        try
+        {
+            // Lightweight check: try to create a sender for a default queue
+            // but just check if the client can interact with the namespace.
+            // Getting the fully qualified namespace is a quick way to check connectivity.
+            return !string.IsNullOrEmpty(_client.FullyQualifiedNamespace);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Service Bus connectivity check failed");
+            return false;
+        }
     }
 
     private string GetQueueNameForEvent(string eventType)

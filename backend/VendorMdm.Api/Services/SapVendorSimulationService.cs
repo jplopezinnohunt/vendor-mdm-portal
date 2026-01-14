@@ -560,6 +560,12 @@ public class SapVendorSimulationService : ISapVendorService
         };
     }
 
+    public Task<bool> TestConnectionAsync()
+    {
+        _logger.LogInformation("SIMULATION: Testing connection (always success)");
+        return Task.FromResult(true);
+    }
+
     private static List<SapVendorDetail> SeedMockData()
     {
         // Seed 50 mock vendors for testing

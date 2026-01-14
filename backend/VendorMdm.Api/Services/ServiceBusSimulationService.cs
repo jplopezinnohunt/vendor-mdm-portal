@@ -32,6 +32,12 @@ public class ServiceBusSimulationService : IServiceBusService
         return Task.CompletedTask;
     }
 
+    public Task<bool> TestConnectionAsync()
+    {
+        _logger.LogInformation("📢 [SIMULATION] Testing Service Bus connection (always success)");
+        return Task.FromResult(true);
+    }
+
     public ValueTask DisposeAsync()
     {
         return ValueTask.CompletedTask;

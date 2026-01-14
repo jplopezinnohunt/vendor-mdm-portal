@@ -45,4 +45,9 @@ public interface IFileStorageService
     /// Check if a file exists
     /// </summary>
     Task<bool> FileExistsAsync(string fileId);
+
+    /// <summary>
+    /// Test connectivity to storage provider
+    /// </summary>
+    Task<bool> TestConnectionAsync();
 }

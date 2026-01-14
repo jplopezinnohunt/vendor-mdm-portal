@@ -27,4 +27,9 @@ public interface ISanctionsScreeningService
     /// Get information about when lists were last updated
     /// </summary>
     Task<ListsUpdateInfo> GetListsUpdateInfoAsync();
+
+    /// <summary>
+    /// Test connectivity to sanctions provider or local data source
+    /// </summary>
+    Task<bool> TestConnectionAsync();
 }

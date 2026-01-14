@@ -187,6 +187,12 @@ public class SanctionsScreeningSimulationService : ISanctionsScreeningService
         });
     }
 
+    public Task<bool> TestConnectionAsync()
+    {
+        _logger.LogInformation("MOCK SANCTIONS SCREENING: Testing connection (always success)");
+        return Task.FromResult(true);
+    }
+
     // Helper methods
 
     private decimal CalculateNameScore(string name1, string name2)

@@ -71,4 +71,9 @@ public interface ISapVendorService
     /// <param name="companyCode">Company code (e.g., "UNES")</param>
     /// <returns>Field configuration from SAP business rules</returns>
     Task<BankCountryConfigResponse> GetBankCountryConfigurationAsync(string countryCode, string companyCode);
+
+    /// <summary>
+    /// Test connectivity to SAP
+    /// </summary>
+    Task<bool> TestConnectionAsync();
 }

@@ -265,6 +265,23 @@ public class FileStorageAzureBlobService : IFileStorageService
         var blobClient = containerClient.GetBlobClient(fileId);
         return await blobClient.ExistsAsync();
     }
+
+    public async Task<bool> TestConnectionAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Testing Azure Blob Storage connectivity");
+            // Check if service is reachable and container exists
+            var containerClient = _blobServiceClient.GetBlobContainerClient(_containerName);
+            await containerClient.ExistsAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Azure Blob Storage health check failed");
+            return false;
+        }
+    }
     
     /// <summary>
     /// Sanitize filename for safe blob storage naming

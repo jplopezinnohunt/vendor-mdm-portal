@@ -9,7 +9,10 @@ import {
     CheckCircle,
     AlertCircle,
     Circle,
-    RefreshCw
+    RefreshCw,
+    Layers,
+    Folder,
+    ShieldCheck
 } from 'lucide-react';
 
 export const SystemStatus: React.FC = () => {
@@ -291,6 +294,93 @@ export const SystemStatus: React.FC = () => {
                                     <span className="text-gray-500">Status:</span>
                                     <span className="font-medium text-gray-900">
                                         {config.email.statusMessage || (config.email.isConfigured ? 'Configured' : 'Not configured')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* SAP ECC Gateway */}
+                <Card className="p-6">
+                    <div className="flex items-start">
+                        <div className="rounded-lg bg-blue-100 p-3">
+                            <Layers className="h-6 w-6 text-blue-600" />
+                        </div>
+                        <div className="ml-4 flex-1">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-900">SAP ECC Gateway</h3>
+                                {getStatusIcon(config.sap.isConnected, config.sap.mode)}
+                            </div>
+                            <div className="mt-3 space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Mode:</span>
+                                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${getModeColor(config.sap.mode)}`}>
+                                        {config.sap.mode}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Status:</span>
+                                    <span className="font-medium text-gray-900">
+                                        {config.sap.statusMessage || (config.sap.isConnected ? 'Connected' : 'Not connected')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* File Storage */}
+                <Card className="p-6">
+                    <div className="flex items-start">
+                        <div className="rounded-lg bg-yellow-100 p-3">
+                            <Folder className="h-6 w-6 text-yellow-600" />
+                        </div>
+                        <div className="ml-4 flex-1">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-900">File Storage</h3>
+                                {getStatusIcon(config.fileStorage.isConnected, config.fileStorage.mode)}
+                            </div>
+                            <div className="mt-3 space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Mode:</span>
+                                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${getModeColor(config.fileStorage.mode)}`}>
+                                        {config.fileStorage.mode}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Status:</span>
+                                    <span className="font-medium text-gray-900">
+                                        {config.fileStorage.statusMessage || (config.fileStorage.isConnected ? 'Connected' : 'Not connected')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Sanctions Screening */}
+                <Card className="p-6">
+                    <div className="flex items-start">
+                        <div className="rounded-lg bg-red-100 p-3">
+                            <ShieldCheck className="h-6 w-6 text-red-600" />
+                        </div>
+                        <div className="ml-4 flex-1">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-gray-900">Sanctions Screening</h3>
+                                {getStatusIcon(config.sanctions.isConnected, config.sanctions.mode)}
+                            </div>
+                            <div className="mt-3 space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Mode:</span>
+                                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${getModeColor(config.sanctions.mode)}`}>
+                                        {config.sanctions.mode}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-500">Status:</span>
+                                    <span className="font-medium text-gray-900">
+                                        {config.sanctions.statusMessage || (config.sanctions.isConnected ? 'Connected' : 'Not connected')}
                                     </span>
                                 </div>
                             </div>
