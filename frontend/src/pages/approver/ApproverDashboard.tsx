@@ -290,7 +290,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
-  const [resentLink, setResentLink] = useState<{ id: string, link: string, emailSent: boolean } | null>(null);
+  const [resentLink, setResentLink] = useState<{ id: string, link: string, emailSent: boolean, emailError?: string } | null>(null);
 
   const handleResend = async (id: string) => {
     setActionLoading(id + '-resend');
@@ -298,7 +298,8 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
       const response = await api.post(`/invitation/resend/${id}`);
       const link = `${window.location.origin}${response.data.invitationLink}`;
       const emailSent = response.data.emailSent;
-      setResentLink({ id, link, emailSent });
+      const emailError = response.data.emailError;
+      setResentLink({ id, link, emailSent, emailError });
       // Refresh invitations
       const res = await api.get('/invitation/list');
       setInvitations(mode === 'worklist'
