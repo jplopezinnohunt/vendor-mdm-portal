@@ -13,7 +13,7 @@ export const MainLayout: React.FC = () => {
     <SidebarProvider
       defaultOpen={true}
       style={{
-        '--sidebar-width': '15rem',
+        '--sidebar-width': '16.25rem',
         '--sidebar-width-icon': '3rem',
       } as React.CSSProperties}
     >
