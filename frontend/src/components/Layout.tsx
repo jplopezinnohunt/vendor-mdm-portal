@@ -13,10 +13,10 @@ const MainLayoutContent: React.FC = () => {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col">
+    <div className="flex min-h-screen flex-1 flex-col transition-all duration-200 ease-linear md:pl-[var(--sidebar-width-icon)] md:peer-data-[state=expanded]:pl-[var(--sidebar-width)]">
       <ImpersonationBanner />
-      {/* Top Navigation Bar - Positioned AFTER sidebar using peer CSS */}
-      <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-white px-4 shadow-sm md:pl-[calc(var(--sidebar-width-icon)+1rem)] md:peer-data-[state=expanded]:pl-[calc(var(--sidebar-width)+1rem)] transition-all duration-200">
+      {/* Top Navigation Bar */}
+      <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-white px-4 shadow-sm">
         <div className="flex items-center gap-2">
           <Button
             onClick={toggleSidebar}
@@ -49,12 +49,12 @@ const MainLayoutContent: React.FC = () => {
       </header>
 
       {/* Page Content */}
-      <div className="flex-1 overflow-auto md:pl-[var(--sidebar-width-icon)] md:peer-data-[state=expanded]:pl-[var(--sidebar-width)] transition-all duration-200">
+      <div className="flex-1 overflow-auto p-4">
         <Outlet />
       </div>
 
       {/* Footer with Service Status */}
-      <footer className="border-t bg-white p-4 md:pl-[calc(var(--sidebar-width-icon)+1rem)] md:peer-data-[state=expanded]:pl-[calc(var(--sidebar-width)+1rem)] transition-all duration-200">
+      <footer className="border-t bg-white p-4">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
           <ServiceStatusPanel />
         </div>
