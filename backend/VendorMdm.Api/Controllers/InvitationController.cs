@@ -131,6 +131,11 @@ public class InvitationController : ControllerBase
                 return NotFound(new { error = "Invitation not found or already completed" });
             }
 
+            if (!emailSent && string.IsNullOrEmpty(emailError))
+            {
+                emailError = "Unknown error: Backend returned no specific failure message.";
+            }
+
             return Ok(new { message = "Invitation resent successfully", invitationLink, emailSent, emailError });
         }
         catch (Exception ex)

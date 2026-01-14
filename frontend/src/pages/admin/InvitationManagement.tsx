@@ -449,7 +449,7 @@ export const InvitationManagement: React.FC = () => {
                                         <p className="text-sm text-orange-700">
                                             {resentLink?.emailError || (
                                                 <>
-                                                    The invitation was generated but the <strong>email could not be sent</strong>.
+                                                    The invitation was generated but the <strong>email could not be sent</strong> (Error Details Missing).
                                                     Please copy and send the link manually to the vendor.
                                                 </>
                                             )}
