@@ -2,7 +2,7 @@ name: Deploy Database Migrations
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
     paths:
       - 'backend/VendorMdm.Api/Migrations/**'
       - 'backend/VendorMdm.Api/Data/**'
