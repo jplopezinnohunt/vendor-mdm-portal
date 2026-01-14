@@ -234,7 +234,7 @@ else
 Console.WriteLine("");
 
 
-// 1. Azure Clients
+// 1. Azure Clients - Trigger Deployment
 builder.Services.AddAzureClients(clientBuilder =>
 {
     // Service Bus
