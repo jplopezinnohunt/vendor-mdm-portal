@@ -110,6 +110,8 @@ export const InviteVendorForm: React.FC = () => {
     });
 
     const selectedVendorType = watch('vendorType');
+    const selectedAccountGroup = watch('accountGroup');
+    const selectedCompanyCode = watch('companyCode');
     const isIndividual = selectedVendorType === 'Physical' || selectedVendorType === 'Participant';
 
     const nextStep = () => setActiveStep((prev) => Math.min(prev + 1, STEPS.length - 1));
@@ -423,7 +425,7 @@ export const InviteVendorForm: React.FC = () => {
                                     </div>
                                 </div>
                                 <div className="mt-8 flex justify-end border-t pt-4">
-                                    <Button type="button" disabled={!selectedVendorType || !watch('accountGroup') || !watch('companyCode')} onClick={() => { setCategoryCommitted(true); if (viewMode === 'wizard') nextStep(); }} className="px-8 font-bold bg-brand-700 text-white">Confirm & Continue</Button>
+                                    <Button type="button" disabled={!selectedVendorType || !selectedAccountGroup || !selectedCompanyCode} onClick={() => { setCategoryCommitted(true); if (viewMode === 'wizard') nextStep(); }} className="px-8 font-bold bg-brand-700 text-white">Confirm & Continue</Button>
                                 </div>
                             </Card>
                         ) : (
@@ -438,7 +440,7 @@ export const InviteVendorForm: React.FC = () => {
                                         <span className="text-sm font-bold text-brand-100">{(ACCOUNT_GROUP_OPTIONS[selectedVendorType] || []).find(o => o.value === watch('accountGroup'))?.label || watch('accountGroup')}</span>
                                     </div>
                                 </div>
-                                <button type="button" onClick={() => { setCategoryCommitted(false); setActiveStep(0); }} className="text-[10px] bg-brand-800 hover:bg-white hover:text-brand-900 border border-brand-700 px-3 py-1 font-bold uppercase tracking-tighter">Change</button>
+                                <button type="button" onClick={() => { setCategoryCommitted(false); setActiveStep(0); }} className="text-[10px] bg-brand-800 hover:bg-white hover:text-brand-900 border border-brand-700 px-3 py-1 font-bold uppercase tracking-tighter cursor-pointer">Change</button>
                             </div>
                         )}
                     </div>

@@ -89,11 +89,11 @@ export function AppSidebar() {
                                                         }
                                                     >
                                                         <item.icon className="h-4 w-4" />
-                                                        <span>{item.name}</span>
+                                                        <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
                                                     </NavLink>
                                                 </SidebarMenuButton>
                                             </TooltipTrigger>
-                                            <TooltipContent side="right" className="group-data-[collapsible=icon]:block hidden">
+                                            <TooltipContent side="right" className="hidden group-data-[state=collapsed]:block">
                                                 {item.name}
                                             </TooltipContent>
                                         </Tooltip>

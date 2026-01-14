@@ -225,31 +225,36 @@ const Sidebar = React.forwardRef<
         ref={ref}
         className="group peer hidden text-sidebar-foreground md:block"
         data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
+        data-collapsible={collapsible}
         data-variant={variant}
         data-side={side}
       >
         {/* This is what handles the sidebar gap on desktop */}
         <div
           className={cn(
-            "relative w-[--sidebar-width] bg-transparent transition-[width] duration-200 ease-linear",
-            "group-data-[collapsible=offcanvas]:w-0",
-            "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+            "relative bg-transparent transition-[width] duration-200 ease-linear",
+            collapsible === "offcanvas" && "w-0",
+            collapsible === "icon" && state === "collapsed" && "w-[calc(var(--sidebar-width-icon))]",
+            collapsible === "icon" && state === "expanded" && "w-[--sidebar-width]",
+            collapsible === "none" && "w-[--sidebar-width]"
           )}
         />
         <div
           className={cn(
-            "fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] duration-200 ease-linear md:flex",
-            side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
-            variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
+            "fixed inset-y-0 z-10 hidden h-svh transition-[left,right,width] duration-200 ease-linear md:flex",
+            // Width based on collapsible mode and state
+            collapsible === "icon" && state === "collapsed" && "w-[--sidebar-width-icon]",
+            collapsible === "icon" && state === "expanded" && "w-[--sidebar-width]",
+            collapsible === "none" && "w-[--sidebar-width]",
+            collapsible === "offcanvas" && state === "expanded" && "w-[--sidebar-width]",
+            // Position based on side and collapsible
+            side === "left" && "left-0",
+            side === "right" && "right-0",
+            collapsible === "offcanvas" && state === "collapsed" && side === "left" && "left-[calc(var(--sidebar-width)*-1)]",
+            collapsible === "offcanvas" && state === "collapsed" && side === "right" && "right-[calc(var(--sidebar-width)*-1)]",
+            // Borders
+            side === "left" && "border-r",
+            side === "right" && "border-l",
             className
           )}
           {...props}
