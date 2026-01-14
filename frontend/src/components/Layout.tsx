@@ -40,7 +40,7 @@ export const MainLayout: React.FC = () => {
         <ImpersonationBanner />
 
         <div className="flex-1 overflow-auto bg-gray-50/50 p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto w-full max-w-7xl">
+          <div className="w-full">
             <Outlet />
           </div>
         </div>
