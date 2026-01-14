@@ -13,7 +13,7 @@ const MainLayoutContent: React.FC = () => {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <SidebarInset className="transition-all duration-200 ease-linear md:peer-data-[state=collapsed]:pl-[3rem] md:peer-data-[state=expanded]:pl-[16rem]">
+    <SidebarInset>
       <ImpersonationBanner />
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-white px-4 shadow-sm">
