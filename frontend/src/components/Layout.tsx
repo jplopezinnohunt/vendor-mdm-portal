@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Bell } from 'lucide-react';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { AppSidebar } from './app-sidebar';
 import { UserNav } from './user-nav';
@@ -10,11 +10,9 @@ import { ImpersonationBanner } from './ImpersonationBanner';
 
 const MainLayoutContent: React.FC = () => {
   return (
-    <div className="flex min-h-screen flex-1 flex-col">
-      <ImpersonationBanner />
-
+    <SidebarInset>
       {/* Top Navigation Bar - Fully Responsive */}
-      <header className="sticky top-0 z-50 flex h-14 md:h-16 shrink-0 items-center gap-2 border-b bg-background px-3 md:px-4 shadow-sm">
+      <header className="flex h-14 md:h-16 shrink-0 items-center gap-2 border-b bg-white px-3 md:px-4 shadow-sm">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex items-center gap-2">
@@ -36,6 +34,8 @@ const MainLayoutContent: React.FC = () => {
         </div>
       </header>
 
+      <ImpersonationBanner />
+
       {/* Page Content - Responsive Padding */}
       <main className="flex-1 overflow-auto p-3 md:p-4 lg:p-6">
         <Outlet />
@@ -47,7 +47,7 @@ const MainLayoutContent: React.FC = () => {
           <ServiceStatusPanel />
         </div>
       </footer>
-    </div>
+    </SidebarInset>
   );
 };
 
