@@ -70,7 +70,7 @@ export function AppSidebar() {
     }
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon">
             <SidebarContent className="pt-2">
                 <SidebarGroup className="py-0">
                     <SidebarGroupLabel className="text-xs px-2 py-2">{roleLabel}</SidebarGroupLabel>
