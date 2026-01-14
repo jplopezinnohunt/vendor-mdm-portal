@@ -40,7 +40,6 @@ local.settings.json
 .DS_Store
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
 
 # Auto-generated version file
