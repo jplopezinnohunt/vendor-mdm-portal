@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { Bell, PanelLeft } from 'lucide-react';
-import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarInset, useSidebar } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { AppSidebar } from './app-sidebar';
@@ -13,7 +13,7 @@ const MainLayoutContent: React.FC = () => {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <div className="flex min-h-screen flex-1 flex-col transition-all duration-200 ease-linear">
+    <SidebarInset>
       <ImpersonationBanner />
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-white px-4 shadow-sm">
@@ -59,7 +59,7 @@ const MainLayoutContent: React.FC = () => {
           <ServiceStatusPanel />
         </div>
       </footer>
-    </div>
+    </SidebarInset>
   );
 };
 
