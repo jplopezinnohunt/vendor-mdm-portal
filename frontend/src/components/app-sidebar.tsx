@@ -70,40 +70,38 @@ export function AppSidebar() {
     }
 
     return (
-        <TooltipProvider>
-            <Sidebar collapsible="icon">
-                <SidebarContent className="pt-2">
-                    <SidebarGroup className="py-0">
-                        <SidebarGroupLabel className="text-xs px-2 py-2">{roleLabel}</SidebarGroupLabel>
-                        <SidebarGroupContent>
-                            <SidebarMenu className="gap-1 px-1">
-                                {navigation.map((item) => (
-                                    <SidebarMenuItem key={item.name}>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <SidebarMenuButton asChild className="h-9 px-2">
-                                                    <NavLink
-                                                        to={item.href}
-                                                        className={({ isActive }) =>
-                                                            isActive ? 'bg-brand-100 text-brand-900 font-medium' : ''
-                                                        }
-                                                    >
-                                                        <item.icon className="h-4 w-4" />
-                                                        <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
-                                                    </NavLink>
-                                                </SidebarMenuButton>
-                                            </TooltipTrigger>
-                                            <TooltipContent side="right" className="hidden group-data-[state=collapsed]:block">
-                                                {item.name}
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                </SidebarContent>
-            </Sidebar>
-        </TooltipProvider>
+        <Sidebar collapsible="icon">
+            <SidebarContent className="pt-2">
+                <SidebarGroup className="py-0">
+                    <SidebarGroupLabel className="text-xs px-2 py-2">{roleLabel}</SidebarGroupLabel>
+                    <SidebarGroupContent>
+                        <SidebarMenu className="gap-1 px-1">
+                            {navigation.map((item) => (
+                                <SidebarMenuItem key={item.name}>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <SidebarMenuButton asChild className="h-9 px-2">
+                                                <NavLink
+                                                    to={item.href}
+                                                    className={({ isActive }) =>
+                                                        isActive ? 'bg-brand-100 text-brand-900 font-medium' : ''
+                                                    }
+                                                >
+                                                    <item.icon className="h-4 w-4" />
+                                                    <span className="group-data-[state=collapsed]:hidden">{item.name}</span>
+                                                </NavLink>
+                                            </SidebarMenuButton>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="right" className="hidden group-data-[state=collapsed]:block">
+                                            {item.name}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </SidebarMenuItem>
+                            ))}
+                        </SidebarMenu>
+                    </SidebarGroupContent>
+                </SidebarGroup>
+            </SidebarContent>
+        </Sidebar>
     );
 }
