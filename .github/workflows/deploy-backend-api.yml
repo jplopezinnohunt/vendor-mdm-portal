@@ -41,6 +41,6 @@ jobs:
     - name: Deploy to Azure App Service
       uses: azure/webapps-deploy@v3
       with:
-        app-name: ${{ github.ref == 'refs/heads/main' && 'app-vendor-mdm-api-prod' || 'app-vendor-mdm-api-dev' }}
+        app-name: 'app-vendor-mdm-api-dev'
         publish-profile: ${{ secrets.AZURE_APP_SERVICE_PUBLISH_PROFILE }}
         package: ./backend/VendorMdm.Api/publish
