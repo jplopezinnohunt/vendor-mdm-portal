@@ -142,4 +142,11 @@ This document acts as the **Root Authority** for all development. It defines the
     2.  **Health Expose:** Proactive connectivity status MUST be exposed via the `/api/system/data-sources` or `/api/health` endpoints.
     3.  **UI Fail-Fast:** The Frontend MUST query these statuses and proactively warn the user *before* they initiate a workflow that depends on a failing service.
     4.  **Truth in Success:** No "Silent Masking". If an external call fails in production, the service MUST NOT return a `Success: true` flag even if it successfully logged the failure. Real-world intent (e.g., email sent) must match the returned status.
-    5.  **Contextual Error Logs:** Critical failures in production MUST log the current configuration state (e.g., `SMTP Enabled: false`, `URL: ...`) alongside the exception to aid instant diagnosis without needing to re-check config files.
+    5.  **Contextual Error Logs**: Critical failures in production MUST log the current configuration state (e.g., `SMTP Enabled: false`, `URL: ...`) alongside the exception to aid instant diagnosis without needing to re-check config files.
+
+## 15. Production Infrastructure Readiness & Hygiene
+**"Local convenience must not compromise Cloud integrity."**
+*   **1. Middleware Sequencing**: In `Program.cs`, critical middleware order MUST be preserved. Specifically, `app.UseCors()` MUST be placed AFTER `app.UseRouting()` but BEFORE `app.UseAuthorization()` to ensure correct header propagation across all endpoints.
+*   **2. Asset Integrity**: Never use third-party CDNs (e.g., Tailwind CDN) or inline configuration scripts in `index.html` for production. All assets MUST be part of the compiled build artifact to ensure performance, security, and offline support.
+*   **3. Configuration Clarity**: All `appsettings.json` keys MUST use descriptive placeholders (e.g., `https://YOUR_RESOURCE.azurewebsites.net`) instead of empty strings or `localhost`. This provides instant guidance for infrastructure provisioning.
+*   **4. Workspace Hygiene**: Before starting a new task, the developer/agent MUST verify the workspace state (`git status`). Active development must start from a clean or stashed state to prevent unintended side effects or merge conflicts.

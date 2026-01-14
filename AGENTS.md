@@ -33,8 +33,9 @@
 
 ## 5. Thinking Process
 When solving a task:
-1.  **Read `task.md`** to understand the plan.
-2.  **Read `docs/BEST_PRACTICES.md`** to check constraints.
-3.  **Search** for existing patterns (don't reinvent `BankInformationForm`).
-4.  **Implement** incrementally.
-5.  **Verify** using the provided `.sh` scripts in `tests/verification/`.
+1.  **Check `git status`** to ensure the workspace is clean or has stashed changes before starting (Rule 15.4).
+2.  **Read `task.md`** to understand the plan.
+3.  **Read `docs/BEST_PRACTICES.md`** to check constraints.
+4.  **Search** for existing patterns (don't reinvent `BankInformationForm`).
+5.  **Implement** incrementally.
+6.  **Verify** using the provided `.sh` scripts in `tests/verification/`.
