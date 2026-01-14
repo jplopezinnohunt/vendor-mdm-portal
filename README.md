@@ -6,6 +6,13 @@
 
 A React-based vendor management portal built with TypeScript and Vite, designed for Azure Static Web Apps deployment.
 
+## 🤖 AI Agent & Contributor Instructions
+**MANDATORY**: All development work must follow the **Spec-Driven Development** workflow.
+- **Workflow File**: [.agent/workflows/spec-driven-dev.md](./.agent/workflows/spec-driven-dev.md)
+- **Agent Rules**: [docs/AGENT_MANDATE.md](file:///Users/jplopez/projects/vendor-mdm-portal/docs/AGENT_MANDATE.md)
+- **Best Practices**: [docs/BEST_PRACTICES.md](./docs/BEST_PRACTICES.md)
+- **Rule**: If you are an Agent, you **MUST** read these files before starting any task. if a user request lacks a Specification, you **MUST** refuse to write code until the Spec phase is complete.
+
 ## 🏗️ Tech Stack
 
 - **React 19.2** - Modern UI framework

@@ -216,4 +216,49 @@ public class InvitationServiceTests : TestBase
         invitation.Attributes.Should().Contain("Currency");
         invitation.Attributes.Should().Contain("SapLanguage");
     }
+
+    [Fact]
+    public async Task ResendInvitationAsync_ValidRequest_PropagatesEmailSentStatus()
+    {
+        // Arrange
+        var context = CreateInMemoryDbContext();
+        var logger = CreateMockLogger<InvitationService>();
+        var mockServiceBus = new Mock<IServiceBusService>();
+        var mockEmail = new Mock<IEmailService>();
+        var mockConfig = MockHelpers.CreateMockConfiguration();
+        var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
+        var mockSanctions = new Mock<ISanctionsScreeningService>();
+        
+        var service = new InvitationService(
+            context, logger.Object, mockServiceBus.Object, 
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
+
+        var invitationId = Guid.NewGuid();
+        var originalToken = "original-token";
+        context.VendorInvitations.Add(new VendorInvitation
+        {
+            Id = invitationId,
+            VendorLegalName = "Resend Vendor",
+            PrimaryContactEmail = "resend@vendor.com",
+            InvitationToken = originalToken,
+            Status = InvitationStatus.Pending,
+            ExpiresAt = DateTime.UtcNow.AddDays(1)
+        });
+        await context.SaveChangesAsync();
+
+        // Setup email mock to return false (failure) to test propagation
+        mockEmail.Setup(e => e.SendInvitationEmailAsync(It.IsAny<InvitationEmailData>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await service.ResendInvitationAsync(invitationId, Guid.NewGuid());
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.EmailSent.Should().BeFalse(); // Propagated from mock
+        result.Link.Should().NotBeNullOrEmpty();
+        
+        var invitation = await context.VendorInvitations.FirstOrDefaultAsync(i => i.Id == invitationId);
+        invitation.InvitationToken.Should().NotBe(originalToken); // New token generated
+    }
 }

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
 import { Input } from '../components/ui/Elements';
+import { VendorFormData } from '../types/vendor';
 import { Info, Landmark } from 'lucide-react';
 import { validateIBAN, validateSWIFT } from '../utils/bankValidation';
 
 // Updated: 2026-01-05 12:55 - Full SAP integration with all fields
 
 interface BankInformationFormProps {
-    register: UseFormRegister<any>;
-    errors: FieldErrors<any>;
-    setValue: UseFormSetValue<any>;
+    register: UseFormRegister<VendorFormData>;
+    errors: FieldErrors<VendorFormData>;
+    setValue: UseFormSetValue<VendorFormData>;
 }
 
 interface BankCountryConfig {

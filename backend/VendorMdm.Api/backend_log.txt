@@ -1,0 +1,54 @@
+Building...
+🔧 Development mode: Using local configuration (appsettings.Development.json or User Secrets)
+
+═══════════════════════════════════════════════════════════
+🔌 DATA SOURCE MODE CONFIGURATION
+═══════════════════════════════════════════════════════════
+Configured Mode: Auto
+✅ Azure AD Authentication enabled
+🔧 No Azure resources configured.
+💡 Auto-detecting mode: Using Local
+Active Mode: Local
+═══════════════════════════════════════════════════════════
+
+🔧 Using Local Emulators for development.
+   Database: SQLite
+   Cosmos: Local Emulator
+   Service Bus: Local Emulator
+
+
+═══════════════════════════════════════════════════════════
+🔌 SERVICE IMPLEMENTATION CONFIGURATION
+═══════════════════════════════════════════════════════════
+✓ SAP: MOCK (Simulation with in-memory data)
+✓ File Storage: MOCK (Local filesystem)
+✓ Sanctions Screening: REAL (US Treasury OFAC - Free Source)
+═══════════════════════════════════════════════════════════
+
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (14ms) [Parameters=[], CommandType='Text', CommandTimeout='30']
+      SELECT COUNT(*) FROM "sqlite_master" WHERE "type" = 'table' AND "rootpage" IS NOT NULL;
+✅ Database initialized successfully.
+
+═══════════════════════════════════════════════════════════
+📧 EMAIL SERVICE CONFIGURATION
+═══════════════════════════════════════════════════════════
+Environment: Local Development
+✅ SMTP: CONFIGURED
+   Host: smtp.gmail.com
+   From: jplopez+MDMPORTAL@innohunt.io
+   Status: Real emails will be sent via SMTP
+═══════════════════════════════════════════════════════════
+
+info: Microsoft.Hosting.Lifetime[14]
+      Now listening on: http://localhost:5001
+info: Microsoft.Hosting.Lifetime[0]
+      Application started. Press Ctrl+C to shut down.
+info: Microsoft.Hosting.Lifetime[0]
+      Hosting environment: Development
+info: Microsoft.Hosting.Lifetime[0]
+      Content root path: /Users/jplopez/projects/vendor-mdm-portal/backend/VendorMdm.Api
+warn: Microsoft.AspNetCore.HttpsPolicy.HttpsRedirectionMiddleware[3]
+      Failed to determine the https port for redirect.
+info: Microsoft.Hosting.Lifetime[0]
+      Application is shutting down...

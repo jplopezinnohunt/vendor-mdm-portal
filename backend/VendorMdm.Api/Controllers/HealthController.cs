@@ -9,18 +9,20 @@ public class HealthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<HealthController> _logger;
+    private readonly IEmailService _emailService;
 
-    public HealthController(IConfiguration configuration, ILogger<HealthController> logger)
+    public HealthController(IConfiguration configuration, ILogger<HealthController> logger, IEmailService emailService)
     {
         _configuration = configuration;
         _logger = logger;
+        _emailService = emailService;
     }
 
     /// <summary>
     /// Get email service configuration status
     /// </summary>
     [HttpGet("email-service")]
-    public IActionResult GetEmailServiceStatus()
+    public async Task<IActionResult> GetEmailServiceStatus()
     {
         var useLocalEmulators = _configuration.GetValue<bool>("UseLocalEmulators");
         var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
@@ -104,6 +106,7 @@ public class HealthController : ControllerBase
                 message = message,
                 environment = useLocalEmulators ? "local" : "azure",
                 configured = smtpConfigured || azureFunctionConfigured,
+                connected = await _emailService.TestConnectionAsync(),
                 smtp = new
                 {
                     enabled = smtpEnabled,

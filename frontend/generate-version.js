@@ -12,20 +12,40 @@ const __dirname = dirname(__filename);
 function generateVersion() {
   try {
     // Get the total number of commits (version number)
-    const commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
-    
+    let commitCount = '';
+    try {
+      commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
+    } catch (e) {
+      commitCount = process.env.GITHUB_RUN_NUMBER || '0';
+    }
+
     // Get the last commit date
-    const lastCommitDate = execSync('git log -1 --format=%ci', { encoding: 'utf-8' }).trim();
-    
+    let lastCommitDate = '';
+    try {
+      lastCommitDate = execSync('git log -1 --format=%ci', { encoding: 'utf-8' }).trim();
+    } catch (e) {
+      lastCommitDate = new Date().toISOString();
+    }
+
     // Get the last commit hash (short)
-    const commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
-    
+    let commitHash = '';
+    try {
+      commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
+    } catch (e) {
+      commitHash = (process.env.GITHUB_SHA || 'unknown').substring(0, 7);
+    }
+
     // Get the current branch name
-    const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-    
+    let branch = '';
+    try {
+      branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+    } catch (e) {
+      branch = process.env.GITHUB_REF_NAME || 'unknown';
+    }
+
     // Format the build date
     const buildDate = new Date().toISOString();
-    
+
     // Create the version file content
     const versionContent = `// This file is auto-generated. Do not edit manually.
 // Generated on: ${buildDate}
@@ -50,21 +70,21 @@ export const version: VersionInfo = {
 
 export default version;
 `;
-    
+
     // Write to src/version.ts
     const outputPath = join(__dirname, 'src', 'version.ts');
     writeFileSync(outputPath, versionContent, 'utf-8');
-    
+
     console.log(`✅ Version file generated successfully!`);
     console.log(`   Version: v${commitCount}`);
     console.log(`   Commit: ${commitHash}`);
     console.log(`   Branch: ${branch}`);
     console.log(`   Last Commit: ${lastCommitDate}`);
     console.log(`   Build Date: ${buildDate}`);
-    
+
   } catch (error) {
     console.error('❌ Error generating version file:', error.message);
-    
+
     // Create a fallback version file for non-git environments
     const fallbackContent = `// This file is auto-generated. Do not edit manually.
 // Fallback version (git not available)
@@ -89,7 +109,7 @@ export const version: VersionInfo = {
 
 export default version;
 `;
-    
+
     const outputPath = join(__dirname, 'src', 'version.ts');
     writeFileSync(outputPath, fallbackContent, 'utf-8');
     console.log('⚠️  Fallback version file created (git not available)');

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth, UserRole } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Shield, ChevronDown, ChevronUp } from 'lucide-react';
+import { version } from '../version';
 
 export const Login = () => {
   const { login, mockLogin } = useAuth();
@@ -153,7 +154,7 @@ export const Login = () => {
 
         {/* Footer */}
         <div className="mt-6 text-center text-xs text-gray-500">
-          v164 • Built on Jan 8, 2026, 01:10 PM • 961f3e8
+          {version.version} • Built on {new Date(version.buildDate).toLocaleString()} • {version.commitHash} ({version.branch})
         </div>
       </div>
     </div>

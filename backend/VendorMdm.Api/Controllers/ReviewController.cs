@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using VendorMdm.Api.Data;
 using VendorMdm.Shared.Models;
+using VendorMdm.Api.Services;
 
 namespace VendorMdm.Api.Controllers;
 
@@ -12,11 +13,13 @@ namespace VendorMdm.Api.Controllers;
 public class ReviewController : ControllerBase
 {
     private readonly SqlDbContext _context;
+    private readonly IVendorApplicationService _applicationService;
     private readonly ILogger<ReviewController> _logger;
 
-    public ReviewController(SqlDbContext context, ILogger<ReviewController> logger)
+    public ReviewController(SqlDbContext context, IVendorApplicationService applicationService, ILogger<ReviewController> logger)
     {
         _context = context;
+        _applicationService = applicationService;
         _logger = logger;
     }
 
@@ -82,81 +85,26 @@ public class ReviewController : ControllerBase
     [HttpPost("{id}/approve")]
     public async Task<IActionResult> ApproveApplication(Guid id, [FromBody] ApprovalRequest request)
     {
-        var app = await _context.VendorApplications.FindAsync(id);
-        if (app == null) return NotFound();
-
-        if (app.Status != "PendingReview")
-            return BadRequest("Application is not pending review");
-
-        // 1. Apply Enrichment (Updates)
-        if (request.EnrichedAttributes != null && request.EnrichedAttributes.Any())
+        try 
         {
-            // Parse existing attributes
-            Dictionary<string, object> existingAttributes = new Dictionary<string, object>();
-            if (!string.IsNullOrEmpty(app.Attributes))
-            {
-                try
-                {
-                    existingAttributes = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(app.Attributes) 
-                                         ?? new Dictionary<string, object>();
-                }
-                catch
-                {
-                    // If parsing fails, start fresh or log warning
-                    _logger.LogWarning("Failed to parse existing attributes for App {Id}, overwriting.", id);
-                }
-            }
-
-            // Merge new attributes
-            foreach (var kvp in request.EnrichedAttributes)
-            {
-                // If the key maps to a core column, update the column directly
-                /* 
-                   Note: For now, we update attributes. 
-                   If specific core columns need update (like CompanyName), we can do it here. 
-                   e.g. if (kvp.Key == "companyName") app.CompanyName = kvp.Value.ToString();
-                */
-                if (kvp.Key.Equals("companyName", StringComparison.OrdinalIgnoreCase)) 
-                    app.CompanyName = kvp.Value.ToString() ?? app.CompanyName;
-                else if (kvp.Key.Equals("taxId", StringComparison.OrdinalIgnoreCase)) 
-                    app.TaxId = kvp.Value.ToString() ?? app.TaxId;
-                else if (kvp.Key.Equals("contactName", StringComparison.OrdinalIgnoreCase))
-                    app.ContactName = kvp.Value.ToString() ?? app.ContactName;
-                else if (kvp.Key.Equals("email", StringComparison.OrdinalIgnoreCase))
-                    app.ContactEmail = kvp.Value.ToString() ?? app.ContactEmail;
-                else
-                {
-                    // It's an extended attribute
-                    existingAttributes[kvp.Key] = kvp.Value;
-                }
-            }
-
-            // Serialize back
-            app.Attributes = System.Text.Json.JsonSerializer.Serialize(existingAttributes);
+            var approverId = User.Identity?.Name ?? "System";
+            await _applicationService.ApproveApplicationAsync(id, request.EnrichedAttributes, request.ForceSanctionsOverride, approverId);
+            return Ok(new { message = "Application approved", status = "Approved" });
         }
-
-        app.Status = "Approved";
-        app.UpdatedAt = DateTime.UtcNow;
-        
-        // Update Invitation Status if linked
-        if (app.InvitationId.HasValue || app.RegistrationType == "Invitation")
+        catch (InvalidOperationException ex)
         {
-            // Find invitation by app ID if direct link not stored on app (Schema check needed)
-             var inv = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.VendorApplicationId == id);
-             if (inv != null) 
-             {
-                 inv.ReviewStatus = "Approved";
-                 inv.Status = InvitationStatus.Approved; 
-             }
+            _logger.LogWarning(ex, "Approval failed for {Id}", id);
+            return BadRequest(new { error = ex.Message });
         }
-
-        // TODO: Trigger SAP Integration Event here
-
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Application {Id} approved by {Approver}. enriched fields: {Count}", id, "CurrentUser", request.EnrichedAttributes?.Count ?? 0); 
-
-        return Ok(new { message = "Application approved", status = "Approved" });
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Approval failed unexpectedly for {Id}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
     }
 
     /// <summary>
@@ -165,25 +113,21 @@ public class ReviewController : ControllerBase
     [HttpPost("{id}/reject")]
     public async Task<IActionResult> RejectApplication(Guid id, [FromBody] RejectionRequest request)
     {
-        var app = await _context.VendorApplications.FindAsync(id);
-        if (app == null) return NotFound();
-
-        app.Status = "Rejected";
-        app.UpdatedAt = DateTime.UtcNow;
-        
-        // Update Invitation
-        var inv = await _context.VendorInvitations.FirstOrDefaultAsync(i => i.VendorApplicationId == id);
-        if (inv != null) 
+        try
         {
-            inv.ReviewStatus = "Rejected";
-            inv.Status = InvitationStatus.Rejected;
+            var approverId = User.Identity?.Name ?? "System";
+            await _applicationService.RejectApplicationAsync(id, request.Reason, approverId);
+            return Ok(new { message = "Application rejected", status = "Rejected" });
         }
-
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Application {Id} rejected by {Approver}. Reason: {Reason}", id, "CurrentUser", request.Reason);
-
-        return Ok(new { message = "Application rejected", status = "Rejected" });
+        catch (KeyNotFoundException)
+        {
+             return NotFound();
+        }
+        catch (Exception ex)
+        {
+             _logger.LogError(ex, "Rejection failed for {Id}", id);
+             return StatusCode(500, new { error = "Internal server error" });
+        }
     }
 }
 
@@ -191,6 +135,7 @@ public class ApprovalRequest
 {
     public string? Comments { get; set; }
     public Dictionary<string, object>? EnrichedAttributes { get; set; }
+    public bool ForceSanctionsOverride { get; set; } = false;
 }
 
 public class RejectionRequest

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
 using VendorMdm.Shared.Models;
 using Microsoft.Azure.Cosmos;
+using VendorMdm.Api.Services;
 
 namespace VendorMdm.Api.Controllers;
 
@@ -18,16 +19,31 @@ public class SystemController : ControllerBase
     private readonly ILogger<SystemController> _logger;
     private readonly SqlDbContext _dbContext;
     private readonly CosmosClient? _cosmosClient;
+    private readonly IEmailService _emailService;
+    private readonly ISapVendorService _sapService;
+    private readonly IFileStorageService _fileService;
+    private readonly ISanctionsScreeningService _sanctionsService;
+    private readonly IServiceBusService _serviceBusService;
 
     public SystemController(
         IConfiguration configuration,
         ILogger<SystemController> logger,
         SqlDbContext dbContext,
+        IEmailService emailService,
+        ISapVendorService sapService,
+        IFileStorageService fileService,
+        ISanctionsScreeningService sanctionsService,
+        IServiceBusService serviceBusService,
         CosmosClient? cosmosClient = null)
     {
         _configuration = configuration;
         _logger = logger;
         _dbContext = dbContext;
+        _emailService = emailService;
+        _sapService = sapService;
+        _fileService = fileService;
+        _sanctionsService = sanctionsService;
+        _serviceBusService = serviceBusService;
         _cosmosClient = cosmosClient;
     }
 
@@ -44,8 +60,11 @@ public class SystemController : ControllerBase
                 Mode = GetCurrentMode(),
                 Database = await GetDatabaseStatusAsync(),
                 Cosmos = await GetCosmosStatusAsync(),
-                ServiceBus = GetServiceBusStatus(),
-                Email = GetEmailStatus(),
+                ServiceBus = await GetServiceBusStatusAsync(),
+                Email = await GetEmailStatusAsync(),
+                Sap = await GetSapStatusAsync(),
+                FileStorage = await GetFileStorageStatusAsync(),
+                Sanctions = await GetSanctionsStatusAsync(),
                 LastChecked = DateTime.UtcNow
             };
 
@@ -281,7 +300,7 @@ public class SystemController : ControllerBase
         return config;
     }
 
-    private ServiceBusConfig GetServiceBusStatus()
+    private async Task<ServiceBusConfig> GetServiceBusStatusAsync()
     {
         var config = new ServiceBusConfig();
         
@@ -313,10 +332,14 @@ public class SystemController : ControllerBase
                 config.Mode = "Unknown";
             }
 
-            // Note: We can't easily test Service Bus connection without sending a message
-            // So we just indicate if it's configured
-            config.IsConnected = !string.IsNullOrEmpty(serviceBusConnection);
-            config.StatusMessage = config.IsConnected ? "Configured" : "Not configured";
+            // Test connection
+            config.IsConnected = await _serviceBusService.TestConnectionAsync();
+            config.StatusMessage = config.IsConnected ? "Connected" : "Connected (Limited/Fallback)";
+            
+            if (!config.IsConnected)
+            {
+                config.StatusMessage = "Connection failed";
+            }
         }
         catch (Exception ex)
         {
@@ -328,7 +351,7 @@ public class SystemController : ControllerBase
         return config;
     }
 
-    private EmailConfig GetEmailStatus()
+    private async Task<EmailConfig> GetEmailStatusAsync()
     {
         var config = new EmailConfig();
         
@@ -402,6 +425,13 @@ public class SystemController : ControllerBase
                     config.StatusMessage = "Email service not configured";
                 }
             }
+
+            // Check real connectivity
+            config.IsConnected = await _emailService.TestConnectionAsync();
+            if (!config.IsConnected && config.IsConfigured)
+            {
+                config.StatusMessage = "Service configured but connection failed";
+            }
         }
         catch (Exception ex)
         {
@@ -410,6 +440,57 @@ public class SystemController : ControllerBase
             _logger.LogWarning(ex, "Failed to check email configuration");
         }
 
+        return config;
+    }
+
+    private async Task<SapConfig> GetSapStatusAsync()
+    {
+        var config = new SapConfig();
+        try
+        {
+            var useMock = _configuration.GetValue<bool>("Services:SAP:UseMock", true);
+            config.Mode = useMock ? "Simulation" : "Real (RFC)";
+            config.IsConnected = await _sapService.TestConnectionAsync();
+            config.StatusMessage = config.IsConnected ? "Connected" : "Not connected / Simulation Error";
+        }
+        catch (Exception ex)
+        {
+            config.StatusMessage = $"Error: {ex.Message}";
+        }
+        return config;
+    }
+
+    private async Task<FileStorageConfig> GetFileStorageStatusAsync()
+    {
+        var config = new FileStorageConfig();
+        try
+        {
+            var useMock = _configuration.GetValue<bool>("Services:FileStorage:UseMock", true);
+            config.Mode = useMock ? "Simulation (Local)" : "Azure Blob";
+            config.IsConnected = await _fileService.TestConnectionAsync();
+            config.StatusMessage = config.IsConnected ? "Connected" : "Disconnected";
+        }
+        catch (Exception ex)
+        {
+            config.StatusMessage = $"Error: {ex.Message}";
+        }
+        return config;
+    }
+
+    private async Task<SanctionsConfig> GetSanctionsStatusAsync()
+    {
+        var config = new SanctionsConfig();
+        try
+        {
+            var useMock = _configuration.GetValue<bool>("Services:SanctionsScreening:UseMock", true);
+            config.Mode = useMock ? "Simulation" : "OFAC Source";
+            config.IsConnected = await _sanctionsService.TestConnectionAsync();
+            config.StatusMessage = config.IsConnected ? "Connected" : "Disconnected";
+        }
+        catch (Exception ex)
+        {
+            config.StatusMessage = $"Error: {ex.Message}";
+        }
         return config;
     }
 

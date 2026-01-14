@@ -6,7 +6,16 @@ export interface DataSourceConfiguration {
     cosmos: CosmosConfig;
     serviceBus: ServiceBusConfig;
     email: EmailConfig;
+    sap: BaseServiceConfig;
+    fileStorage: BaseServiceConfig;
+    sanctions: BaseServiceConfig;
     lastChecked: string;
+}
+
+export interface BaseServiceConfig {
+    mode: string;
+    isConnected: boolean;
+    statusMessage?: string;
 }
 
 export interface DatabaseConfig {
@@ -35,6 +44,7 @@ export interface ServiceBusConfig {
 export interface EmailConfig {
     mode: string;
     isConfigured: boolean;
+    isConnected: boolean;
     smtpHost?: string;
     fromEmail?: string;
     statusMessage?: string;

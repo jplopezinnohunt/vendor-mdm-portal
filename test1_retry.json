@@ -1,20 +1,0 @@
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 127.0.0.1:5001...
-* Connected to 127.0.0.1 (127.0.0.1) port 5001
-> GET /api/sap/vendor/10189999?companyCode=UNES HTTP/1.1
-> Host: 127.0.0.1:5001
-> User-Agent: curl/8.7.1
-> Accept: */*
-> 
-* Request completely sent off
-< HTTP/1.1 200 OK
-< Content-Type: application/json; charset=utf-8
-< Date: Tue, 06 Jan 2026 05:41:10 GMT
-< Server: Kestrel
-< Transfer-Encoding: chunked
-< 
-{ [1054 bytes data]
-100  1047    0  1047    0     0   2716      0 --:--:-- --:--:-- --:--:--  2719
-* Connection #0 to host 127.0.0.1 left intact
-{"success":true,"errorMessage":null,"vendor":{"sapId":"10189999","legalName":"SMITH John","accountGroup":"INDV","country":"US","blocked":false,"deletionFlag":false,"taxCode1":"123-456-789","taxCode2":"987654321","permittedPayee":"10189999","generalData":{"title":"Mr","name1":"SMITH","name2":"John","name3":"Middle","name4":"","searchTerm":"SMITH","street":"123 Main Street","houseNo":"","street2":"Apt 4B","street3":"","street4":"","postalCode":"10001","city":"New York","country":"US","taxNumber2":"","fax":"+1234567891","region":"","language":"","telephone":"+1234567890","email":"john.smith@example.com","dateOfBirth":"1980-05-15T00:00:00","nationality":""},"bankAccounts":[{"bankCountry":"US","bankKey":"","bankAccount":"1234567890","iban":null,"swift":"CHASUS33","accountHolder":"John Smith","bankName":"Chase Bank","currency":"USD","routingNumber":"021000021","accountType":null}],"companyCodeData":{"companyCode":"UNES","reconciliationAccount":"1110010000","paymentTerms":"Z001","paymentMethods":[],"currency":"USD","paymentBlock":false}}}

@@ -174,6 +174,22 @@ public class SanctionsScreeningOpenSanctionsService : ISanctionsScreeningService
         throw new KeyNotFoundException($"Screening result {screeningId} not found");
     }
 
+    public async Task<bool> TestConnectionAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Testing OpenSanctions API connectivity");
+            // Check connectivity to the metadata endpoint as a lightweight health check
+            var response = await _httpClient.GetAsync("metadata");
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OpenSanctions API health check failed");
+            return false;
+        }
+    }
+
     public async Task<ListsUpdateInfo> GetListsUpdateInfoAsync()
     {
         try

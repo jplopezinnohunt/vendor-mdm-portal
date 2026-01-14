@@ -213,6 +213,12 @@ public class FileStorageSimulationService : IFileStorageService
         return Task.FromResult(_mockMetadata.ContainsKey(fileId));
     }
 
+    public Task<bool> TestConnectionAsync()
+    {
+        _logger.LogInformation("MOCK FILE STORAGE: Testing connection (checking base path)");
+        return Task.FromResult(Directory.Exists(_basePath));
+    }
+
     // Helper methods
 
     private string BuildStoragePath(string app, string entityId, string process,

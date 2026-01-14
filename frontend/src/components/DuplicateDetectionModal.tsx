@@ -4,18 +4,7 @@ import { Button } from './Elements';
 import { VendorComparisonModal } from './VendorComparisonModal';
 import { VendorDetailModal } from './VendorDetailModal';
 
-interface DuplicateVendor {
-    vendorName: string;
-    dateOfBirth?: string;
-    sapId: string;
-    reqId?: string;
-    country: string;
-    companyCode: string;
-    accountGroup: string;
-    sapStatus: string;  // "Valid", "Blocked", "Deleted"
-    blocked: boolean;
-    matchScore: number;  // 0.0 to 1.0
-}
+import { DuplicateVendor } from '../types/vendor';
 
 interface DuplicateDetectionModalProps {
     isOpen: boolean;

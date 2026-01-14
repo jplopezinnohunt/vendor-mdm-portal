@@ -290,14 +290,15 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
-  const [resentLink, setResentLink] = useState<{ id: string, link: string } | null>(null);
+  const [resentLink, setResentLink] = useState<{ id: string, link: string, emailSent: boolean } | null>(null);
 
   const handleResend = async (id: string) => {
     setActionLoading(id + '-resend');
     try {
       const response = await api.post(`/invitation/resend/${id}`);
       const link = `${window.location.origin}${response.data.invitationLink}`;
-      setResentLink({ id, link });
+      const emailSent = response.data.emailSent;
+      setResentLink({ id, link, emailSent });
       // Refresh invitations
       const res = await api.get('/invitation/list');
       setInvitations(mode === 'worklist'
@@ -769,15 +770,31 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
         <Modal
           isOpen={!!resentLink}
           onClose={() => setResentLink(null)}
-          title="Invitation Resent Successfully"
+          title={resentLink?.emailSent ? "Invitation Resent Successfully" : "Invitation Generated - Email Failed"}
           footer={
             <Button onClick={() => setResentLink(null)}>Done</Button>
           }
         >
           <div className="space-y-4">
-            <p className="text-sm text-gray-600 text-left">
-              A new invitation has been sent. You can also manually copy the link below:
-            </p>
+            {resentLink?.emailSent ? (
+              <p className="text-sm text-gray-600 text-left">
+                A new invitation has been sent. You can also manually copy the link below:
+              </p>
+            ) : (
+              <div className="bg-orange-50 border-l-4 border-orange-400 p-4">
+                <div className="flex text-left">
+                  <div className="flex-shrink-0">
+                    <Mail className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-orange-700">
+                      The invitation was generated but the <strong>email could not be sent</strong>.
+                      Please copy and send the link manually to the vendor.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md border border-gray-200">
               <code className="text-xs text-brand-700 break-all flex-1">{resentLink?.link}</code>
               <button

@@ -53,9 +53,13 @@ const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode
   return <>{children}</>;
 };
 
+
+import { DebugConsole } from './components/dev/DebugConsole';
+
 const App: React.FC = () => {
   return (
     <AuthProvider>
+      <DebugConsole />
       <BrowserRouter>
         <Routes>
           {/* Public Routes */}
@@ -175,6 +179,7 @@ const App: React.FC = () => {
     </AuthProvider>
   );
 };
+
 
 // Helper to redirect to correct home page based on role
 const RoleBasedRedirect = () => {

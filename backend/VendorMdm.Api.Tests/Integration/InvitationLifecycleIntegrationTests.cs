@@ -62,7 +62,7 @@ public class InvitationLifecycleIntegrationTests : IClassFixture<IntegrationTest
 
         // 4. Verify MFA
         var mfaResult = await service.VerifyMfaCodeAsync(token, mfaCode);
-        mfaResult.Should().BeTrue();
+        mfaResult.Success.Should().BeTrue();
 
         var inv3 = await context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
         inv3.CurrentStage.Should().Be(InvitationStage.MfaVerified);
@@ -88,48 +88,14 @@ public class InvitationLifecycleIntegrationTests : IClassFixture<IntegrationTest
         var inv5 = await context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
         inv5.CurrentStage.Should().Be(InvitationStage.Enriched);
         
-        // 7. Complete Invitation (Triggers Application Creation & Screening)
-        var completeRequest = new CompleteInvitationRequest
-        {
-            CompanyName = "Lifecycle Test Vendor",
-            ContactName = "Tester",
-            Email = "lifecycle@test.com",
-            TaxId = "TAX123",
-            Attributes = enrichmentData
-        };
+        // 7. Verify Atomic Completion (New System Behavior)
+        // SubmitEnrichmentAsync now atomically creates the application and completes the invitation.
+        inv5.Status.Should().Be(InvitationStatus.Completed);
+        inv5.VendorApplicationId.Should().NotBeNull();
         
-        // We need to call the Controller logic essentially, or the Service method if we had one that bundled it.
-        // Since we are testing Service layer, we simulate what the Controller does:
-        // 1. Create App
-        // 2. Screen
-        // 3. Complete Invitation
-        
-        // WAIT: The Service does NOT have a method that does all this. The Controller coordinates it.
-        // To properly test "InvitationLifecycle", we should arguably be testing the SERVICE method `CompleteInvitationAsync`.
-        // BUT `CompleteInvitationAsync` in Service ONLY updates the status and emits events. It doesn't create the Application.
-        // The Application creation logic is in the CONTROLLER.
-        
-        // In a proper Clean Architecture, "CreateApplicationFromInvitation" should be a Service method.
-        // Refactoring opportunity: Move Controller logic to `InvitationService.CreateApplicationFromInvitationAsync`.
-        
-        // For now, to verify the FIX works (Frontend calls Complete > Controller Logic > Service Complete),
-        // we essentially need to manually do what the Controller does in this test to verify the Service *allows* it.
-        
-        // But the previous test failed because "SubmitEnrichment" marked it as completed.
-        // Now it shouldn't.
-        inv5.Status.Should().Be(InvitationStatus.Pending); // Should still be pending/enriched, not Completed
-        
-        // Simulate Controller Logic:
-        var app = new VendorApplication { Id = Guid.NewGuid(), ContactEmail = "lifecycle@test.com", Status="PendingReview" };
-        context.VendorApplications.Add(app);
-        await context.SaveChangesAsync();
-        
-        // Now call Service Complete
-        var completed = await service.CompleteInvitationAsync(token, app.Id);
-        completed.Should().BeTrue();
-        
-        var invFinal = await context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);
-        invFinal.Status.Should().Be(InvitationStatus.Completed);
-        invFinal.VendorApplicationId.Should().Be(app.Id);
+        var app = await context.VendorApplications.FindAsync(inv5.VendorApplicationId);
+        app.Should().NotBeNull();
+        app.ContactEmail.Should().Be("lifecycle@test.com");
+        app.Status.Should().Be("PendingReview");
     }
 }

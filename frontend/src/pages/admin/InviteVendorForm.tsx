@@ -5,6 +5,7 @@ import { Button, Card } from '../../components/ui/Elements';
 import { DuplicateDetectionModal } from '../../components/DuplicateDetectionModal';
 import { useAuth } from '../../context/AuthContext';
 import { api } from '../../services/api';
+import { DuplicateVendor, InvitationResponse, SanctionsResult } from '../../types/vendor';
 import { CheckCircle, ChevronRight, ChevronLeft, Layout, Settings, FileText, Mail, ShieldCheck, Copy, Search, AlertTriangle, ShieldAlert, User, Globe } from 'lucide-react';
 
 interface InviteVendorFormData {
@@ -64,7 +65,7 @@ export const InviteVendorForm: React.FC = () => {
     const { user } = useAuth();
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [invitationData, setInvitationData] = useState<any>(null);
+    const [invitationData, setInvitationData] = useState<InvitationResponse | null>(null);
     const [copied, setCopied] = useState(false);
 
     // Flow states
@@ -72,11 +73,24 @@ export const InviteVendorForm: React.FC = () => {
     const [activeStep, setActiveStep] = useState(0);
     const [viewMode, setViewMode] = useState<'wizard' | 'full'>('wizard');
     const [isChecking, setIsChecking] = useState(false);
-    const [checkResults, setCheckResults] = useState<any[] | null>(null);
-    const [sanctionsResult, setSanctionsResult] = useState<any>(null);
+    const [checkResults, setCheckResults] = useState<DuplicateVendor[] | null>(null);
+    const [sanctionsResult, setSanctionsResult] = useState<SanctionsResult | null>(null);
     const [validationPassed, setValidationPassed] = useState(false);
     const [showDupModal, setShowDupModal] = useState(false);
     const [validationTimestamp, setValidationTimestamp] = useState<string | null>(null);
+    const [emailStatus, setEmailStatus] = useState<{ isConnected: boolean; mode: string } | null>(null);
+
+    useEffect(() => {
+        const checkEmailStatus = async () => {
+            try {
+                const response = await api.get('/system/data-sources');
+                setEmailStatus(response.data.email);
+            } catch (error) {
+                console.error('Failed to check email status:', error);
+            }
+        };
+        checkEmailStatus();
+    }, []);
 
     const { register, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<InviteVendorFormData>({
         defaultValues: {
@@ -323,6 +337,19 @@ export const InviteVendorForm: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            {emailStatus && !emailStatus.isConnected && emailStatus.mode !== 'Console Logging' && (
+                <div className="mb-8 mx-auto max-w-7xl bg-red-50 border-l-4 border-red-400 p-4 flex items-start shadow-sm rounded-r-md animate-in fade-in slide-in-from-top duration-500">
+                    <ShieldAlert className="h-6 w-6 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div className="ml-4">
+                        <h3 className="text-base font-black text-red-900 uppercase tracking-tight">System Alert: Email Service Offline</h3>
+                        <p className="mt-1 text-sm text-red-700 font-medium">
+                            The configured email provider ({emailStatus.mode}) is currently unreachable.
+                            Invitations will be created, but you must <span className="underline font-bold">manually copy and send</span> the link to the vendor.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Debug removed */}
 

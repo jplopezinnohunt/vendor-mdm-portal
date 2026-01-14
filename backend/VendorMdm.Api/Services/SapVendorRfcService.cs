@@ -127,6 +127,13 @@ public class SapVendorRfcService : ISapVendorService
         _logger.LogWarning("RFC: Bank country configuration not yet implemented - falling back to simulation");
         throw new NotImplementedException("Bank country configuration via RFC not yet implemented. Use SapVendorSimulationService.");
     }
+
+    public Task<bool> TestConnectionAsync()
+    {
+        _logger.LogWarning("REAL SAP: TestConnectionAsync called - SAP NCo not yet configured");
+        // For now, always return false since SAP NCo is not integrated
+        return Task.FromResult(false);
+    }
 }
 
 /*
