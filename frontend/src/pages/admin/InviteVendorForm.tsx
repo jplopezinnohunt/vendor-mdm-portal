@@ -322,7 +322,7 @@ export const InviteVendorForm: React.FC = () => {
     }
 
     return (
-        <div className="mx-auto max-w-7xl py-8 px-4 sm:px-6 md:px-8">
+        <>
             <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 border-b-2 border-brand-500 pb-2 inline-block">Invite New Vendor</h1>
@@ -604,6 +604,6 @@ export const InviteVendorForm: React.FC = () => {
                     duplicates={checkResults || []}
                 />
             </form>
-        </div>
+        </>
     );
 };
