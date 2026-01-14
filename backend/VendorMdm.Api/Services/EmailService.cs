@@ -94,7 +94,10 @@ public class EmailService : IEmailService
             // If in production/Azure and we reached here, it means real sending failed
             if (!_useLocalEmulators)
             {
-                _logger.LogWarning("Email sending failed in Production environment. Fallback to logging.");
+                _logger.LogError("CRITICAL: Email sending failed in Production. [SMTP Enabled: {SmtpEnabled}, Function URL: {FunctionUrl}]. Falling back to logging only.", 
+                    _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false), 
+                    _configuration["EmailService:FunctionUrl"] ?? "None");
+                
                 return false;
             }
             
@@ -102,7 +105,7 @@ public class EmailService : IEmailService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to send email to {Email}", email);
+            _logger.LogError(ex, "EXCEPTION: Email sending failed for {Email}", email);
             LogEmail(email, subject, data, isMfa, mfaCode);
             return false;
         }

@@ -61,6 +61,7 @@ This document acts as the **Root Authority** for all development. It defines the
 *   **Verification Scripts:** Every feature must have a `tests/verification/verify_task_X.sh` script.
 *   **No Magic Strings:** Use constants or Enums.
 *   **Strict Types:** No `any` in TypeScript.
+*   **Interface Integrity:** When modifying an interface (e.g., adding `TestConnectionAsync`), perform a global search to ensure ALL implementations (Real, Mock, Simulation, etc.) are updated. Never leave "stale" implementations.
 
 ## 7. Canonical Data Model (CDM)
 **"The Hexagonal Standard"**
@@ -88,6 +89,7 @@ This document acts as the **Root Authority** for all development. It defines the
     1.  Define the **Interface** (e.g., `ISapService`).
     2.  Create a **Simulation Service** (e.g., `SapSimulationService`) that implements realistic behavior (logs actions, returns success/failure objects, mimics latency).
     3.  Write the **Consumer Code** fully, as if the real service exists.
+*   **Simulation Transparency:** Every simulation MUST explicitly log its actions with a distinct prefix: `[SIMULATION MODE - NO EXTERNAL ACTION]`. This prevents developers from investigating "missing" external side effects when in simulation mode.
 *   **Switching:** Use `appsettings.UseMocks: true` to inject the simulation.
 *   **Result:** The application flow is fully functional and testable from Day 1.
 
@@ -139,4 +141,5 @@ This document acts as the **Root Authority** for all development. It defines the
     1.  **Connectivity Probes:** Every external service client MUST implement a `TestConnectionAsync` method that performs a real connectivity check (ping, OPTIONS request, or port connection).
     2.  **Health Expose:** Proactive connectivity status MUST be exposed via the `/api/system/data-sources` or `/api/health` endpoints.
     3.  **UI Fail-Fast:** The Frontend MUST query these statuses and proactively warn the user *before* they initiate a workflow that depends on a failing service.
-    4.  **No False Positives:** If a service call fails, the Backend MUST return a clear error code (503 Service Unavailable) or flag (e.g., `emailSent: false`), and never silently "fallback" to logging in production.
+    4.  **Truth in Success:** No "Silent Masking". If an external call fails in production, the service MUST NOT return a `Success: true` flag even if it successfully logged the failure. Real-world intent (e.g., email sent) must match the returned status.
+    5.  **Contextual Error Logs:** Critical failures in production MUST log the current configuration state (e.g., `SMTP Enabled: false`, `URL: ...`) alongside the exception to aid instant diagnosis without needing to re-check config files.
