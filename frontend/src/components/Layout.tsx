@@ -1,9 +1,8 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Bell, PanelLeft } from 'lucide-react';
-import { SidebarProvider, SidebarInset, useSidebar } from '@/components/ui/sidebar';
+import { Bell } from 'lucide-react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
-import { Button } from '@/components/ui/button';
 import { AppSidebar } from './app-sidebar';
 import { UserNav } from './user-nav';
 import { ServiceStatusPanel } from './ServiceStatusPanel';
