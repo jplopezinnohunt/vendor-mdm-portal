@@ -18,7 +18,7 @@ public interface IInvitationService
     Task<VendorInvitation?> GetInvitationByTokenAsync(string token);
     Task<InvitationListResponse> GetInvitationsAsync(int page = 1, int pageSize = 20, string? status = null);
     Task<bool> CompleteInvitationAsync(string token, Guid vendorApplicationId);
-    Task<(bool Success, string? Link, bool EmailSent)> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
+    Task<(bool Success, string? Link, bool EmailSent, string? EmailError)> ResendInvitationAsync(Guid invitationId, Guid requestedBy);
     Task<bool> TriggerMfaAsync(string token);
     Task<VerifyMfaResponse> VerifyMfaCodeAsync(string token, string code);
     Task<bool> SubmitInitialInfoAsync(string token, Dictionary<string, object> initialInfo);
@@ -251,6 +251,7 @@ public class InvitationService : IInvitationService
 
         // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
         bool emailSent = false;
+        string? emailError = null;
         try
         {
             var baseUrl = _configuration["App:BaseUrl"] 
@@ -269,7 +270,7 @@ public class InvitationService : IInvitationService
                 BaseUrl = baseUrl
             };
 
-            emailSent = await _emailService.SendInvitationEmailAsync(emailData);
+            (emailSent, emailError) = await _emailService.SendInvitationEmailAsync(emailData);
             
             if (emailSent)
             {
@@ -280,8 +281,8 @@ public class InvitationService : IInvitationService
             else
             {
                 _logger.LogWarning(
-                    "Invitation email sending returned false for {Email}. Email details logged. Updating attributes.", 
-                    request.PrimaryContactEmail);
+                    "Invitation email sending returned false for {Email}. Error: {Error}. Updating attributes.", 
+                    request.PrimaryContactEmail, emailError);
                 
                 // Update attributes to reflect failure
                 try 
@@ -291,6 +292,8 @@ public class InvitationService : IInvitationService
                         : JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
                     
                     attrs["emailSent"] = false;
+                    if (emailError != null) attrs["emailError"] = emailError;
+
                     invitation.Attributes = JsonSerializer.Serialize(attrs);
                     await _context.SaveChangesAsync();
                 }
@@ -306,6 +309,8 @@ public class InvitationService : IInvitationService
                 "Failed to send invitation email directly for {Email}. Invitation created but email not sent.", 
                 request.PrimaryContactEmail);
             
+            emailError = ex.Message;
+
             // Update attributes to reflect exception/failure
             try 
             {
@@ -314,6 +319,7 @@ public class InvitationService : IInvitationService
                     : JsonSerializer.Deserialize<Dictionary<string, object>>(invitation.Attributes) ?? new();
                 
                 attrs["emailSent"] = false;
+                attrs["emailError"] = ex.Message;
                 invitation.Attributes = JsonSerializer.Serialize(attrs);
                 await _context.SaveChangesAsync();
             }
@@ -329,7 +335,7 @@ public class InvitationService : IInvitationService
             InvitationLink = invitationLink,
             ExpiresAt = expiresAt,
             EmailSent = emailSent,
-            EmailError = emailSent ? null : "Email sending failed. Please copy the link manually."
+            EmailError = emailSent ? null : (emailError ?? "Email sending failed. Please copy the link manually.")
         };
     }
 
@@ -529,14 +535,14 @@ public class InvitationService : IInvitationService
         return true;
     }
 
-    public async Task<(bool Success, string? Link, bool EmailSent)> ResendInvitationAsync(Guid invitationId, Guid requestedBy)
+    public async Task<(bool Success, string? Link, bool EmailSent, string? EmailError)> ResendInvitationAsync(Guid invitationId, Guid requestedBy)
     {
         var invitation = await _context.VendorInvitations
             .FirstOrDefaultAsync(i => i.Id == invitationId);
 
         if (invitation == null || invitation.Status == InvitationStatus.Completed)
         {
-            return (false, null, false);
+            return (false, null, false, "Invitation not found or completed");
         }
 
         // Generate new token and extend expiration
@@ -581,6 +587,7 @@ public class InvitationService : IInvitationService
 
         // E. DIRECT EMAIL: Send email immediately (for local dev or as fallback)
         bool emailSent = false;
+        string? emailError = null;
         try
         {
             var baseUrl = _configuration["App:BaseUrl"] 
@@ -599,7 +606,7 @@ public class InvitationService : IInvitationService
                 BaseUrl = baseUrl
             };
 
-            emailSent = await _emailService.SendInvitationEmailAsync(emailData);
+            (emailSent, emailError) = await _emailService.SendInvitationEmailAsync(emailData);
             
             if (emailSent)
             {
@@ -611,8 +618,8 @@ public class InvitationService : IInvitationService
             else
             {
                 _logger.LogWarning(
-                    "⚠️ Resend invitation email sending returned false for {Email}. Email details logged to console.", 
-                    invitation.PrimaryContactEmail);
+                    "⚠️ Resend invitation email sending returned false for {Email}. Error: {Error}.", 
+                    invitation.PrimaryContactEmail, emailError);
                 Console.WriteLine($"⚠️ Resend invitation email logged (not sent) for: {invitation.PrimaryContactEmail}");
             }
         }
@@ -621,6 +628,7 @@ public class InvitationService : IInvitationService
             _logger.LogError(ex, 
                 "Failed to send resend invitation email directly for {Email}. Invitation resent but email not sent.", 
                 invitation.PrimaryContactEmail);
+            emailError = ex.Message;
             // Don't fail the resend if email sending fails
         }
 
@@ -629,7 +637,7 @@ public class InvitationService : IInvitationService
             invitationId, requestedBy);
 
         var link = $"/invitation/register/{invitation.InvitationToken}";
-        return (true, link, emailSent);
+        return (true, link, emailSent, emailError);
     }
 
     public async Task<bool> CancelInvitationAsync(Guid invitationId, Guid requestedBy)
@@ -759,7 +767,8 @@ public class InvitationService : IInvitationService
         await _context.SaveChangesAsync();
 
         // Send Email
-        return await _emailService.SendMfaCodeEmailAsync(invitation.PrimaryContactEmail, invitation.VendorLegalName, code);
+        var (sent, _) = await _emailService.SendMfaCodeEmailAsync(invitation.PrimaryContactEmail, invitation.VendorLegalName, code);
+        return sent;
     }
 
     public async Task<VerifyMfaResponse> VerifyMfaCodeAsync(string token, string code)

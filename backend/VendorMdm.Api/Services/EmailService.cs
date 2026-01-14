@@ -31,12 +31,12 @@ public class EmailService : IEmailService
         _useLocalEmulators = configuration.GetValue<bool>("UseLocalEmulators");
     }
 
-    public async Task<bool> SendInvitationEmailAsync(InvitationEmailData data)
+    public async Task<(bool Success, string? ErrorMessage)> SendInvitationEmailAsync(InvitationEmailData data)
     {
         return await SendEmailAsync(data.Email, $"Onboarding Invitation for {data.VendorName}", data);
     }
 
-    public async Task<bool> SendMfaCodeEmailAsync(string email, string vendorName, string code)
+    public async Task<(bool Success, string? ErrorMessage)> SendMfaCodeEmailAsync(string email, string vendorName, string code)
     {
         var data = new InvitationEmailData
         {
@@ -49,7 +49,7 @@ public class EmailService : IEmailService
         return await SendEmailAsync(email, "Your Verification Code", data, isMfa: true, mfaCode: code);
     }
 
-    private async Task<bool> SendEmailAsync(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null)
+    private async Task<(bool Success, string? ErrorMessage)> SendEmailAsync(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null)
     {
         try
         {
@@ -72,9 +72,10 @@ public class EmailService : IEmailService
                     ?? "http://localhost:7071/api/invitation/send-email";
                 
                 // For simulation purposes, we'll just log if function call fails
-                if (await TrySendViaFunctionAsync(functionUrl, data))
+                var (fnSuccess, fnError) = await TrySendViaFunctionAsync(functionUrl, data);
+                if (fnSuccess)
                 {
-                    return true;
+                    return (true, null);
                 }
             }
 
@@ -82,9 +83,16 @@ public class EmailService : IEmailService
             var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
             if (smtpEnabled)
             {
-                if (await TrySendViaSmtpAsync(data, subject, isMfa, mfaCode))
+                var (smtpSuccess, smtpError) = await TrySendViaSmtpAsync(data, subject, isMfa, mfaCode);
+                if (smtpSuccess)
                 {
-                    return true;
+                    return (true, null);
+                }
+                
+                // Keep the error to return if we fail completely
+                if (!_useLocalEmulators)
+                {
+                    return (false, smtpError ?? "SMTP sending failed without explicit error");
                 }
             }
 
@@ -98,16 +106,16 @@ public class EmailService : IEmailService
                     _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false), 
                     _configuration["EmailService:FunctionUrl"] ?? "None");
                 
-                return false;
+                return (false, "Email sending failed. No valid sending method configured or reachable.");
             }
             
-            return true;
+            return (true, null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "EXCEPTION: Email sending failed for {Email}", email);
             LogEmail(email, subject, data, isMfa, mfaCode);
-            return false;
+            return (false, ex.Message);
         }
     }
 
@@ -189,7 +197,7 @@ public class EmailService : IEmailService
     /// <summary>
     /// Try to send email via Azure Function HTTP endpoint
     /// </summary>
-    private async Task<bool> TrySendViaFunctionAsync(string functionUrl, InvitationEmailData data)
+    private async Task<(bool Success, string? ErrorMessage)> TrySendViaFunctionAsync(string functionUrl, InvitationEmailData data)
     {
         try
         {
@@ -215,14 +223,15 @@ public class EmailService : IEmailService
                 _logger.LogInformation(
                     "Invitation email sent successfully via Function to {Email}",
                     data.Email);
-                return true;
+                return (true, null);
             }
             else
             {
+                var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogWarning(
-                    "Function endpoint returned {StatusCode}, falling back to logging",
-                    response.StatusCode);
-                return false;
+                    "Function endpoint returned {StatusCode}: {Content}, falling back to logging",
+                    response.StatusCode, errorContent);
+                return (false, $"Azure Function error: {response.StatusCode} - {errorContent}");
             }
         }
         catch (HttpRequestException ex)
@@ -231,14 +240,14 @@ public class EmailService : IEmailService
                 "Azure Function not available at {Url}: {Message}. Falling back to logging.",
                 functionUrl,
                 ex.Message);
-            return false;
+            return (false, $"Azure Function connection failed: {ex.Message}");
         }
     }
 
     /// <summary>
     /// Try to send email via SMTP
     /// </summary>
-    private async Task<bool> TrySendViaSmtpAsync(InvitationEmailData data, string subject, bool isMfa = false, string? mfaCode = null)
+    private async Task<(bool Success, string? ErrorMessage)> TrySendViaSmtpAsync(InvitationEmailData data, string subject, bool isMfa = false, string? mfaCode = null)
     {
         try
         {
@@ -267,7 +276,7 @@ public class EmailService : IEmailService
             if (string.IsNullOrEmpty(smtpHost) || string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword))
             {
                 _logger.LogWarning("SMTP configuration incomplete. Missing Host, Username, or Password.");
-                return false;
+                return (false, "SMTP configuration incomplete. Missing Host, Username, or Password.");
             }
 
 
@@ -303,13 +312,13 @@ public class EmailService : IEmailService
 
             _logger.LogInformation("✅ Email sent successfully via SMTP to {Email}", data.Email);
             Console.WriteLine($"✅ Email sent via SMTP to: {data.Email}");
-            return true;
+            return (true, null);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send email via SMTP to {Email}", data.Email);
             Console.WriteLine($"❌ SMTP error: {ex.Message}");
-            return false;
+            return (false, $"SMTP send failed: {ex.Message}");
         }
     }
 

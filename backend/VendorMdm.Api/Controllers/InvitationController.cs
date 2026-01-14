@@ -124,14 +124,14 @@ public class InvitationController : ControllerBase
         try
         {
             var requestedBy = Guid.NewGuid(); // In production: parse from token
-            var (success, invitationLink, emailSent) = await _invitationService.ResendInvitationAsync(id, requestedBy);
+            var (success, invitationLink, emailSent, emailError) = await _invitationService.ResendInvitationAsync(id, requestedBy);
 
             if (!success)
             {
                 return NotFound(new { error = "Invitation not found or already completed" });
             }
 
-            return Ok(new { message = "Invitation resent successfully", invitationLink, emailSent });
+            return Ok(new { message = "Invitation resent successfully", invitationLink, emailSent, emailError });
         }
         catch (Exception ex)
         {

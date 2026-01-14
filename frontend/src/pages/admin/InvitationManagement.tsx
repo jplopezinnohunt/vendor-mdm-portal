@@ -23,7 +23,7 @@ export const InvitationManagement: React.FC = () => {
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [filter, setFilter] = useState<string>('');
     const [confirmAction, setConfirmAction] = useState<{ id: string, type: 'resend' | 'cancel' } | null>(null);
-    const [resentLink, setResentLink] = useState<{ id: string, link: string, emailSent: boolean } | null>(null);
+    const [resentLink, setResentLink] = useState<{ id: string, link: string, emailSent: boolean, emailError?: string } | null>(null);
     const navigate = useNavigate();
 
     const loadInvitations = async () => {
@@ -59,9 +59,9 @@ export const InvitationManagement: React.FC = () => {
         setActionLoading(id + '-resend');
         try {
             const response = await api.post(`/invitation/resend/${id}`);
-            const link = `${window.location.origin}${response.data.invitationLink}`;
-            const emailSent = response.data.emailSent;
-            setResentLink({ id, link, emailSent });
+            const { invitationLink, emailSent, emailError } = response.data;
+            const link = `${window.location.origin}${invitationLink}`;
+            setResentLink({ id, link, emailSent, emailError });
             loadInvitations();
         } catch (error: any) {
             console.error('Failed to resend invitation:', error);
@@ -447,8 +447,12 @@ export const InvitationManagement: React.FC = () => {
                                     </div>
                                     <div className="ml-3">
                                         <p className="text-sm text-orange-700">
-                                            The invitation was generated but the <strong>email could not be sent</strong>.
-                                            Please copy and send the link manually to the vendor.
+                                            {resentLink?.emailError || (
+                                                <>
+                                                    The invitation was generated but the <strong>email could not be sent</strong>.
+                                                    Please copy and send the link manually to the vendor.
+                                                </>
+                                            )}
                                         </p>
                                     </div>
                                 </div>

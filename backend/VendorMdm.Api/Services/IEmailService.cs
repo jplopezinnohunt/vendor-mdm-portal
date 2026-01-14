@@ -8,12 +8,12 @@ public interface IEmailService
     /// <summary>
     /// Sends an invitation email to a vendor
     /// </summary>
-    Task<bool> SendInvitationEmailAsync(InvitationEmailData data);
+    Task<(bool Success, string? ErrorMessage)> SendInvitationEmailAsync(InvitationEmailData data);
 
     /// <summary>
     /// Sends an MFA verification code to a vendor
     /// </summary>
-    Task<bool> SendMfaCodeEmailAsync(string email, string vendorName, string code);
+    Task<(bool Success, string? ErrorMessage)> SendMfaCodeEmailAsync(string email, string vendorName, string code);
 
     /// <summary>
     /// Tests the connection to the email service.
