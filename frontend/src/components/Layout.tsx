@@ -10,32 +10,20 @@ import { ServiceStatusPanel } from './ServiceStatusPanel';
 import { ImpersonationBanner } from './ImpersonationBanner';
 
 const MainLayoutContent: React.FC = () => {
-  const { toggleSidebar } = useSidebar();
-
   return (
     <SidebarInset>
       <ImpersonationBanner />
       {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-white px-4 shadow-sm">
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
         <div className="flex items-center gap-2">
-          <Button
-            onClick={toggleSidebar}
-            variant="ghost"
-            size="icon"
-            className="-ml-1 h-7 w-7 text-gray-500 hover:text-gray-900"
-            aria-label="Toggle Sidebar"
-          >
-            <PanelLeft className="h-4 w-4" />
-          </Button>
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-bold text-sm">
-              VM
-            </div>
-            <span className="text-base font-semibold hidden sm:block">
-              Vendor Portal
-            </span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white font-bold text-sm">
+            VM
           </div>
+          <span className="text-base font-semibold hidden sm:block">
+            Vendor Portal
+          </span>
         </div>
 
         {/* Top-Right: Notifications + User Profile */}
@@ -49,7 +37,7 @@ const MainLayoutContent: React.FC = () => {
       </header>
 
       {/* Page Content */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex flex-1 flex-col gap-4 p-4">
         <Outlet />
       </div>
 
