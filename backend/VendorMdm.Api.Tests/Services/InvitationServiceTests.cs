@@ -248,7 +248,7 @@ public class InvitationServiceTests : TestBase
 
         // Setup email mock to return false (failure) to test propagation
         mockEmail.Setup(e => e.SendInvitationEmailAsync(It.IsAny<InvitationEmailData>()))
-            .ReturnsAsync(false);
+            .ReturnsAsync((false, "Mock Error"));
 
         // Act
         var result = await service.ResendInvitationAsync(invitationId, Guid.NewGuid());
