@@ -31,9 +31,10 @@ import { NavLink } from 'react-router-dom';
 
 // Navigation items for different roles
 const VENDOR_NAV = [
-    { name: 'My Profile', href: '/profile', icon: User },
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'My Requests', href: '/requests', icon: FileText },
+    { name: 'My Reviews', href: '/requests', icon: FileText },
+    { name: 'My Profile', href: '/profile', icon: User },
+    { name: 'Security Settings', href: '/account', icon: Settings },
 ];
 
 const APPROVER_NAV = [
@@ -42,14 +43,17 @@ const APPROVER_NAV = [
     { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: Mail },
     { name: 'Create Vendor', href: '/approver/create-vendor', icon: UserPlus },
     { name: 'Update Vendor', href: '/approver/select-vendor', icon: FileText },
+    { name: 'My Account', href: '/account', icon: User },
 ];
 
 const ADMIN_NAV = [
     { name: 'System Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'User Management', href: '/admin/users', icon: UserPlus },
     { name: 'System Status', href: '/admin/system-status', icon: Activity },
     { name: 'Workflow Rules', href: '/admin/rules', icon: Settings },
     { name: 'Audit Logs', href: '/admin/audit', icon: ShieldAlert },
     { name: 'Branching Strategy', href: '/admin/strategy', icon: GitBranch },
+    { name: 'My Account', href: '/account', icon: User },
 ];
 
 export function AppSidebar() {
@@ -62,11 +66,12 @@ export function AppSidebar() {
     if (user?.role === 'Admin') {
         navigation = ADMIN_NAV;
         roleLabel = 'System Administrator';
-    } else if (user?.role === 'Requestor' || user?.role === 'VendorUnit' || user?.role === 'BFM' || user?.role === 'Approver') {
+    } else if (['Requestor', 'VendorUnit', 'BFM', 'Approver', 'Viewer'].includes(user?.role || '')) {
         navigation = APPROVER_NAV;
         roleLabel = user?.role === 'Requestor' ? 'Requestor' :
             user?.role === 'VendorUnit' ? 'Vendor Unit Approver' :
-                user?.role === 'BFM' ? 'BFM Approver' : 'Internal Approver';
+                user?.role === 'BFM' ? 'BFM Approver' :
+                    user?.role === 'Viewer' ? 'Read-Only Viewer' : 'Internal Approver';
     }
 
     return (

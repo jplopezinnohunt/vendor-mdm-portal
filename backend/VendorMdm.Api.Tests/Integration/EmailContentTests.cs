@@ -50,13 +50,15 @@ public class EmailContentTests
         };
         
         // Invoke
-        var result = (string)method.Invoke(service, new object[] { 
+        var result = (string)method.Invoke(service, new object?[] { 
             data, 
             "http://localhost/link", 
             "Expiration String", 
             "UNESCO", 
             true, // isMfa
-            "123456" // code
+            "123456", // code
+            false, // isMagicLink
+            null // magicLink
         });
         
         // Assert

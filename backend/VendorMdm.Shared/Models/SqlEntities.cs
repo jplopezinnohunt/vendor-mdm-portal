@@ -93,7 +93,7 @@ public class UserRole
     [Key]
     public Guid Id { get; set; }
     public string Username { get; set; } = string.Empty;
-    public string Role { get; set; } = "User"; // Admin, Requester, Approver
+    public string Role { get; set; } = "User"; // Admin, Requestor, Approver
 
     /// <summary>
     /// Semi-structured attributes for flexible data storage.

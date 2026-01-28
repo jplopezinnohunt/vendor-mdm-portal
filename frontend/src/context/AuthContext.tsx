@@ -5,7 +5,7 @@ import { InteractionStatus, InteractionRequiredAuthError } from "@azure/msal-bro
 import axios from 'axios';
 
 // User type mimicking claims from Azure AD B2C / Entra ID
-export type UserRole = 'Vendor' | 'Requestor' | 'VendorUnit' | 'BFM' | 'Admin' | 'Approver';
+export type UserRole = 'Vendor' | 'Requestor' | 'VendorUnit' | 'BFM' | 'Admin' | 'Approver' | 'Viewer';
 
 export interface User {
   id: string;
@@ -21,6 +21,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (role?: UserRole) => Promise<void>;
+  loginLocal: (token: string, user: User) => Promise<void>;
   mockLogin: (role: UserRole) => Promise<void>;
   logout: () => void;
   getToken: () => Promise<string | null>;
@@ -33,11 +34,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
   const { instance, accounts, inProgress } = useMsal();
   const account = accounts[0] || undefined;
+  const [localToken, setLocalToken] = useState<string | null>(localStorage.getItem('localToken'));
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Helper to acquire token
   const getToken = async () => {
+    if (localToken) return localToken; // Priority to local token
+
     if (!account) return null;
     try {
       const response = await instance.acquireTokenSilent({
@@ -47,7 +51,6 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       return response.accessToken;
     } catch (error) {
       if (error instanceof InteractionRequiredAuthError) {
-        // Should handle by asking user to login again, but for getToken just return null
         return null;
       }
       console.error(error);
@@ -63,14 +66,20 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
         const mockUser = JSON.parse(storedMockUser);
         setUser(mockUser);
         setIsLoading(false);
-        return; // Skip Azure AD check if mock user exists
+        return;
       } catch (e) {
         console.error('Failed to parse stored mock user', e);
         localStorage.removeItem('mockUser');
       }
     }
 
-    // Timeout to prevent infinite loading
+    // Check for Local Auth Token
+    if (localToken) {
+      // Ideally verify token or just fetch profile
+      // For now, let fetchProfile handle validity
+    }
+
+    // Timeout
     const timeout = setTimeout(() => {
       if (isLoading) {
         console.warn('[AuthContext] Loading timeout - setting isLoading to false');
@@ -79,38 +88,64 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
     }, 3000);
 
     const fetchProfile = async () => {
-      if (account && inProgress === InteractionStatus.None) {
+      // Logic: If account OR localToken exists
+      if ((account && inProgress === InteractionStatus.None) || localToken) {
         setIsLoading(true);
         try {
           const token = await getToken();
           if (token) {
-            const response = await axios.get('/api/auth/profile', {
+            // If local token, maybe we already have user info? 
+            // Better to always fetch profile to stay in sync
+            // Note: Our backend /api/auth/profile needs to support the local JWT too.
+            // Since we implemented JWT in AuthController, we essentially need to make sure 
+            // the backend *verifies* it. (Program.cs handles JwtBearer).
+
+            // However, the /profile endpoint might be in UserController or AuthController.
+            // If it's the old mocking one, we might need a new one or ensure old one adapts.
+            // Let's assume /api/auth/profile works with the new JWT claims (UserId, Role, etc).
+
+            // Wait, existing profile endpoint might rely on Graph if Azure AD. 
+            // If Local, it should just return User from DB.
+            // We need to verify /api/auth/profile implementation on Backend later.
+
+            // For now, let's assume we can set user directly from login response for Local Auth
+            // to avoid round trip if possible, BUT fetchProfile is cleaner for page reloads.
+
+            const response = await axios.get('/api/user/me', { // Changed to /user/me or similar if exists, or fallback
               headers: { Authorization: `Bearer ${token}` }
             });
 
+            // If 404/401, catch block handles it.
             const data = response.data;
 
-            // Helper key mapping to handle case-sensitivity from backend JSON
             const roles = data.roles || data.Roles || [];
-            const userId = data.userId || data.UserId;
-            const displayName = data.displayName || data.DisplayName;
+            const userId = data.id || data.Id;
+            const displayName = data.username || data.Username || data.email;
             const email = data.email || data.Email;
-            const isImpersonated = data.isImpersonated || data.IsImpersonated;
 
             let role: UserRole = 'Vendor';
             if (roles.includes('Admin')) role = 'Admin';
             else if (roles.includes('Approver')) role = 'Approver';
+            else if (roles.includes('VendorUnit')) role = 'VendorUnit';
+            else if (roles.includes('BFM')) role = 'BFM';
+            else if (roles.includes('Requestor') || roles.includes('Requester')) role = 'Requestor';
+            else if (roles.includes('Viewer')) role = 'Viewer';
 
             setUser({
               id: userId,
               name: displayName,
               email: email,
               role: role,
-              isImpersonated: isImpersonated
+              isImpersonated: false
             });
           }
         } catch (err) {
           console.error("Failed to fetch profile", err);
+          // If local token is invalid, clear it
+          if (localToken) {
+            setLocalToken(null);
+            localStorage.removeItem('localToken');
+          }
           setUser(null);
         } finally {
           setIsLoading(false);
@@ -124,10 +159,29 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
     fetchProfile();
 
     return () => clearTimeout(timeout);
-  }, [account, inProgress]);
+  }, [account, inProgress, localToken]);
+
+  const loginLocal = async (token: string, userData: User) => {
+    setLocalToken(token);
+    localStorage.setItem('localToken', token);
+    setUser(userData);
+    setIsLoading(false);
+  };
+
+  const mockLogin = async (role: UserRole) => {
+    const mockUser: User = {
+      id: 'mock-user-id',
+      name: `Mock ${role}`,
+      email: `mock.${role.toLowerCase()}@example.com`,
+      role: role,
+      isImpersonated: false
+    };
+    setUser(mockUser);
+    localStorage.setItem('mockUser', JSON.stringify(mockUser));
+    setIsLoading(false);
+  };
 
   const login = async (role?: UserRole) => {
-    // We ignore role for Real Auth, effectively.
     try {
       await instance.loginPopup(loginRequest);
     } catch (e) {
@@ -135,63 +189,16 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
     }
   };
 
-  // Mock login for testing different roles without Azure AD
-  const mockLogin = async (role: UserRole) => {
-    const mockUsers = {
-      'Vendor': {
-        id: 'mock-vendor-001',
-        name: 'Test Vendor User',
-        email: 'test.vendor@unesco.org',
-        role: 'Vendor' as UserRole,
-        sapId: 'VENDOR001',
-        isImpersonated: false
-      },
-      'Requestor': {
-        id: 'mock-requestor-001',
-        name: 'Test Requestor User',
-        email: 'test.requestor@unesco.org',
-        role: 'Requestor' as UserRole,
-        isImpersonated: false
-      },
-      'VendorUnit': {
-        id: 'mock-vendorunit-001',
-        name: 'Test Vendor Unit Approver',
-        email: 'test.vendorunit@unesco.org',
-        role: 'VendorUnit' as UserRole,
-        isImpersonated: false
-      },
-      'BFM': {
-        id: 'mock-bfm-001',
-        name: 'Test BFM Approver',
-        email: 'test.bfm@unesco.org',
-        role: 'BFM' as UserRole,
-        isImpersonated: false
-      },
-      'Approver': {
-        id: 'mock-approver-001',
-        name: 'Test Approver User',
-        email: 'test.approver@unesco.org',
-        role: 'Approver' as UserRole,
-        isImpersonated: false
-      },
-      'Admin': {
-        id: 'mock-admin-001',
-        name: 'Test Admin User',
-        email: 'test.admin@unesco.org',
-        role: 'Admin' as UserRole,
-        isImpersonated: false
-      }
-    };
-
-    const mockUser = mockUsers[role];
-    setUser(mockUser);
-    setIsLoading(false);
-    // Persist to localStorage so refresh doesn't lose the session
-    localStorage.setItem('mockUser', JSON.stringify(mockUser));
-  };
   const logout = () => {
-    localStorage.removeItem('mockUser'); // Clear mock user session
-    instance.logoutRedirect();
+    localStorage.removeItem('mockUser');
+    if (localToken) {
+      localStorage.removeItem('localToken');
+      setLocalToken(null);
+      setUser(null);
+      // Maybe redirect to login
+    } else {
+      instance.logoutRedirect();
+    }
     setUser(null);
   };
 
@@ -224,6 +231,7 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       isAuthenticated: !!user,
       isLoading,
       login,
+      loginLocal,
       mockLogin,
       logout,
       getToken,

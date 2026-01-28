@@ -3,7 +3,7 @@ using VendorMdm.Shared.Models;
 
 namespace VendorMdm.Api.Services;
 
-public class CosmosRepository
+public class CosmosRepository : ICosmosRepository
 {
     private readonly Container _changeRequestContainer;
     private readonly Container _domainEventsContainer;

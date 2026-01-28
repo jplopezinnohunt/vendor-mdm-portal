@@ -286,8 +286,50 @@ public class User : CanonicalEntityBase
     public string Email { get; set; } = string.Empty;
 
     [Required]
+    public List<string> Roles { get; set; } = new() { "Viewer" }; // Admin, Requestor, Approver, Viewer
+
+    /// <summary>
+    /// Links this user to their Azure AD Object ID (GUID).
+    /// Populated automatically upon first SSO login.
+    /// </summary>
     [MaxLength(50)]
-    public string Role { get; set; } = "Viewer"; // Admin, Requester, Approver, Viewer
+    public string? AzureAdObjectId { get; set; }
+
+    /// <summary>
+    /// Indicates the source of the identity: "Local" or "AzureAd".
+    /// </summary>
+    [MaxLength(20)]
+    public string AuthProvider { get; set; } = "Local";
+
+    /// <summary>
+    /// Password Hash for Local Auth (only used for Bootstrap/Break-glass accounts).
+    /// </summary>
+    public string? PasswordHash { get; set; }
+
+    public DateTime? LastLogonAt { get; set; }
+    public bool IsBlocked { get; set; } = false;
+
+    // --- Invitation & Security ---
+    [MaxLength(100)]
+    public string? InvitationToken { get; set; }
+    
+    public DateTime? InvitationExpiresAt { get; set; }
+    
+    [MaxLength(200)]
+    public string? TwoFactorSecret { get; set; } // Base32 encoded secret
+    
+    public bool TwoFactorEnabled { get; set; } = false;
+    
+    public string? RecoveryCodes { get; set; } = "[]"; // JSON Array
+
+    // --- Multi-Channel Auth ---
+    [Required] 
+    public string AuthMethod { get; set; } = "MagicLink"; // "AzureAd", "MagicLink", "LocalStrong"
+
+    [MaxLength(100)]
+    public string? MagicLinkToken { get; set; }
+
+    public DateTime? MagicLinkExpiresAt { get; set; }
 
     // Inherits Attributes for: FullName, Department, UiPreferences, NotificationSettings
 }

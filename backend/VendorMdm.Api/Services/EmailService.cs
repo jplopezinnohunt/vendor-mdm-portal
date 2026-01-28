@@ -42,14 +42,28 @@ public class EmailService : IEmailService
         {
             Email = email,
             VendorName = vendorName,
-            Notes = $"Your verification code is: {code}",
-            // We use the same structure for now, but we'll build a specific HTML for MFA
+            Notes = $"{code}",
         };
 
         return await SendEmailAsync(email, "Your Verification Code", data, isMfa: true, mfaCode: code);
     }
 
-    private async Task<(bool Success, string? ErrorMessage)> SendEmailAsync(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null)
+    public async Task<(bool Success, string? ErrorMessage)> SendMagicLinkEmailAsync(string email, string link)
+    {
+        var data = new InvitationEmailData
+        {
+            Email = email,
+            VendorName = "User", // Generic
+            Notes = link // Storing link in Notes for simplicity in template or logging
+        };
+        
+        // We reuse SendEmailAsync but we might want a specific template. 
+        // For now, let's treat it as a variation or just log it if simulating.
+        // To do it properly, we should update BuildEmailHtml. 
+        return await SendEmailAsync(email, "Sign in to Vendor Portal", data, isMagicLink: true, magicLink: link);
+    }
+
+    private async Task<(bool Success, string? ErrorMessage)> SendEmailAsync(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null, bool isMagicLink = false, string? magicLink = null)
     {
         try
         {
@@ -83,7 +97,7 @@ public class EmailService : IEmailService
             var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
             if (smtpEnabled)
             {
-                var (smtpSuccess, smtpError) = await TrySendViaSmtpAsync(data, subject, isMfa, mfaCode);
+            var (smtpSuccess, smtpError) = await TrySendViaSmtpAsync(data, subject, isMfa, mfaCode, isMagicLink, magicLink);
                 if (smtpSuccess)
                 {
                     return (true, null);
@@ -97,7 +111,7 @@ public class EmailService : IEmailService
             }
 
             // Fallback: Log email (for local development)
-            LogEmail(email, subject, data, isMfa, mfaCode);
+            LogEmail(email, subject, data, isMfa, mfaCode, isMagicLink, magicLink);
             
             // If in production/Azure and we reached here, it means real sending failed
             if (!_useLocalEmulators)
@@ -114,7 +128,7 @@ public class EmailService : IEmailService
         catch (Exception ex)
         {
             _logger.LogError(ex, "EXCEPTION: Email sending failed for {Email}", email);
-            LogEmail(email, subject, data, isMfa, mfaCode);
+            LogEmail(email, subject, data, isMfa, mfaCode, isMagicLink, magicLink);
             return (false, ex.Message);
         }
     }
@@ -247,7 +261,7 @@ public class EmailService : IEmailService
     /// <summary>
     /// Try to send email via SMTP
     /// </summary>
-    private async Task<(bool Success, string? ErrorMessage)> TrySendViaSmtpAsync(InvitationEmailData data, string subject, bool isMfa = false, string? mfaCode = null)
+    private async Task<(bool Success, string? ErrorMessage)> TrySendViaSmtpAsync(InvitationEmailData data, string subject, bool isMfa = false, string? mfaCode = null, bool isMagicLink = false, string? magicLink = null)
     {
         try
         {
@@ -296,7 +310,7 @@ public class EmailService : IEmailService
             // Build HTML email body
             var bodyBuilder = new BodyBuilder
             {
-                HtmlBody = BuildEmailHtml(data, invitationLink, expiresAt, companyName, isMfa, mfaCode)
+                HtmlBody = BuildEmailHtml(data, invitationLink, expiresAt, companyName, isMfa, mfaCode, isMagicLink, magicLink)
             };
 
             message.Body = bodyBuilder.ToMessageBody();
@@ -325,8 +339,27 @@ public class EmailService : IEmailService
     /// <summary>
     /// Build HTML email content
     /// </summary>
-    private string BuildEmailHtml(InvitationEmailData data, string invitationLink, string expiresAt, string companyName, bool isMfa = false, string? mfaCode = null)
+    private string BuildEmailHtml(InvitationEmailData data, string invitationLink, string expiresAt, string companyName, bool isMfa = false, string? mfaCode = null, bool isMagicLink = false, string? magicLink = null)
     {
+        if (isMagicLink)
+        {
+             return $@"
+<!DOCTYPE html>
+<html lang=""en"">
+<head><title>Sign In</title></head>
+<body style=""font-family: 'Segoe UI', sans-serif; background-color: #f5f5f5; padding: 40px;"">
+    <div style=""max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
+        <h2 style=""color: #333;"">Sign in to Vendor Portal</h2>
+        <p>Click the link below to sign in. This link is valid for 1 hour.</p>
+        <p style=""margin: 30px 0;"">
+            <a href=""{magicLink}"" style=""background: #0078d4; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;"">Sign In Now</a>
+        </p>
+        <p style=""color: #666; font-size: 14px;"">If you didn't request this link, you can ignore this email.</p>
+    </div>
+</body>
+</html>";
+        }
+
         if (isMfa)
         {
             return $@"
@@ -476,8 +509,20 @@ public class EmailService : IEmailService
     /// <summary>
     /// Log email details (fallback for local development)
     /// </summary>
-    private void LogEmail(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null)
+    private void LogEmail(string email, string subject, InvitationEmailData data, bool isMfa = false, string? mfaCode = null, bool isMagicLink = false, string? magicLink = null)
     {
+        if (isMagicLink)
+        {
+            Console.WriteLine("");
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine("📧 MAGIC LINK (LOCAL DEV)");
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            Console.WriteLine($"To: {email}");
+            Console.WriteLine($"Link: {magicLink}");
+            Console.WriteLine("═══════════════════════════════════════════════════════════");
+            return;
+        }
+
         if (isMfa)
         {
             Console.WriteLine("");

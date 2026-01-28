@@ -219,6 +219,7 @@ public class SqlDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Username);
             entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.AzureAdObjectId); // Fast lookup for SSO
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
         });
     }

@@ -12,6 +12,8 @@ import { CreateVendorForm } from './pages/approver/CreateVendorForm';
 import { RequestHistory } from './pages/RequestHistory';
 import { Login } from './pages/Login';
 import { VendorRegistration } from './pages/VendorRegistration';
+import { InvitationPage } from './pages/auth/InvitationPage';
+import { MagicLoginCallback } from './pages/auth/MagicLoginCallback';
 import { InvitationRegistration } from './pages/InvitationRegistration';
 import { ServerError } from './pages/ServerError';
 import { ApproverDashboard } from './pages/approver/ApproverDashboard';
@@ -24,6 +26,8 @@ import { InvitationManagement } from './pages/admin/InvitationManagement';
 import { SystemStatus } from './pages/admin/SystemStatus';
 import { ViewVendor } from './pages/ViewVendor';
 import BranchingStrategy from './pages/BranchingStrategy';
+import { UserManagement } from './pages/admin/UserManagement';
+import { UserAccount } from './pages/UserAccount';
 
 // Protected Route Guard
 const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode, allowedRoles?: UserRole[] }) => {
@@ -65,7 +69,9 @@ const App: React.FC = () => {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<VendorRegistration />} />
+          <Route path="/accept-invite" element={<InvitationPage />} />
           <Route path="/invitation/register/:token" element={<InvitationRegistration />} />
+          <Route path="/magic-login" element={<MagicLoginCallback />} />
 
           {/* Main Layout Wrapper */}
           <Route path="/" element={
@@ -166,6 +172,15 @@ const App: React.FC = () => {
                 <BranchingStrategy />
               </ProtectedRoute>
             } />
+            <Route path="admin/users" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <UserManagement />
+              </ProtectedRoute>
+            } />
+
+            {/* SHARED ROUTES */}
+            <Route path="account" element={<UserAccount />} />
+
           </Route>
 
           {/* Catch all */}

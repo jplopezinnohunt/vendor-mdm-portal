@@ -82,52 +82,34 @@ builder.Services.AddOpenTelemetry()
 // RBAC: Claims Transformation (Maps Groups -> Roles)
 builder.Services.AddTransient<IClaimsTransformation, ClaimsTransformationService>();
 
-// Authentication & Authorization
-// Only enable Azure AD authentication if ClientId is configured
 var azureAdClientId = builder.Configuration["AzureAd:ClientId"];
-if (!string.IsNullOrEmpty(azureAdClientId))
-{
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddMicrosoftIdentityWebApi(builder.Configuration.GetSection("AzureAd"));
-    
-    Console.WriteLine("✅ Azure AD Authentication enabled");
-}
-else
-{
-    Console.WriteLine("⚠️  Authentication DISABLED (Azure AD not configured)");
-    Console.WriteLine("   For local development only - configure AzureAd:ClientId for production");
-}
 
-// Always configure authorization policies (needed even without authentication for local dev)
+// Authentication
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = "VendorMDM",
+        ValidAudience = "VendorMDM",
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes("THIS_IS_A_DEV_SECRET_KEY_REPLACE_IN_PROD_12345"))
+    };
+});
+
+// Authorization
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("AdminOrApprover", policy =>
-    {
-        if (!string.IsNullOrEmpty(azureAdClientId))
-        {
-            // Production: require roles
-            policy.RequireRole("Admin", "Approver");
-        }
-        else
-        {
-            // Local dev without auth: allow all requests
-            policy.RequireAssertion(context => true);
-        }
-    });
-
-    options.AddPolicy("ApproverOnly", policy =>
-    {
-        if (!string.IsNullOrEmpty(azureAdClientId))
-        {
-            // Production: require Approver role strictly
-            policy.RequireRole("Approver");
-        }
-        else
-        {
-            // Local dev without auth: allow all requests
-            policy.RequireAssertion(context => true);
-        }
-    });
+    options.AddPolicy("AdminOrApprover", policy => policy.RequireRole("Admin", "Approver"));
+    options.AddPolicy("ApproverOnly", policy => policy.RequireRole("Approver"));
 });
 
 // Add CORS
@@ -140,6 +122,7 @@ builder.Services.AddCors(options =>
             { 
                 "http://localhost:5173", 
                 "http://localhost:3000", 
+                "http://localhost:3001",
                 "http://localhost:3002",
                 "https://swa-vendor-mdm-dev.azurestaticapps.net",
                 "https://thankful-field-0258f8110.3.azurestaticapps.net"
@@ -283,6 +266,7 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 
 // 4. Custom Services
 builder.Services.AddScoped<CosmosRepository>();
+builder.Services.AddScoped<ICosmosRepository>(sp => sp.GetRequiredService<CosmosRepository>());
 if (useLocalEmulators)
 {
     builder.Services.AddScoped<IServiceBusService, ServiceBusSimulationService>();
@@ -313,6 +297,7 @@ builder.Services.AddScoped<ICustomerService, CustomerService>();
 builder.Services.AddScoped<IVendorService, VendorService>();
 builder.Services.AddScoped<IVendorApplicationService, VendorApplicationService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddSingleton<ITotpService, TotpService>();
 
 // ═══════════════════════════════════════════════════════════════
 // SIMULATION SERVICES - Mock vs Real Implementation Selection
@@ -423,11 +408,14 @@ var app = builder.Build();
 // This will create the schema if it doesn't exist
 using (var scope = app.Services.CreateScope())
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<SqlDbContext>();
+    var services = scope.ServiceProvider;
+    var dbContext = services.GetRequiredService<SqlDbContext>();
+    var logger = services.GetRequiredService<ILogger<Program>>();
     try
     {
-        dbContext.Database.EnsureCreated();
-        Console.WriteLine("✅ Database initialized successfully.");
+        // Initialize and Seed
+        await DbInitializer.InitializeAsync(dbContext, logger);
+        Console.WriteLine("✅ Database initialized and seeded successfully.");
     }
     catch (Exception ex)
     {

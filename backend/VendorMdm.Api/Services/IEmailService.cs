@@ -16,6 +16,11 @@ public interface IEmailService
     Task<(bool Success, string? ErrorMessage)> SendMfaCodeEmailAsync(string email, string vendorName, string code);
 
     /// <summary>
+    /// Sends a magic link for passwordless login
+    /// </summary>
+    Task<(bool Success, string? ErrorMessage)> SendMagicLinkEmailAsync(string email, string link);
+
+    /// <summary>
     /// Tests the connection to the email service.
     /// </summary>
     Task<bool> TestConnectionAsync();
