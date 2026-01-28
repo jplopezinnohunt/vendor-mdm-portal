@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -11,13 +11,10 @@ const __dirname = dirname(__filename);
  */
 function generateVersion() {
   try {
-    // Get the total number of commits (version number)
-    let commitCount = '';
-    try {
-      commitCount = execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim();
-    } catch (e) {
-      commitCount = process.env.GITHUB_RUN_NUMBER || '0';
-    }
+    // Get version from package.json
+    const packageJsonPath = join(__dirname, 'package.json');
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+    const pkgVersion = packageJson.version || '0.0.0';
 
     // Get the last commit date
     let lastCommitDate = '';
@@ -33,6 +30,14 @@ function generateVersion() {
       commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
     } catch (e) {
       commitHash = (process.env.GITHUB_SHA || 'unknown').substring(0, 7);
+    }
+
+    // Get the total number of commits (still useful for internal stats, but not for display version)
+    let commitCount = 0;
+    try {
+      commitCount = parseInt(execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim(), 10);
+    } catch (e) {
+      commitCount = 0;
     }
 
     // Get the current branch name
@@ -60,13 +65,14 @@ export interface VersionInfo {
 }
 
 export const version: VersionInfo = {
-  version: 'v${commitCount}',
+  version: 'v${pkgVersion}',
   commitCount: ${commitCount},
   commitHash: '${commitHash}',
   branch: '${branch}',
   buildDate: '${buildDate}',
   lastCommitDate: '${lastCommitDate}',
 };
+
 
 export default version;
 `;
