@@ -28,7 +28,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
   const [onboardingRequests, setOnboardingRequests] = useState<VendorApplication[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'onboarding' | 'changes' | 'invitations'>('onboarding');
+  const [activeTab, setActiveTab] = useState<'onboarding' | 'changes' | 'invitations'>('invitations');
   const navigate = useNavigate();
 
   // Filter States
@@ -414,6 +414,19 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
           <button
+            onClick={() => setActiveTab('invitations')}
+            className={`${activeTab === 'invitations'
+              ? 'border-brand-500 text-brand-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
+          >
+            <Mail className={`mr-2 h-5 w-5 ${activeTab === 'invitations' ? 'text-brand-500' : 'text-gray-400'}`} />
+            Sent Invitations
+            <span className={`ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium ${activeTab === 'invitations' ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-900'}`}>
+              {invitations.length}
+            </span>
+          </button>
+          <button
             onClick={() => setActiveTab('onboarding')}
             className={`${activeTab === 'onboarding'
               ? 'border-brand-500 text-brand-600'
@@ -439,19 +452,6 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
               {changeRequests.length}
             </span>
           </button>
-          <button
-            onClick={() => setActiveTab('invitations')}
-            className={`${activeTab === 'invitations'
-              ? 'border-brand-500 text-brand-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm flex items-center`}
-          >
-            <Mail className={`mr-2 h-5 w-5 ${activeTab === 'invitations' ? 'text-brand-500' : 'text-gray-400'}`} />
-            Sent Invitations
-            <span className={`ml-2 py-0.5 px-2.5 rounded-full text-xs font-medium ${activeTab === 'invitations' ? 'bg-brand-100 text-brand-600' : 'bg-gray-100 text-gray-900'}`}>
-              {invitations.length}
-            </span>
-          </button>
         </nav>
       </div>
 
@@ -464,7 +464,7 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-32">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Application ID
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -473,11 +473,11 @@ export const ApproverDashboard: React.FC<ApproverDashboardProps> = ({ mode = 'wo
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Tax ID
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-40">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                       Submitted Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 w-40">
-                      Workflow Status
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                      Status
                     </th>
                     <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                   </tr>

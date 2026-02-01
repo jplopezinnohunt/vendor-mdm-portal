@@ -105,7 +105,8 @@ export const InviteVendorForm: React.FC = () => {
             permittedPayee: '',
             expirationDays: 14,
             givenName: '',
-            familyName: ''
+            familyName: '',
+            dateOfBirth: ''
         }
     });
 

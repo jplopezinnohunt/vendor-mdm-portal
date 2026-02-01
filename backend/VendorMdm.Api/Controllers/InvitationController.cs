@@ -319,7 +319,7 @@ public class InvitationController : ControllerBase
             {
                 Id = Guid.NewGuid(),
                 CompanyName = request.CompanyName,
-                TaxId = request.TaxId,
+                TaxId = string.IsNullOrWhiteSpace(request.TaxId) ? null : request.TaxId,
                 ContactName = request.ContactName,
                 ContactEmail = request.Email,
                 Status = "Submitted",

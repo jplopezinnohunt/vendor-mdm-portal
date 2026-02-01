@@ -28,6 +28,9 @@ import { ViewVendor } from './pages/ViewVendor';
 import BranchingStrategy from './pages/BranchingStrategy';
 import { UserManagement } from './pages/admin/UserManagement';
 import { UserAccount } from './pages/UserAccount';
+import { EventDashboard } from './pages/EventDashboard';
+import { EventDetail } from './pages/EventDetail';
+
 
 // Protected Route Guard
 const ProtectedRoute = ({ children, allowedRoles }: { children?: React.ReactNode, allowedRoles?: UserRole[] }) => {
@@ -147,6 +150,18 @@ const App: React.FC = () => {
             <Route path="view-vendor" element={
               <ProtectedRoute allowedRoles={['Approver', 'Admin']}>
                 <ViewVendor />
+              </ProtectedRoute>
+            } />
+
+            {/* EVENT ROUTES */}
+            <Route path="events" element={
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'Admin']}>
+                <EventDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="events/:id" element={
+              <ProtectedRoute allowedRoles={['Requestor', 'VendorUnit', 'Admin']}>
+                <EventDetail />
               </ProtectedRoute>
             } />
 

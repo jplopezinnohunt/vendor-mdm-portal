@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using VendorMdm.Api.Data;
 using VendorMdm.Shared.Models;
 using VendorMdm.Api.Services;
+using System.Text.Json;
 
 namespace VendorMdm.Api.Controllers;
 
@@ -32,7 +33,8 @@ public class ReviewController : ControllerBase
         try
         {
             // Fetch applications with "PendingReview" status
-            var pendingApps = await _context.VendorApplications
+            // Fetch raw applications first
+            var pendingAppsRaw = await _context.VendorApplications
                 .Where(a => a.Status == "PendingReview")
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(a => new
@@ -43,14 +45,24 @@ public class ReviewController : ControllerBase
                     a.ContactEmail,
                     a.RegistrationType,
                     a.CreatedAt,
-                    // Parse Attributes JSON if needed, or send raw
-                    Attributes = a.Attributes 
+                    a.Attributes 
                 })
                 .ToListAsync();
 
-            // Also fetch linked invitations to get Sanctions Info if not fully synced
-            // (Optional optimization: Join query)
-            
+            // Parse Attributes in memory
+            var pendingApps = pendingAppsRaw.Select(a => new
+            {
+                a.Id,
+                a.CompanyName,
+                a.ContactName,
+                a.ContactEmail,
+                a.RegistrationType,
+                a.CreatedAt,
+                Attributes = string.IsNullOrEmpty(a.Attributes) 
+                    ? new Dictionary<string, object>() 
+                    : JsonSerializer.Deserialize<Dictionary<string, object>>(a.Attributes)
+            });
+
             return Ok(pendingApps);
         }
         catch (Exception ex)

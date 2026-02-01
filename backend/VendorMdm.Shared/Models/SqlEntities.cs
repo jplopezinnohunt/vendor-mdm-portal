@@ -156,6 +156,11 @@ public class VendorInvitation
 
     public Guid? VendorApplicationId { get; set; }
 
+    public Guid? EventId { get; set; } // Link to Event (if participant)
+
+    [MaxLength(20)]
+    public string? Tier { get; set; } // Tier_1/2/3 for Event Participants
+
     [MaxLength(50)]
     public string VendorType { get; set; } = string.Empty;
 
@@ -204,6 +209,7 @@ public static class InvitationStage
 public static class InvitationStatus
 {
     public const string Pending = "Pending";
+    public const string Draft = "Draft";
     public const string Accepted = "Accepted";
     public const string Expired = "Expired";
     public const string Completed = "Completed";
@@ -211,4 +217,67 @@ public static class InvitationStatus
     public const string Approved = "Approved";
     public const string Rejected = "Rejected";
     public const string Cancelled = "Cancelled";
+}
+
+public class Event
+{
+    [Key]
+    public Guid Id { get; set; }
+
+    [Required]
+    [MaxLength(50)]
+    public string EventCode { get; set; } = string.Empty;
+
+    [Required]
+    public string Title { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(20)]
+    public string EventType { get; set; } = "Event"; // Event, Conference
+
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    [Required]
+    [MaxLength(100)]
+    public string CreatedBy { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Semi-structured attributes: sector, field_office, location, financial_coding (wbs, io, sap_vendor_id)
+    /// </summary>
+    public string Attributes { get; set; } = "{}";
+}
+
+public class EventParticipant
+{
+    [Key]
+    public Guid Id { get; set; }
+
+    public Guid EventId { get; set; }
+
+    [Required]
+    [EmailAddress]
+    [MaxLength(255)]
+    public string Email { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(255)]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(20)]
+    public string Tier { get; set; } = "Tier_1"; // Tier_1, Tier_2, Tier_3
+
+    [Required]
+    [MaxLength(20)]
+    public string Status { get; set; } = "Pending"; // Pending, Invited, Confirmed, SapCreated
+
+    public Guid? VendorInviteId { get; set; }
+
+    /// <summary>
+    /// Semi-structured attributes: organization, job_title, notes
+    /// </summary>
+    public string Attributes { get; set; } = "{}";
 }

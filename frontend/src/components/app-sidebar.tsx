@@ -9,6 +9,7 @@ import {
     ShieldAlert,
     Activity,
     GitBranch,
+    Calendar,
 } from 'lucide-react';
 import {
     Sidebar,
@@ -43,6 +44,7 @@ const APPROVER_NAV = [
     { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: Mail },
     { name: 'Create Vendor', href: '/approver/create-vendor', icon: UserPlus },
     { name: 'Update Vendor', href: '/approver/select-vendor', icon: FileText },
+    { name: 'Event Management', href: '/events', icon: Calendar },
     { name: 'My Account', href: '/account', icon: User },
 ];
 

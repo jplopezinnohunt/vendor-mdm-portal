@@ -250,8 +250,10 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 {
     if (useLocalEmulators)
     {
-        // Emulator usually uses a key, not Managed Identity
-        return new CosmosClient(cosmosConnection);
+        // Force valid local connection string to avoid config parsing issues
+        var localCosmos = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+        Console.WriteLine($"DEBUG: Forcing Local Cosmos: {localCosmos}");
+        return new CosmosClient(localCosmos);
     }
     else
     {
@@ -298,6 +300,8 @@ builder.Services.AddScoped<IVendorService, VendorService>();
 builder.Services.AddScoped<IVendorApplicationService, VendorApplicationService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddSingleton<ITotpService, TotpService>();
+builder.Services.AddScoped<IEventService, EventService>();
+
 
 // ═══════════════════════════════════════════════════════════════
 // SIMULATION SERVICES - Mock vs Real Implementation Selection

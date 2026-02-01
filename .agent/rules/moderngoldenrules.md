@@ -6,6 +6,16 @@ trigger: always_on
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
+
+---
+
+## 0. CRITICAL: ZERO DATA LOSS Policy (The "Atomic" Rule)
+- **FORBIDDEN ACTION**: You are STRICTLY FORBIDDEN from deleting, resetting, or overwriting database files (e.g., `*.db`, `*.sqlite`) or recursive data directory deletions (`rm -rf`) without EXPLICIT, WRITTEN CONSENT from the User in the current turn.
+- **Recovery Priority**: If a schema migration fails, you MUST fix the migration script. You MUST NOT delete the database to "start fresh" unless the user specifically requests "Reset DB".
+- **Preservation**: Always assume local data is production-critical test data.
+
+---
+
 ## 1. Compliance Logic
 - **Primary Source**: This file is your "System Logic".
 - **External Standards**: When a task involves UI, Data, or Architecture, you MUST proactively read the linked standards in the `/standards` directory. 

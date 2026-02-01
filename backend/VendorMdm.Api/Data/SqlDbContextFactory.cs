@@ -14,6 +14,17 @@ public class SqlDbContextFactory : IDesignTimeDbContextFactory<SqlDbContext>
 {
     public SqlDbContext CreateDbContext(string[] args)
     {
+        // DEVELOPMENT ESCAPE HATCH: Allow SQLite for local 'database update' if explicitly requested
+        var forceSqlite = Environment.GetEnvironmentVariable("FORCE_SQLITE_MIGRATION");
+        if (forceSqlite == "true")
+        {
+             var sqliteConnection = Environment.GetEnvironmentVariable("ConnectionStrings__Sql") ?? "Data Source=app.db";
+             var sqliteBuilder = new DbContextOptionsBuilder<SqlDbContext>();
+             sqliteBuilder.UseSqlite(sqliteConnection);
+             Console.WriteLine("🔧 SqlDbContextFactory: Using SQLite for local migration apply");
+             return new SqlDbContext(sqliteBuilder.Options);
+        }
+
         // ALWAYS use SQL Server for migrations
         // Read connection string from environment variable (set by developer or CI/CD)
         // Fallback to dev Azure SQL if not set

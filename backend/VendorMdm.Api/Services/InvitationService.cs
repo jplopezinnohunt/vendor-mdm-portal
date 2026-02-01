@@ -924,17 +924,24 @@ public class InvitationService : IInvitationService
 
             // 4. Artifacts & Events (Post-Commit Side Effects)
             // Ideally these should be reliable, but SQL consistency is the priority.
-            await SaveInvitationArtifactAsync(invitation.Id.ToString(), new { 
-                Action = "ApplicationCreated", 
-                AppId = appId, 
-                // Sanctions status is inside the entity now
-            });
+            try 
+            {
+                await SaveInvitationArtifactAsync(invitation.Id.ToString(), new { 
+                    Action = "ApplicationCreated", 
+                    AppId = appId, 
+                    // Sanctions status is inside the entity now
+                });
 
-            await EmitDomainEventAsync("ApplicationCreatedFromInvitation", appId.ToString(), new {
-                 ApplicationId = appId,
-                 InvitationId = invitation.Id,
-                 VendorName = appName
-            });
+                await EmitDomainEventAsync("ApplicationCreatedFromInvitation", appId.ToString(), new {
+                     ApplicationId = appId,
+                     InvitationId = invitation.Id,
+                     VendorName = appName
+                });
+            }
+            catch (Exception exArtifact)
+            {
+                _logger.LogWarning(exArtifact, "Non-blocking failure: Failed to save artifacts/events for Invitation {Id} after successful SQL commit.", invitation.Id);
+            }
 
             return true;
         }

@@ -5,7 +5,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/s
 import { Separator } from '@/components/ui/separator';
 import { AppSidebar } from './app-sidebar';
 import { UserNav } from './user-nav';
-import { ServiceStatusPanel } from './ServiceStatusPanel';
+
 import { ImpersonationBanner } from './ImpersonationBanner';
 
 export const MainLayout: React.FC = () => {
@@ -45,9 +45,7 @@ export const MainLayout: React.FC = () => {
           </div>
         </div>
 
-        <footer className="border-t bg-white p-4">
-          <ServiceStatusPanel />
-        </footer>
+
       </SidebarInset>
     </SidebarProvider>
   );

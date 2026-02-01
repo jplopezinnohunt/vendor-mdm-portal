@@ -16,6 +16,8 @@ public class SqlDbContext : DbContext
     public DbSet<SapEnvironment> SapEnvironments { get; set; }
     public DbSet<UserRole> UsersAndRoles { get; set; }
     public DbSet<Attachment> Attachments { get; set; }
+    public DbSet<Event> Events { get; set; }
+    public DbSet<EventParticipant> EventParticipants { get; set; }
 
     // Canonical Entities
     public DbSet<Vendor> Vendors { get; set; }
@@ -110,6 +112,18 @@ public class SqlDbContext : DbContext
         modelBuilder.Entity<WorkflowState>()
             .Property(e => e.Attributes)
             
+            .IsRequired()
+            .HasDefaultValue("{}");
+
+        // Event JSON configuration
+        modelBuilder.Entity<Event>()
+            .Property(e => e.Attributes)
+            .IsRequired()
+            .HasDefaultValue("{}");
+
+        // EventParticipant JSON configuration
+        modelBuilder.Entity<EventParticipant>()
+            .Property(e => e.Attributes)
             .IsRequired()
             .HasDefaultValue("{}");
     }
