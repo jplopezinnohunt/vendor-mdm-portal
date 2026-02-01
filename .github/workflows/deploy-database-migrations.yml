@@ -58,6 +58,19 @@ jobs:
         echo "=== MIGRATION SCRIPT PREVIEW ==="
         head -n 50 migration-script.sql
         echo "=== (showing first 50 lines) ==="
+
+    - name: Check for Destructive Changes (Zero Data Loss)
+      run: |
+        echo "🔍 Analyzing migration script for destructive commands..."
+        if grep -iE "DROP TABLE|DROP COLUMN" migration-script.sql; then
+          echo "❌ DESTRUCTIVE CHANGE DETECTED!"
+          echo "The migration script contains DROP TABLE or DROP COLUMN commands."
+          echo "This violates the Zero Data Loss Policy."
+          echo "Deployment Cancelled."
+          exit 1
+        else
+          echo "✅ No destructive changes detected. Safe to proceed."
+        fi
     
     - name: Azure Login
       uses: azure/login@v1
