@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
       proxy: {
         '/api': {
-          target: 'http://127.0.0.1:5222',
+          target: 'http://127.0.0.1:5001', // Backend API port
           changeOrigin: true,
           secure: false, // Allow self-signed certs for local dev
         }

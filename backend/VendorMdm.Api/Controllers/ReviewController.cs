@@ -5,12 +5,13 @@ using VendorMdm.Api.Data;
 using VendorMdm.Shared.Models;
 using VendorMdm.Api.Services;
 using System.Text.Json;
+using System.Security.Claims;
 
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Policy = "ApproverOnly")]
+[Authorize] // Allow all authenticated users
 public class ReviewController : ControllerBase
 {
     private readonly SqlDbContext _context;
@@ -26,16 +27,32 @@ public class ReviewController : ControllerBase
 
     /// <summary>
     /// Get all applications pending review
+    /// Approvers see all pending reviews
+    /// Requestors see only their own submissions
     /// </summary>
     [HttpGet("pending")]
     public async Task<IActionResult> GetPendingReviews()
     {
         try
         {
+            var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+            var userRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+            var isApprover = userRoles.Contains("Approver");
+
+            _logger.LogInformation("GetPendingReviews called by {Email} with roles: {Roles}", userEmail, string.Join(", ", userRoles));
+
             // Fetch applications with "PendingReview" status
-            // Fetch raw applications first
-            var pendingAppsRaw = await _context.VendorApplications
-                .Where(a => a.Status == "PendingReview")
+            var query = _context.VendorApplications
+                .Where(a => a.Status == "PendingReview");
+
+            // If user is NOT an Approver, filter to show only their own submissions
+            if (!isApprover && !string.IsNullOrEmpty(userEmail))
+            {
+                query = query.Where(a => a.ContactEmail == userEmail);
+                _logger.LogInformation("Filtering reviews for Requestor: {Email}", userEmail);
+            }
+
+            var pendingAppsRaw = await query
                 .OrderByDescending(a => a.CreatedAt)
                 .Select(a => new
                 {
@@ -63,6 +80,7 @@ public class ReviewController : ControllerBase
                     : JsonSerializer.Deserialize<Dictionary<string, object>>(a.Attributes)
             });
 
+            _logger.LogInformation("Returning {Count} pending reviews", pendingApps.Count());
             return Ok(pendingApps);
         }
         catch (Exception ex)
@@ -92,9 +110,10 @@ public class ReviewController : ControllerBase
     }
 
     /// <summary>
-    /// Approve a vendor application
+    /// Approve a vendor application (Approvers only)
     /// </summary>
     [HttpPost("{id}/approve")]
+    [Authorize(Policy = "ApproverOnly")]
     public async Task<IActionResult> ApproveApplication(Guid id, [FromBody] ApprovalRequest request)
     {
         try 
@@ -120,9 +139,10 @@ public class ReviewController : ControllerBase
     }
 
     /// <summary>
-    /// Reject a vendor application
+    /// Reject a vendor application (Approvers only)
     /// </summary>
     [HttpPost("{id}/reject")]
+    [Authorize(Policy = "ApproverOnly")]
     public async Task<IActionResult> RejectApplication(Guid id, [FromBody] RejectionRequest request)
     {
         try

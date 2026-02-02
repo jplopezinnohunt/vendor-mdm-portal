@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using VendorMdm.Api.Models; // DTOs
 using VendorMdm.Api.Services;
 using VendorMdm.Api.Data;
+using VendorMdm.Shared.Mapping;
+using Microsoft.AspNetCore.RateLimiting;
 using VendorMdm.Shared.Models; // SQL entities
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
@@ -175,6 +177,8 @@ public class InvitationController : ControllerBase
     /// Validate an invitation token
     /// </summary>
     [HttpGet("validate/{token}")]
+    [AllowAnonymous]
+    [EnableRateLimiting("anonymous")]
     public async Task<IActionResult> ValidateInvitation(string token)
     {
         try

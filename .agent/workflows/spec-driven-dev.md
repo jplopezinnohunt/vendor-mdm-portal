@@ -9,18 +9,23 @@ Follow this strict process for every non-trivial task.
 ## Phase 1: Specification (The "What")
 
 1. **Context Check & Golden Rules**:
-   - **MANDATORY**: Read `best_practices.md`.
-   - Read `task.md`.
-   - Read `user_rules` (Memo).
-   - If UI task: Read `docs/ui_design_standards.md`.
+   - **MANDATORY**: Read `.agent/rules/modern-golden-rules.md`.
+   - Read `.agent/rules/standards/ontology-modeling-standard.md` (if dealing with Entities).
+   - If UI task: Read `.agent/rules/standards/ui-design-standards.md`.
 
-2. **Draft Specification**:
+2. **Ontology Alignment (NEW)**:
+   - Check `specs/ontology_registry.md` (The Master Ontology).
+   - **Decision**: Does this feature modify an existing Concept or introduce a new one?
+   - If NEW: You must propose the Concept definition first.
+
+3. **Draft Specification**:
    - Create `specs/spec_[short_description].md`.
-   - **Compliance Section**: You MUST list which Best Practices apply (e.g., "Uses Hybrid Data Model", "Follows UI Pillar A & B").
+   - **Compliance Section**: You MUST list which Best Practices apply.
+   - **Ontology Section**: Explicitly define the "Concepts" involved and their "Origin Context" for this feature.
    - **Crucial**: Text-based UI Mockup / JSON Schema.
    - **Crucial**: Acceptance Criteria.
 
-3. **User Review**:
+4. **User Review**:
    - Pause and ask the user to review the Spec.
    - **Do not proceed** until the user says "Approved".
 

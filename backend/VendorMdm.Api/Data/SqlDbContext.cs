@@ -29,6 +29,9 @@ public class SqlDbContext : DbContext
     public DbSet<Customer> Customers { get; set; }
     public DbSet<User> Users { get; set; } /* Canonical User entity */
     public DbSet<ExternalSystemMapping> ExternalSystemMappings { get; set; }
+    
+    // Pattern 16: Audit Trail & Temporal
+    public DbSet<AuditLog> AuditLogs { get; set; }
 
     // Workflow Canonical Model
     public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
@@ -50,6 +53,9 @@ public class SqlDbContext : DbContext
         
         // Configure Workflow Canonical Entities
         ConfigureWorkflowEntities(modelBuilder);
+        
+        // Configure Audit Trail (Pattern 16)
+        ConfigureAuditLog(modelBuilder);
 
         // Seed Workflow States
         modelBuilder.Entity<WorkflowState>().HasData(
@@ -274,6 +280,38 @@ public class SqlDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.WorkflowStepId);
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+        });
+    }
+    
+    /// <summary>
+    /// Configure Audit Log entity (Pattern 16: Audit Trail & Temporal).
+    /// Indexes optimized for compliance queries and temporal reconstruction.
+    /// </summary>
+    private void ConfigureAuditLog(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            
+            // Index for entity-specific queries ("Show all changes to Vendor X")
+            entity.HasIndex(e => new { e.EntityType, e.EntityId, e.ChangedAt })
+                .HasDatabaseName("IX_AuditLog_Entity");
+            
+            // Index for user activity queries ("Show all changes by User Y")
+            entity.HasIndex(e => new { e.ChangedByUserId, e.ChangedAt })
+                .HasDatabaseName("IX_AuditLog_User");
+            
+            // Index for temporal queries ("Show all changes on Date Z")
+            entity.HasIndex(e => e.ChangedAt)
+                .HasDatabaseName("IX_AuditLog_Timestamp");
+            
+            // Index for action-based queries ("Show all deletions")
+            entity.HasIndex(e => new { e.Action, e.ChangedAt })
+                .HasDatabaseName("IX_AuditLog_Action");
+            
+            // Index for tenant-based queries (Pattern 15: Multi-Tenancy)
+            entity.HasIndex(e => new { e.TenantId, e.ChangedAt })
+                .HasDatabaseName("IX_AuditLog_Tenant");
         });
     }
 }

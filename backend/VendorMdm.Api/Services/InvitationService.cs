@@ -119,25 +119,38 @@ public class InvitationService : IInvitationService
         var token = GenerateSecureToken();
         var expiresAt = DateTime.UtcNow.AddDays(request.ExpirationDays);
 
+        // ONTOLOGY-DRIVEN LOGIC
+        // 1. Create the Concept (Domain Object)
+        var vendorConcept = new VendorMdm.Shared.Ontology.Concepts.VendorConcept(
+            request.VendorLegalName, 
+            request.VendorType, 
+            "InvitationService");
+
+        // 2. Validate State
+        var validation = vendorConcept.ValidateState();
+        if (validation.IsFailure)
+        {
+             throw new InvalidOperationException($"Ontology Validation Failed: {validation.Error}");
+        }
+
         var invitation = new VendorInvitation
         {
-            Id = Guid.NewGuid(),
-            InvitationToken = token,
+            VendorType = request.VendorType,
             VendorLegalName = request.VendorLegalName,
             PrimaryContactEmail = request.PrimaryContactEmail,
-            InvitedBy = invitedBy,
-            InvitedByName = invitedByName,
-            ExpiresAt = expiresAt,
-            VendorType = request.VendorType,
             AccountGroup = !string.IsNullOrEmpty(request.AccountGroup) 
                 ? request.AccountGroup 
-                : MapVendorTypeToAccountGroup(request.VendorType),
-            Status = InvitationStatus.Pending,
-            Notes = request.Notes,
-            CreatedAt = DateTime.UtcNow
+                : vendorConcept.AccountGroup, // Use Ontology Logic
+            InvitationToken = token,
+            ExpiresAt = expiresAt,
+            Status = "Pending",
+            InvitedBy = invitedBy,
+            InvitedByName = invitedByName,
+            CreatedAt = DateTime.UtcNow,
+            Attributes = "{}" 
         };
 
-        // Initialize Attributes with internal data
+        // Restore Attributes Logic
         var initialAttributes = new Dictionary<string, object>();
         if (!string.IsNullOrEmpty(request.Currency)) initialAttributes["Currency"] = request.Currency;
         if (!string.IsNullOrEmpty(request.SapLanguage)) initialAttributes["SapLanguage"] = request.SapLanguage;
@@ -147,7 +160,7 @@ public class InvitationService : IInvitationService
         
         if (initialAttributes.Any())
         {
-            invitation.Attributes = JsonSerializer.Serialize(initialAttributes);
+            invitation.Attributes = System.Text.Json.JsonSerializer.Serialize(initialAttributes);
         }
 
         _context.VendorInvitations.Add(invitation);

@@ -7,6 +7,7 @@ using VendorMdm.Shared.Models;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace VendorMdm.Api.Controllers;
 
@@ -139,6 +140,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("magic-link")]
     [AllowAnonymous]
+    [EnableRateLimiting("anonymous")]
     public async Task<IActionResult> SendMagicLink([FromBody] MagicLinkRequest request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -162,6 +164,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("verify-magic-link")]
     [AllowAnonymous]
+    [EnableRateLimiting("anonymous")]
     public async Task<IActionResult> VerifyMagicLink([FromBody] VerifyMagicLinkRequest request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.MagicLinkToken == request.Token);
@@ -182,6 +185,7 @@ public class AuthController : ControllerBase
 
     [HttpPost("login-local")]
     [AllowAnonymous]
+    [EnableRateLimiting("anonymous")]
     public async Task<IActionResult> LoginLocal([FromBody] LoginRequest request)
     {
         var input = request.Email.Trim();
@@ -206,6 +210,7 @@ public class AuthController : ControllerBase
     // Reusing Login2fa but ensuring it checks user is allowed
     [HttpPost("login-2fa")]
     [AllowAnonymous]
+    [EnableRateLimiting("anonymous")]
     public async Task<IActionResult> Login2fa([FromBody] Login2faRequest request)
     {
         var input = request.Email.Trim();
@@ -303,7 +308,8 @@ public class AuthController : ControllerBase
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.Username)
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim("iat", DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64) // Issued at
         };
         
         foreach(var role in user.Roles)
@@ -314,11 +320,14 @@ public class AuthController : ControllerBase
         var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("THIS_IS_A_DEV_SECRET_KEY_REPLACE_IN_PROD_12345"));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        // SECURITY: 15-minute sliding expiration (Pattern 7: Zero-Trust Security)
+        // Tokens expire after 15 minutes of inactivity
+        // Frontend must refresh token before expiration
         var token = new JwtSecurityToken(
             issuer: "VendorMDM",
             audience: "VendorMDM",
             claims: claims,
-            expires: DateTime.Now.AddDays(1),
+            expires: DateTime.UtcNow.AddMinutes(15), // Changed from AddDays(1) to AddMinutes(15)
             signingCredentials: creds
         );
 

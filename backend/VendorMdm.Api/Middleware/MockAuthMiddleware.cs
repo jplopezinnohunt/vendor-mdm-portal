@@ -33,6 +33,7 @@ public class MockAuthMiddleware
                     {
                         new Claim(ClaimTypes.Name, $"Mock {mockUserHeader}"),
                         new Claim(ClaimTypes.NameIdentifier, $"mock-{mockUserHeader.ToLower()}-001"),
+                        new Claim(ClaimTypes.Email, $"mock.{mockUserHeader.ToLower()}@example.com"), // Add Email claim
                         // Add specific roles
                         new Claim(ClaimTypes.Role, mockUserHeader)
                     };

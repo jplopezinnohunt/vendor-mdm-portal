@@ -71,3 +71,35 @@ You are required to load and apply the following detailed standards based on the
 - **Hygiene**: Pinned dependencies, `no-any` TypeScript, mandatory verification scripts with auth headers.
 - **Observability**: `traceparent` propagation + `TraceId` UI overlays.
 - **Simulation**: [SIMULATION MODE] logs for all external mocks.
+
+---
+
+## 6. The Architecture DNA (Micro-App Standard)
+**Status**: MANDATORY for all new features.
+
+1.  **The Ontology Rule**: Business Logic MUST exist in `VendorMdm.Shared/Ontology/Concepts`. Services are merely coordinators.
+2.  **The Core Framework**: Apps MUST depend on `VendorMdm.Core.Framework` for base interfaces (`IOntologyConcept`, `IUserContext`).
+3.  **App-Scoped Security**: Authorization MUST be Context-Aware. `IUserContext.HasRoleForApp` is the only valid check.
+4.  **No Entity Leaks**: APIs MUST return DTOs (`Shared.Contracts`). Returning SQL Entities is FORBIDDEN.
+5.  **Observability**: Every Concept MUST implement `GetFunctionalLogs()`. Traceability from API -> Concept -> DB is required.
+
+---
+
+## 7. Security High Standards (The Iron Dome)
+**Status**: ZERO TOLERANCE for violations.
+
+### A. Authentication & Session
+-   **No Hardcoded Secrets**: All keys MUST come from KeyVault (Prod) or UserSecrets (Dev).
+-   **Signed Impersonation**: Impersonation cookies/tokens MUST be cryptographically signed.
+-   **Session Lifetime**: MUST be Configurable (Admin Parameter). Default: **15 Minutes** (Sliding).
+-   **Ghost User Block**: Users present in Azure AD but missing from DB MUST be blocked in Production.
+
+### B. Network & Transport
+-   **Strict Headers**: `HSTS` (Strict-Transport-Security), `CSP` (Content-Security-Policy), and `X-Frame-Options: DENY` are MANDATORY.
+-   **CORS Strictness**: Production CORS MUST be restricted to the specific `App:BaseUrl`. NO Localhost allowed in Prod.
+-   **Rate Limiting**: All Public (`AllowAnonymous`) endpoints MUST have IP-based Rate Limiting (5 req/min).
+
+### C. Input Hygiene
+-   **Anti-XSS**: All DTO strings MUST be sanitized (`IInputSanitizer`) before reaching the Domain Layer.
+-   **DTO Enforcement**: Never accept raw JSONB or Entity objects from the client.
+
