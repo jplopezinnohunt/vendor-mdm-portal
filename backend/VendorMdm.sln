@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VendorMdm.Shared", "VendorM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VendorMdm.Api.Tests", "VendorMdm.Api.Tests\VendorMdm.Api.Tests.csproj", "{3980EE1F-9472-4801-A7CD-9D5A43F48448}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VendorMdm.Core.Framework", "VendorMdm.Core.Framework\VendorMdm.Core.Framework.csproj", "{13AEDA9A-E95D-4C6E-9FD7-984E35AD3980}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VendorMdm.Infrastructure", "VendorMdm.Infrastructure\VendorMdm.Infrastructure.csproj", "{4F32E72A-0D98-48CB-9116-A292BAE34122}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +40,13 @@ Global
 		{3980EE1F-9472-4801-A7CD-9D5A43F48448}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3980EE1F-9472-4801-A7CD-9D5A43F48448}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3980EE1F-9472-4801-A7CD-9D5A43F48448}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13AEDA9A-E95D-4C6E-9FD7-984E35AD3980}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13AEDA9A-E95D-4C6E-9FD7-984E35AD3980}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13AEDA9A-E95D-4C6E-9FD7-984E35AD3980}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13AEDA9A-E95D-4C6E-9FD7-984E35AD3980}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4F32E72A-0D98-48CB-9116-A292BAE34122}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4F32E72A-0D98-48CB-9116-A292BAE34122}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4F32E72A-0D98-48CB-9116-A292BAE34122}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4F32E72A-0D98-48CB-9116-A292BAE34122}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

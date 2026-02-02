@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
+using Microsoft.AspNetCore.RateLimiting;
 using VendorMdm.Shared.Models;
 
 namespace VendorMdm.Api.Controllers;
@@ -19,8 +20,9 @@ public class AuthDiscoveryController : ControllerBase
         _configuration = configuration;
     }
 
-    [HttpPost("lookup")]
+    [HttpGet("discover")] // Changed from Post("lookup") to Get("discover")
     [AllowAnonymous]
+    [EnableRateLimiting("anonymous")] // Added EnableRateLimiting attribute
 
     public async Task<IActionResult> LookupUser([FromBody] LookupRequest request)
     {

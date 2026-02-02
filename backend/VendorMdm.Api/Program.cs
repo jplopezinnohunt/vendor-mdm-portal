@@ -17,6 +17,8 @@ using Microsoft.AspNetCore.Authentication;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.IdentityModel.Tokens; // For SecurityTokenExpiredException
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +69,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// --- RATE LIMITING (Zero-Trust Security) ---
+// Protects anonymous endpoints from brute-force attacks (5 req/min per IP)
+builder.Services.AddRateLimiter(_ => _
+    .AddFixedWindowLimiter(policyName: "anonymous", options =>
+    {
+        options.PermitLimit = 5;
+        options.Window = TimeSpan.FromMinutes(1);
+        options.QueueProcessingOrder = System.Threading.RateLimiting.QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0; // No queuing, reject immediately
+    }));
+
 // --- OBSERVABILITY (Rule 1) ---
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracing => tracing
@@ -96,12 +109,27 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuer = true,
         ValidateAudience = true,
-        ValidateLifetime = true,
+        ValidateLifetime = true, // CRITICAL: Validate token expiration
+        ClockSkew = TimeSpan.Zero, // No tolerance for expired tokens
         ValidateIssuerSigningKey = true,
         ValidIssuer = "VendorMDM",
         ValidAudience = "VendorMDM",
         IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
             System.Text.Encoding.UTF8.GetBytes("THIS_IS_A_DEV_SECRET_KEY_REPLACE_IN_PROD_12345"))
+    };
+    
+    // Session expiration events
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
+        {
+            if (context.Exception is SecurityTokenExpiredException)
+            {
+                context.Response.Headers.Append("Token-Expired", "true");
+                context.Response.StatusCode = 401;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -283,6 +311,20 @@ builder.Services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
 builder.Services.AddHttpClient(); // For EmailService HTTP client
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IInvitationService, InvitationService>();
+
+// Pattern 16: Audit Trail
+builder.Services.AddScoped<AuditInterceptor>();
+builder.Services.AddScoped<ITemporalQueryService, TemporalQueryService>();
+
+// Pattern 17: GDPR Privacy & Masking
+builder.Services.AddScoped<IDataMaskingService, DataMaskingService>();
+builder.Services.AddScoped<IFieldEncryptionService, FieldEncryptionService>();
+
+// Pattern 15: Multi-Tenancy
+builder.Services.AddScoped<ITenantContext, TenantContext>();
+
+// Pattern 18: Multilanguage/i18n
+builder.Services.AddScoped<ILocalizationService, LocalizationService>();
 builder.Services.AddApplicationInsightsTelemetry();
 
 // Canonical Model Services - External System Integration
@@ -444,6 +486,7 @@ if (!string.IsNullOrEmpty(azureAdClientId))
 {
     app.UseAuthentication();
     app.UseMiddleware<ImpersonationMiddleware>();
+    app.UseGhostUserBlocking(); // Block ghost users in Production
 }
 
 // 2026-01-10: Support Mock Auth Header in Local Dev
@@ -452,6 +495,7 @@ if (app.Environment.IsDevelopment())
     app.UseMiddleware<MockAuthMiddleware>();
 }
 
+app.UseRateLimiter(); // Rate limiting (before authorization)
 app.UseAuthorization();
 app.MapControllers();
 

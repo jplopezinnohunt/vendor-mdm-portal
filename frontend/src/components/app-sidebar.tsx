@@ -35,17 +35,15 @@ const VENDOR_NAV = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'My Reviews', href: '/requests', icon: FileText },
     { name: 'My Profile', href: '/profile', icon: User },
-    { name: 'Security Settings', href: '/account', icon: Settings },
 ];
 
 const APPROVER_NAV = [
     { name: 'My Worklist', href: '/approver/worklist', icon: ClipboardList },
-    { name: 'Request History', href: '/approver/history', icon: FileText },
     { name: 'Invite Vendor', href: '/approver/invite-vendor', icon: Mail },
+    { name: 'Event Management', href: '/events', icon: Calendar },
     { name: 'Create Vendor', href: '/approver/create-vendor', icon: UserPlus },
     { name: 'Update Vendor', href: '/approver/select-vendor', icon: FileText },
-    { name: 'Event Management', href: '/events', icon: Calendar },
-    { name: 'My Account', href: '/account', icon: User },
+    { name: 'Request History', href: '/approver/history', icon: FileText },
 ];
 
 const ADMIN_NAV = [
@@ -55,7 +53,6 @@ const ADMIN_NAV = [
     { name: 'Workflow Rules', href: '/admin/rules', icon: Settings },
     { name: 'Audit Logs', href: '/admin/audit', icon: ShieldAlert },
     { name: 'Branching Strategy', href: '/admin/strategy', icon: GitBranch },
-    { name: 'My Account', href: '/account', icon: User },
 ];
 
 export function AppSidebar() {
