@@ -37,6 +37,19 @@ public class Vendor : CanonicalEntityBase
     [MaxLength(255)]
     public string PrimaryContactEmail { get; set; } = string.Empty;
     
+    /// <summary>
+    /// Pattern 15: Multi-Tenancy - Tenant/Agency ID (e.g., UNDP, UNICEF, WHO).
+    /// Null for global/shared vendors.
+    /// </summary>
+    public Guid? TenantId { get; set; }
+    
+    /// <summary>
+    /// Pattern 14: Data Residency - Geographic region for data storage compliance.
+    /// Values: "EU", "US", "APAC", "GLOBAL"
+    /// </summary>
+    [MaxLength(20)]
+    public string DataResidencyRegion { get; set; } = "GLOBAL";
+    
     // Inherited from CanonicalEntityBase:
     // - Id (UUID)
     // - EntityVersion (int)

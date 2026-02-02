@@ -194,7 +194,11 @@ const App: React.FC = () => {
             } />
 
             {/* SHARED ROUTES */}
-            <Route path="account" element={<UserAccount />} />
+            <Route path="account" element={
+              <ProtectedRoute>
+                <UserAccount />
+              </ProtectedRoute>
+            } />
 
           </Route>
 

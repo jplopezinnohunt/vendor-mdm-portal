@@ -17,6 +17,15 @@ The platform follows a strict **Hexagonal Architecture (Ports & Adapters)** patt
     -   MUST NOT contain external system IDs (e.g., `LIFNR`).
     -   MUST be compile-able independently of the API or Database.
 
+### 2.1.2 Domain Ontology (The "World Model")
+- **Location**: `backend/VendorMdm.Shared/Ontology/`
+- **Responsibility**: The executable definition of what exists (Concepts) and how it behaves.
+- **Role**:
+    -   **Concepts**: Classes implementing `IOntologyConcept` (e.g., `Vendor`, `Contract`).
+    -   **Rules**: Logic that holds true regardless of persistence (e.g., `IsEligibleForInvitation`).
+    -   **Origin Contexts**: Enums defining how an entity came to be (`Direct`, `Event`, `Migration`).
+-   **Usage**: Services MUST delegate decision-making to this layer. `Service` -> `Ontology` -> `Result`.
+
 ### 2.2 Inbound Port (API Layer)
 - **Location**: `backend/VendorMdm.Api/Controllers/`
 - **Responsibility**: Contract-first REST APIs.
