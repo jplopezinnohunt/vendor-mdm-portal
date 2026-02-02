@@ -50,7 +50,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Attachments");
+                    b.ToTable("Attachments", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.AuditLog", b =>
@@ -115,7 +115,7 @@ namespace VendorMdm.Api.Migrations
                     b.HasIndex("EntityType", "EntityId", "ChangedAt")
                         .HasDatabaseName("IX_AuditLog_Entity");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.ChangeRequest", b =>
@@ -149,7 +149,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChangeRequests");
+                    b.ToTable("ChangeRequests", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.ChangeRequestCanonical", b =>
@@ -202,7 +202,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("VendorId");
 
-                    b.ToTable("ChangeRequestsCanonical");
+                    b.ToTable("ChangeRequestsCanonical", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.Customer", b =>
@@ -260,7 +260,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("TaxId");
 
-                    b.ToTable("Customers");
+                    b.ToTable("Customers", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.Employee", b =>
@@ -324,7 +324,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("Employees");
+                    b.ToTable("Employees", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.Event", b =>
@@ -369,7 +369,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.EventParticipant", b =>
@@ -412,7 +412,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("EventParticipants");
+                    b.ToTable("EventParticipants", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.ExternalSystemMapping", b =>
@@ -459,7 +459,7 @@ namespace VendorMdm.Api.Migrations
                         .IsUnique()
                         .HasDatabaseName("IX_ExternalSystemMapping_Unique");
 
-                    b.ToTable("ExternalSystemMappings");
+                    b.ToTable("ExternalSystemMappings", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.Fund", b =>
@@ -516,7 +516,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("FundCode");
 
-                    b.ToTable("Funds");
+                    b.ToTable("Funds", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.Project", b =>
@@ -575,7 +575,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("ProjectCode");
 
-                    b.ToTable("Projects");
+                    b.ToTable("Projects", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.SapEnvironment", b =>
@@ -590,7 +590,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("EnvironmentCode");
 
-                    b.ToTable("SapEnvironments");
+                    b.ToTable("SapEnvironments", (string)null);
 
                     b.HasData(
                         new
@@ -714,7 +714,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("Username");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.UserRole", b =>
@@ -739,7 +739,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("UsersAndRoles");
+                    b.ToTable("UsersAndRoles", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.Vendor", b =>
@@ -756,11 +756,6 @@ namespace VendorMdm.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("{}");
-
-                    b.Property<string>("DataResidencyRegion")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<int>("EntityVersion")
                         .HasColumnType("int");
@@ -794,9 +789,6 @@ namespace VendorMdm.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<Guid?>("TenantId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -810,7 +802,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("Vendors");
+                    b.ToTable("Vendors", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.VendorApplication", b =>
@@ -863,7 +855,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("VendorApplications");
+                    b.ToTable("VendorApplications", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.VendorInvitation", b =>
@@ -959,7 +951,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("VendorInvitations");
+                    b.ToTable("VendorInvitations", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.VendorInvitationCanonical", b =>
@@ -1041,7 +1033,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("VendorInvitationsCanonical");
+                    b.ToTable("VendorInvitationsCanonical", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.WorkflowAction", b =>
@@ -1107,7 +1099,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("WorkflowStepId");
 
-                    b.ToTable("WorkflowActions");
+                    b.ToTable("WorkflowActions", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.WorkflowDefinition", b =>
@@ -1170,7 +1162,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("WorkflowDefinitions");
+                    b.ToTable("WorkflowDefinitions", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.WorkflowFieldDefinition", b =>
@@ -1245,7 +1237,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("WorkflowStepId");
 
-                    b.ToTable("WorkflowFieldDefinitions");
+                    b.ToTable("WorkflowFieldDefinitions", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.WorkflowRoleBinding", b =>
@@ -1301,7 +1293,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("WorkflowStepId");
 
-                    b.ToTable("WorkflowRoleBindings");
+                    b.ToTable("WorkflowRoleBindings", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.WorkflowState", b =>
@@ -1322,7 +1314,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasKey("StateName");
 
-                    b.ToTable("WorkflowStates");
+                    b.ToTable("WorkflowStates", (string)null);
 
                     b.HasData(
                         new
@@ -1410,7 +1402,7 @@ namespace VendorMdm.Api.Migrations
 
                     b.HasIndex("WorkflowDefinitionId");
 
-                    b.ToTable("WorkflowSteps");
+                    b.ToTable("WorkflowSteps", (string)null);
                 });
 
             modelBuilder.Entity("VendorMdm.Shared.Models.WorkflowAction", b =>
