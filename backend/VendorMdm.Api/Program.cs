@@ -315,6 +315,7 @@ builder.Services.AddScoped<IInvitationService, InvitationService>();
 // Pattern 16: Audit Trail
 builder.Services.AddScoped<AuditInterceptor>();
 builder.Services.AddScoped<ITemporalQueryService, TemporalQueryService>();
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // Pattern 17: GDPR Privacy & Masking
 builder.Services.AddScoped<IDataMaskingService, DataMaskingService>();
