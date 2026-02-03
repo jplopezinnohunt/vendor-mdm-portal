@@ -234,7 +234,7 @@ public class InvitationService : IInvitationService
         {
             IsValid = true,
             InvitationId = invitation.Id,
-            VendorName = invitation.VendorLegalName,
+            VendorLegalName = invitation.VendorLegalName,
             PrimaryContactEmail = invitation.PrimaryContactEmail,
             Status = invitation.Status,
             CurrentStage = invitation.CurrentStage
@@ -542,7 +542,7 @@ public class InvitationService : IInvitationService
         // E. DIRECT EMAIL (Sync fallback/priority)
         var emailData = new InvitationEmailData
         {
-            InvitationId = invitation.Id,
+            InvitationId = invitation.Id.ToString(),
             VendorName = invitation.VendorLegalName,
             Email = invitation.PrimaryContactEmail,
             Token = invitation.InvitationToken,

@@ -34,6 +34,7 @@ public class CreateInvitationResponse
 public class ValidateInvitationResponse
 {
     public bool IsValid { get; set; }
+    public Guid? InvitationId { get; set; } // Added
     public string? ErrorMessage { get; set; }
     public string? VendorLegalName { get; set; }
     public string? PrimaryContactEmail { get; set; }
