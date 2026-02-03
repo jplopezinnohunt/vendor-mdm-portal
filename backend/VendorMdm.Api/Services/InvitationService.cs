@@ -147,7 +147,7 @@ public class InvitationService : IInvitationService
         // AUDIT LOG
         await _auditLog.LogAsync(
             entityType: "VendorInvitation", 
-            entityId: invitation.Id, 
+            entityId: invitation.Id.ToString(), 
             action: "Created", 
             oldValues: null, 
             newValues: request, 
@@ -195,7 +195,7 @@ public class InvitationService : IInvitationService
         return new CreateInvitationResponse
         {
             InvitationId = invitation.Id,
-            Token = invitation.InvitationToken,
+            InvitationToken = invitation.InvitationToken,
             ExpiresAt = invitation.ExpiresAt,
             EmailSent = emailSuccess
         };
@@ -451,7 +451,7 @@ public class InvitationService : IInvitationService
         // ✅ AUDIT LOG: Log invitation completion
         await _auditLog.LogAsync(
             entityType: "VendorInvitation",
-            entityId: invitation.Id,
+            entityId: invitation.Id.ToString(),
             action: "Completed",
             oldValues: new { Status = previousStatus },
             newValues: new { 
