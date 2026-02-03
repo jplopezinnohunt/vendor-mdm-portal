@@ -66,3 +66,176 @@ Follow this strict process for every non-trivial task.
 
 1. **Check Drift**: Compare local Bicep vs Azure Portal (if infra).
 2. **Deploy**: Run the approved deployment command.
+
+---
+
+## Feature Completeness Checklist
+
+Before marking a feature as "done", verify ALL items below:
+
+### Backend Checklist
+
+- [ ] **API Endpoints Implemented**
+  - All endpoints defined in spec are implemented
+  - Correct HTTP methods (GET, POST, PUT, DELETE)
+  - Proper route naming and versioning
+
+- [ ] **Error Handling Complete**
+  - Try/catch blocks around all async operations
+  - Proper HTTP status codes (400, 404, 500)
+  - Meaningful error messages returned
+  - Errors logged for debugging
+
+- [ ] **Validation Implemented**
+  - Input validation on all endpoints
+  - DTO validation with data annotations
+  - Business rule validation
+  - Proper validation error messages
+
+- [ ] **Tests Written** (if applicable)
+  - Unit tests for business logic
+  - Integration tests for API endpoints
+  - Test coverage > 70%
+
+- [ ] **Swagger Documentation Updated**
+  - Endpoints documented with XML comments
+  - Request/response examples provided
+  - Authentication requirements documented
+
+### Frontend Checklist
+
+- [ ] **UI Components Implemented**
+  - All screens/components from spec are built
+  - Follows UI design standards
+  - Responsive design (mobile, tablet, desktop)
+  - Dark mode supported
+
+- [ ] **Error Handling Complete**
+  - Try/catch around ALL async operations
+  - 10-second timeout on ALL API calls
+  - Error messages displayed to user
+  - Error messages are dismissible
+
+- [ ] **Loading States Implemented**
+  - Loading spinner during async operations
+  - Buttons disabled during submission
+  - Skeleton screens for initial load
+  - Loading text is descriptive
+
+- [ ] **Success/Error Messages Implemented**
+  - Success message on completion (green banner)
+  - Error message on failure (red banner)
+  - Messages auto-dismiss (success) or manually dismissible (error)
+  - Retry button when applicable
+
+- [ ] **Empty States Implemented**
+  - Empty state when no data
+  - Relevant icon and message
+  - CTA button when applicable
+  - Helpful description
+
+- [ ] **Responsive Design Verified**
+  - Works on mobile (< 640px)
+  - Works on tablet (640-1024px)
+  - Works on desktop (> 1024px)
+  - Touch targets 44x44px minimum
+
+### Integration Checklist
+
+- [ ] **Backend + Frontend Tested Together**
+  - API calls work from frontend
+  - Data flows correctly
+  - Error handling works end-to-end
+  - Success paths verified
+
+- [ ] **CORS Configured**
+  - Frontend can call backend
+  - No CORS errors in console
+  - Proper headers configured
+
+- [ ] **Authentication Works**
+  - Login flow functional
+  - Protected routes work
+  - Session management correct
+  - Logout works
+
+- [ ] **Authorization Works**
+  - Role-based access control
+  - Permissions enforced
+  - Unauthorized access blocked
+
+### Deployment Checklist
+
+- [ ] **Builds Locally (0 errors)**
+  - Backend builds successfully
+  - Frontend builds successfully
+  - No TypeScript errors
+  - No C# errors
+
+- [ ] **Migrations < 50KB**
+  - All migrations under 50KB
+  - Migrations tested locally
+  - Migrations tested in Azure DEV
+
+- [ ] **Deployed to DEV**
+  - Code pushed to develop branch
+  - GitHub Actions successful
+  - Deployment verified
+
+- [ ] **Verified in DEV**
+  - Feature works in DEV environment
+  - No console errors
+  - No API errors
+  - Critical paths tested
+
+- [ ] **Ready for PROD**
+  - All checklists complete
+  - User acceptance obtained
+  - Release notes prepared
+
+### Agent Behavior
+
+**Before Marking Feature as Done**:
+1. ✅ Review this checklist
+2. ✅ Verify ALL applicable items are complete
+3. ✅ Report completion status to user
+4. ✅ Highlight any incomplete items
+5. ✅ Create issues for deferred items
+
+**Reporting Format**:
+```
+✅ Feature Completeness Report
+
+Backend: 6/6 ✅
+Frontend: 5/5 ✅
+Integration: 4/4 ✅
+Deployment: 5/5 ✅
+
+TOTAL: 20/20 ✅ READY FOR PRODUCTION
+
+Deferred Items: None
+```
+
+**If Incomplete**:
+```
+⚠️ Feature Completeness Report
+
+Backend: 5/6 ⚠️
+  ❌ Swagger documentation missing
+
+Frontend: 5/5 ✅
+Integration: 4/4 ✅
+Deployment: 4/5 ⚠️
+  ❌ Not yet deployed to DEV
+
+TOTAL: 18/20 ⚠️ NOT READY
+
+Action Required:
+1. Add Swagger documentation
+2. Deploy to DEV and verify
+```
+
+**Agent MUST NOT**:
+- ❌ Mark feature as done if checklist incomplete
+- ❌ Skip items without user approval
+- ❌ Deploy to PROD with incomplete checklist

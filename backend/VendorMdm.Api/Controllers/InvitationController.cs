@@ -77,37 +77,8 @@ public class InvitationController : ControllerBase
     {
         try
         {
-            var query = _context.VendorInvitations.AsQueryable();
-            var totalCount = await _context.VendorInvitations.CountAsync();
-            _logger.LogInformation("ListInvitations called. Total invitations in DB: {Count}. Status filter: {Status}", totalCount, status);
-
-            // Filter by status if provided
-            if (!string.IsNullOrEmpty(status))
-            {
-                query = query.Where(i => i.Status == status);
-            }
-
-            var invitations = await query
-                .OrderByDescending(i => i.CreatedAt)
-                .Select(i => new
-                {
-                    id = i.Id,
-                    vendorLegalName = i.VendorLegalName,
-                    primaryContactEmail = i.PrimaryContactEmail,
-                    status = i.Status,
-                    invitedByName = i.InvitedByName,
-                    createdAt = i.CreatedAt,
-                    expiresAt = i.ExpiresAt,
-                    vendorType = i.VendorType,
-                    accountGroup = i.AccountGroup,
-                    vendorApplicationId = i.VendorApplicationId,
-                    currentStage = i.CurrentStage,
-                    // Check attributes for email failure flag
-                    emailSent = i.Attributes != null && !i.Attributes.Contains("\"emailSent\":false") // Simple check avoids full parsing for list
-                })
-                .ToListAsync();
-
-            return Ok(new { invitations });
+            var result = await _invitationService.GetInvitationsAsync(1, 100, status); // Default limits for now
+            return Ok(new { invitations = result.Invitations });
         }
         catch (Exception ex)
         {

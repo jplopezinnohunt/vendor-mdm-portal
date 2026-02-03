@@ -257,7 +257,249 @@ Layout.tsx           → Page structure (CSS Grid)
 
 ---
 
-## 6. Quality Checklist
+## 6. Error Handling & User Feedback (MANDATORY)
+
+**Philosophy**: "Silent failures destroy user trust. Every action must have visible feedback."
+
+### The Mandatory Pattern
+
+ALL async operations MUST implement these 4 components:
+
+#### 1. Try/Catch Block (Required)
+```typescript
+// ✅ CORRECT: Comprehensive error handling
+const handleSubmit = async () => {
+  setError(null);
+  setLoading(true);
+  
+  try {
+    await apiCall();
+    setSuccess('Operation successful!');
+  } catch (err: any) {
+    console.error('Operation failed:', err);
+    setError(err.message || 'Operation failed. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+// ❌ WRONG: No error handling
+const handleSubmit = async () => {
+  await apiCall();
+  setSuccess('Done!');
+};
+```
+
+#### 2. Timeout Protection (Required - 10 seconds default)
+```typescript
+// ✅ CORRECT: Timeout protection
+const loadData = async () => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
+  try {
+    const data = await apiCall({ signal: controller.signal });
+    clearTimeout(timeoutId);
+    setData(data);
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      setError('Request timed out. Please check your connection.');
+    } else {
+      setError(err.message);
+    }
+  }
+};
+
+// ❌ WRONG: No timeout - can hang forever
+const loadData = async () => {
+  const data = await apiCall();
+  setData(data);
+};
+```
+
+#### 3. Loading State (Required)
+```typescript
+// ✅ CORRECT: Visible loading state
+const [loading, setLoading] = useState(false);
+
+return (
+  <Button onClick={handleSubmit} disabled={loading}>
+    {loading ? (
+      <>
+        <Spinner className="mr-2" />
+        Saving...
+      </>
+    ) : 'Save'}
+  </Button>
+);
+
+// ❌ WRONG: No loading indicator
+return <Button onClick={handleSubmit}>Save</Button>;
+```
+
+#### 4. User Feedback (Required)
+```typescript
+// ✅ CORRECT: Success and error messages
+const [success, setSuccess] = useState<string | null>(null);
+const [error, setError] = useState<string | null>(null);
+
+return (
+  <>
+    {success && (
+      <div className="bg-green-50 p-4 rounded-md">
+        <p className="text-green-800">{success}</p>
+      </div>
+    )}
+    
+    {error && (
+      <div className="bg-red-50 p-4 rounded-md">
+        <p className="text-red-800">{error}</p>
+        <button onClick={() => setError(null)}>Dismiss</button>
+      </div>
+    )}
+  </>
+);
+
+// ❌ WRONG: Silent success/failure
+// User has no idea if operation succeeded
+```
+
+### Visual Feedback Standards
+
+#### Success Messages
+- **Color**: Green (`bg-green-50`, `text-green-800`)
+- **Icon**: Checkmark (`✓`)
+- **Duration**: Auto-dismiss after 5 seconds
+- **Dismissible**: Yes (X button)
+
+```tsx
+<div className="rounded-md bg-green-50 p-4">
+  <div className="flex">
+    <CheckCircleIcon className="h-5 w-5 text-green-400" />
+    <div className="ml-3">
+      <p className="text-sm font-medium text-green-800">
+        {successMessage}
+      </p>
+    </div>
+    <button onClick={dismiss} className="ml-auto">
+      <XMarkIcon className="h-5 w-5 text-green-500" />
+    </button>
+  </div>
+</div>
+```
+
+#### Error Messages
+- **Color**: Red (`bg-red-50`, `text-red-800`)
+- **Icon**: X or Alert (`⚠`)
+- **Duration**: Manual dismiss only
+- **Dismissible**: Yes (required)
+- **Retry**: Include retry button when applicable
+
+```tsx
+<div className="rounded-md bg-red-50 p-4">
+  <div className="flex">
+    <XCircleIcon className="h-5 w-5 text-red-400" />
+    <div className="ml-3 flex-1">
+      <p className="text-sm font-medium text-red-800">{error}</p>
+      <button onClick={retry} className="mt-2 text-sm text-red-600">
+        Retry
+      </button>
+    </div>
+  </div>
+</div>
+```
+
+#### Loading States
+- **Spinner**: Animated spinner icon
+- **Text**: Descriptive ("Loading...", "Saving...", "Creating...")
+- **Disable**: Disable buttons during loading
+- **Skeleton**: Use skeleton screens for initial page load
+
+```tsx
+{loading ? (
+  <div className="flex items-center justify-center py-12">
+    <Spinner className="h-8 w-8 text-brand-600" />
+    <p className="ml-3 text-sm text-gray-500">Loading data...</p>
+  </div>
+) : (
+  <DataTable data={data} />
+)}
+```
+
+#### Empty States
+- **Icon**: Relevant icon (no data, no results)
+- **Message**: Clear explanation ("No events yet")
+- **Action**: CTA button when applicable ("Create Event")
+
+```tsx
+{data.length === 0 && (
+  <div className="text-center py-12">
+    <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
+    <h3 className="mt-2 text-sm font-medium text-gray-900">No events</h3>
+    <p className="mt-1 text-sm text-gray-500">
+      Get started by creating a new event.
+    </p>
+    <Button onClick={onCreate} className="mt-6">
+      Create Event
+    </Button>
+  </div>
+)}
+```
+
+### FORBIDDEN Patterns
+
+❌ **Silent Failures**:
+```typescript
+// NEVER DO THIS
+const handleCreate = async () => {
+  await createEvent(data);
+  closeModal();
+};
+// User has no idea if it succeeded or failed!
+```
+
+❌ **Infinite Loading**:
+```typescript
+// NEVER DO THIS
+const loadData = async () => {
+  setLoading(true);
+  await fetchData(); // No timeout - can hang forever
+  setLoading(false);
+};
+```
+
+❌ **Missing Error Handling**:
+```typescript
+// NEVER DO THIS
+const handleSubmit = async () => {
+  const result = await apiCall();
+  setData(result);
+};
+// If apiCall fails, app crashes or shows blank screen
+```
+
+### Agent Behavior
+
+When implementing UI components, the agent MUST:
+1. ✅ Add try/catch to ALL async operations
+2. ✅ Implement 10-second timeout for ALL API calls
+3. ✅ Show loading state during operations
+4. ✅ Display success message on completion
+5. ✅ Display error message on failure
+6. ✅ Implement empty state when no data
+7. ✅ Make error messages dismissible
+8. ✅ Include retry button when applicable
+
+**Verification**: Before committing UI code, agent must verify:
+- [ ] All async calls have try/catch
+- [ ] All API calls have timeout
+- [ ] Loading states are visible
+- [ ] Success/error messages are implemented
+- [ ] Empty states are implemented
+
+---
+
+## 7. Quality Checklist
 
 Before shipping any UI component, verify:
 

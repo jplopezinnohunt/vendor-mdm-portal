@@ -34,12 +34,14 @@ public class CreateInvitationResponse
 public class ValidateInvitationResponse
 {
     public bool IsValid { get; set; }
+    public Guid? InvitationId { get; set; } // Added
     public string? ErrorMessage { get; set; }
     public string? VendorLegalName { get; set; }
     public string? PrimaryContactEmail { get; set; }
     public string? VendorType { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public string? CurrentStage { get; set; }
+    public string? Status { get; set; } // Added Status
     public Dictionary<string, object> Attributes { get; set; } = new();
 }
 

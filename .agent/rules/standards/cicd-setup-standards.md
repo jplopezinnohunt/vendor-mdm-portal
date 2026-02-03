@@ -253,6 +253,92 @@ git revert <commit-sha>
 
 ---
 
+## 7. Post-Deployment Verification (MANDATORY)
+
+**CRITICAL**: Every deployment MUST be verified before considering it complete.
+
+### Verification Steps
+
+**1. Wait for Deployment** (5-10 minutes)
+- Monitor GitHub Actions workflow
+- Wait for "Success" status
+- Check deployment logs for errors
+
+**2. Run Verification Script**:
+```bash
+./scripts/verify-deployment.sh
+# Expected: ✓ DEPLOYMENT VERIFIED
+```
+
+**3. Manual Checks**:
+- [ ] Backend Swagger accessible
+- [ ] Frontend loads
+- [ ] Login works
+- [ ] Critical features functional
+- [ ] No console errors
+
+**4. Smoke Tests**:
+```bash
+# Backend health
+curl https://app-vendor-mdm-api-dev.azurewebsites.net/swagger
+
+# Frontend
+curl https://thankful-field-0258f8110.3.azurestaticapps.net/
+
+# Critical endpoint
+curl -H "Authorization: Bearer $TOKEN" \
+  https://app-vendor-mdm-api-dev.azurewebsites.net/api/vendors
+```
+
+### Rollback Plan
+
+**If Verification Fails**:
+1. **Immediate**: Revert commit
+   ```bash
+   git revert <commit-sha>
+   git push origin main
+   ```
+
+2. **Investigate**: Check logs
+   - GitHub Actions logs
+   - Azure App Service logs
+   - Browser console errors
+
+3. **Fix**: Address issue locally
+   - Test thoroughly
+   - Verify alignment
+   - Redeploy
+
+4. **Document**: Create issue
+   - What failed
+   - Why it failed
+   - How it was fixed
+
+### Agent Behavior
+
+**After Merge to Main**:
+1. ✅ Wait for deployment (monitor GitHub Actions)
+2. ✅ Run `verify-deployment.sh`
+3. ✅ Report deployment status to user
+4. ✅ Suggest rollback if verification fails
+5. ✅ Document any issues found
+
+**Verification Checklist**:
+- [ ] GitHub Actions shows "Success"
+- [ ] Backend API responds (200 OK)
+- [ ] Frontend loads (200 OK)
+- [ ] Swagger UI accessible
+- [ ] No 500 errors in logs
+- [ ] Critical features work
+
+**Failure Response**:
+- Agent MUST alert user immediately
+- Agent MUST suggest rollback
+- Agent MUST provide error details
+- Agent MUST NOT proceed with other work until resolved
+
+---
+
 ## Next Steps
 
 1. ✅ Add all required secrets to GitHub

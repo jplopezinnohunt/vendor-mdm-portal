@@ -27,7 +27,7 @@ namespace VendorMdm.Api.Tests.Ontology
             // Arrange
             var start = DateTime.UtcNow.AddDays(10);
             var end = DateTime.UtcNow.AddDays(5); // End before Start!
-            var evt = new EventConcept("Bad Event", start, end, "Test");
+            var evt = new EventConcept("Bad Event", "EVT001", "Conference", start, end, "TestUser", "Test");
 
             // Act
             var result = evt.ValidateState();

@@ -26,7 +26,7 @@ namespace VendorMdm.Infrastructure.Repositories
         public async Task<VendorInvitation?> GetByTokenAsync(string token)
         {
             return await _context.Set<VendorInvitation>()
-                .FirstOrDefaultAsync(i => i.Token == token);
+                .FirstOrDefaultAsync(i => i.InvitationToken == token);
         }
 
         public async Task<IEnumerable<VendorInvitation>> GetAllAsync()

@@ -88,3 +88,98 @@ The platform follows a strict **Hexagonal Architecture (Ports & Adapters)** patt
     4.  **Major Breaking Changes**: If a breaking change is required (e.g., renaming a core field), increment the Major Version (e.g., `v2.0.0`) and create a NEW Schema file.
     5.  **JSON Schema Repository**: Iterate schemas in `VendorMdm.Shared/Schemas/` (e.g., `vendor-v1.0.0.json`, `vendor-v1.1.0.json`).
     6.  **Event Propagation**: `DomainEvent` objects MUST include `SchemaVersion` to inform downstream consumers of the payload structure.
+
+## 7. Health Endpoints (MANDATORY)
+
+**REQUIREMENT**: Every service MUST implement health endpoints for monitoring and deployment verification.
+
+### Backend (ASP.NET Core)
+
+**Implementation**:
+```csharp
+// Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+// Add health checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<SqlDbContext>("database")
+    .AddCheck("ready", () => HealthCheckResult.Healthy());
+
+var app = builder.Build();
+
+// Map health endpoints
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready", new HealthCheckOptions {
+    Predicate = check => check.Tags.Contains("ready")
+});
+app.MapHealthChecks("/health/live", new HealthCheckOptions {
+    Predicate = check => check.Tags.Contains("live")
+});
+
+app.Run();
+```
+
+**Health Checks**:
+- **Database Connectivity**: Verify SQL connection
+- **External Service Availability**: Check SAP/Salesforce (if applicable)
+- **Disk Space**: Ensure sufficient storage
+- **Memory Usage**: Monitor memory consumption
+
+**Endpoints**:
+- `/health` - Overall health (200 = healthy, 503 = unhealthy)
+- `/health/ready` - Readiness probe (for Kubernetes/Azure)
+- `/health/live` - Liveness probe (for Kubernetes/Azure)
+
+**Response Format**:
+```json
+{
+  "status": "Healthy",
+  "totalDuration": "00:00:00.0123456",
+  "entries": {
+    "database": {
+      "status": "Healthy",
+      "duration": "00:00:00.0100000"
+    }
+  }
+}
+```
+
+### Frontend
+
+**Not Required**: Static assets don't need health endpoints
+
+**Version Info**: Provide version information at `/version.json`
+```json
+{
+  "version": "v1.0.1",
+  "commit": "d4c7204",
+  "branch": "main",
+  "buildDate": "2026-02-03T07:00:00Z"
+}
+```
+
+### Agent Behavior
+
+When creating new services, the agent MUST:
+1. ✅ Implement `/health` endpoint
+2. ✅ Add database connectivity check
+3. ✅ Add readiness probe (`/health/ready`)
+4. ✅ Add liveness probe (`/health/live`)
+5. ✅ Test health endpoints locally
+6. ✅ Verify health endpoints in deployment verification
+
+**Verification**:
+```bash
+# Test health endpoint
+curl https://app-vendor-mdm-api-dev.azurewebsites.net/health
+# Expected: {"status":"Healthy"}
+
+# Test readiness
+curl https://app-vendor-mdm-api-dev.azurewebsites.net/health/ready
+# Expected: {"status":"Healthy"}
+```
+
+**Deployment Verification**:
+- Agent MUST check `/health` endpoint after deployment
+- Agent MUST report health status to user
+- Agent MUST alert if health check fails

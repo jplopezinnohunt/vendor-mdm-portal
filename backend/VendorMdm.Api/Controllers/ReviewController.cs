@@ -67,21 +67,35 @@ public class ReviewController : ControllerBase
                 .ToListAsync();
 
             // Parse Attributes in memory
-            var pendingApps = pendingAppsRaw.Select(a => new
+            var pendingAppsList = pendingAppsRaw.Select(a => 
             {
-                a.Id,
-                a.CompanyName,
-                a.ContactName,
-                a.ContactEmail,
-                a.RegistrationType,
-                a.CreatedAt,
-                Attributes = string.IsNullOrEmpty(a.Attributes) 
-                    ? new Dictionary<string, object>() 
-                    : JsonSerializer.Deserialize<Dictionary<string, object>>(a.Attributes)
-            });
+                Dictionary<string, object> attributes = new();
+                try
+                {
+                    if (!string.IsNullOrEmpty(a.Attributes))
+                    {
+                        attributes = JsonSerializer.Deserialize<Dictionary<string, object>>(a.Attributes) ?? new();
+                    }
+                }
+                catch
+                {
+                    // Ignore invalid JSON to prevent crash
+                }
 
-            _logger.LogInformation("Returning {Count} pending reviews", pendingApps.Count());
-            return Ok(pendingApps);
+                return new
+                {
+                    a.Id,
+                    a.CompanyName,
+                    a.ContactName,
+                    a.ContactEmail,
+                    a.RegistrationType,
+                    a.CreatedAt,
+                    Attributes = attributes
+                };
+            }).ToList();
+
+            _logger.LogInformation("Returning {Count} pending reviews", pendingAppsList.Count);
+            return Ok(pendingAppsList);
         }
         catch (Exception ex)
         {
