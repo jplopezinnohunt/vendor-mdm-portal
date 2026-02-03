@@ -215,7 +215,7 @@ public class EmailService : IEmailService
     {
         try
         {
-            var httpClient = _httpClientFactory.CreateClient();
+            var httpClient = _httpClientFactory.CreateClient("resilient");
             httpClient.Timeout = TimeSpan.FromSeconds(10);
 
             var request = new

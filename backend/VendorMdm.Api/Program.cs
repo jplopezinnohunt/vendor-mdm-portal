@@ -19,7 +19,8 @@ using OpenTelemetry.Resources;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using VendorMdm.Core.Framework.Primitives;
-using VendorMdm.Core.Framework.Extensions; // Required for AddCoreFramework
+using VendorMdm.Core.Framework.Extensions;
+using VendorMdm.Core.Framework.Resilience; // Required for CorePolicyRegistry
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -191,7 +192,8 @@ else
 {
     builder.Services.AddScoped<IServiceBusService, ServiceBusService>();
     builder.Services.AddScoped<ISapVendorService, SapVendorRfcService>();
-    builder.Services.AddHttpClient<ISanctionsScreeningService, SanctionsScreeningOpenSanctionsService>();
+    builder.Services.AddHttpClient<ISanctionsScreeningService, SanctionsScreeningOpenSanctionsService>()
+        .AddPolicyHandler(CorePolicyRegistry.HttpResilientPolicy);
 }
 
 // Additional Cosmos Client
