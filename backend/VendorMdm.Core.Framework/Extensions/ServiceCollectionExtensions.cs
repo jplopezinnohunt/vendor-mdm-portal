@@ -169,22 +169,20 @@ public static class ServiceCollectionExtensions
         string appName,
         IConfiguration configuration)
     {
-        // OpenTelemetry configuration
-        // Implementation will be added later
-        /*
-        services.AddOpenTelemetryTracing(builder =>
-        {
-            builder
-                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService(appName))
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddSqlClientInstrumentation()
-                .AddAzureMonitorTraceExporter(options =>
-                {
-                    options.ConnectionString = configuration["ApplicationInsights:ConnectionString"];
-                });
-        });
-        */
+        // Register distributed tracing service
+        services.AddSingleton<Observability.IDistributedTracing>(sp => 
+            new Observability.DistributedTracingService(appName));
+
+        // Register metrics service
+        services.AddSingleton<Observability.IMetricsService>(sp => 
+            new Observability.MetricsService(appName));
+
+        // Note: Full OpenTelemetry configuration will be added when apps integrate Core.Framework
+        // For now, services are registered and ready to use
+        // Apps can configure OpenTelemetry in their Program.cs using:
+        // services.AddOpenTelemetry()
+        //   .WithTracing(...)
+        //   .WithMetrics(...)
     }
 
     private static void AddSecurity(
