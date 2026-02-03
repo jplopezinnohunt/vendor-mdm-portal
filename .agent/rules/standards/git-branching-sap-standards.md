@@ -119,7 +119,199 @@ feat: add new vendor onboarding form
 
 ---
 
-## 7. FAQ
+## 7. Hotfix Protocol (DETAILED)
+
+**WHEN TO USE**: Critical production issues ONLY.
+
+**Definition of Critical**:
+- Production is down or severely degraded
+- Data loss or corruption risk
+- Security vulnerability
+- Critical business process blocked
+
+### Hotfix Process (Step-by-Step)
+
+**1. Create Hotfix Branch from Main**:
+```bash
+# Ensure main is up to date
+git checkout main
+git pull origin main
+
+# Create hotfix branch
+git checkout -b hotfix/description main
+# Example: git checkout -b hotfix/fix-migration-failure main
+```
+
+**2. Fix Issue (Minimal Changes Only)**:
+```bash
+# Make ONLY the necessary changes
+# Do NOT add new features
+# Do NOT refactor unrelated code
+
+# Commit with clear message
+git commit -m "fix: description of fix
+
+HOTFIX: Critical issue description
+IMPACT: What was broken
+FIX: What was changed
+TESTED: How it was verified"
+```
+
+**3. Test Locally**:
+```bash
+# Run alignment verification
+./scripts/verify-alignment.sh
+# Expected: ✓ ALL CHECKS PASSED
+
+# Test the specific fix
+# Verify no regressions
+```
+
+**4. Merge to Main AND Develop**:
+```bash
+# Merge to main (production)
+git checkout main
+git merge hotfix/description --no-ff -m "Merge hotfix: description"
+
+# Merge to develop (keep in sync)
+git checkout develop
+git merge hotfix/description --no-ff -m "Merge hotfix: description"
+
+# Push both branches
+git push origin main
+git push origin develop
+```
+
+**5. Tag Release**:
+```bash
+# Create patch version tag
+git tag -a v1.0.x -m "Hotfix: description
+
+CRITICAL FIX:
+- Issue: ...
+- Fix: ...
+- Impact: ..."
+
+git push origin v1.0.x
+```
+
+**6. Deploy and Verify**:
+```bash
+# Wait for Azure deployment (5-10 min)
+# Monitor GitHub Actions
+
+# Run deployment verification
+./scripts/verify-deployment.sh
+# Expected: ✓ DEPLOYMENT VERIFIED
+
+# Verify the fix works in production
+# Monitor for any issues
+```
+
+**7. Document and Communicate**:
+```bash
+# Create issue documenting the hotfix
+# Update release notes
+# Notify stakeholders
+```
+
+### Hotfix Checklist
+
+**Before Starting**:
+- [ ] Issue is truly critical (production down/data loss/security)
+- [ ] Root cause identified
+- [ ] Fix approach validated
+- [ ] Stakeholders notified
+
+**During Hotfix**:
+- [ ] Branch created from main
+- [ ] Minimal changes only (no features, no refactoring)
+- [ ] Tested locally
+- [ ] Alignment verification passed
+- [ ] Commit message explains issue and fix
+
+**After Hotfix**:
+- [ ] Merged to main
+- [ ] Merged to develop
+- [ ] Tagged with version
+- [ ] Deployed to production
+- [ ] Deployment verified
+- [ ] Issue documented
+- [ ] Stakeholders notified
+
+### Agent Behavior
+
+When executing a hotfix, the agent MUST:
+1. ✅ Verify issue is critical before proceeding
+2. ✅ Create branch from main (not develop)
+3. ✅ Make minimal changes only
+4. ✅ Test locally before commit
+5. ✅ Merge to BOTH main AND develop
+6. ✅ Create tag with patch version
+7. ✅ Verify deployment
+8. ✅ Document the hotfix
+
+**FORBIDDEN**:
+- ❌ Adding new features during hotfix
+- ❌ Refactoring unrelated code
+- ❌ Merging only to main (must merge to develop too)
+- ❌ Skipping testing
+- ❌ Skipping deployment verification
+
+### Hotfix vs Regular Fix
+
+| Criteria | Hotfix | Regular Fix |
+|----------|--------|-------------|
+| **Severity** | Critical (prod down) | Non-critical |
+| **Branch From** | main | develop |
+| **Merge To** | main + develop | develop only |
+| **Testing** | Minimal (focused) | Comprehensive |
+| **Deployment** | Immediate | Next release |
+| **Tag** | Patch version (v1.0.x) | Minor/Major version |
+
+### Example Hotfix
+
+**Scenario**: Database migration fails in production
+
+```bash
+# 1. Create hotfix branch
+git checkout -b hotfix/fix-migration-failure main
+
+# 2. Fix the migration
+# Remove large migration, keep only critical ones
+
+# 3. Commit
+git commit -m "fix: Remove large migration causing Azure SQL timeout
+
+HOTFIX: Database migration deployment failing
+IMPACT: Features blocked from production
+FIX: Removed 155KB migration, kept only critical migrations
+TESTED: Local migration successful, Azure DEV deployment verified"
+
+# 4. Test
+./scripts/verify-alignment.sh
+
+# 5. Merge to main
+git checkout main
+git merge hotfix/fix-migration-failure --no-ff
+
+# 6. Merge to develop
+git checkout develop
+git merge hotfix/fix-migration-failure --no-ff
+
+# 7. Tag
+git tag -a v1.0.1 -m "Hotfix: Fix migration failure"
+
+# 8. Push
+git push origin main develop v1.0.1
+
+# 9. Verify deployment
+./scripts/verify-deployment.sh
+```
+
+---
+
+## 8. FAQ
 
 **Q: What if SAP D01 is down?**
 A: Recommend using local Mocks in 'feature' branch to not stop development, but real integration is validated in 'develop'.
