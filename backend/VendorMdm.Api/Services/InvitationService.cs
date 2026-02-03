@@ -1066,7 +1066,7 @@ public class InvitationService : IInvitationService
             EntityType = (invitation.VendorType == "Physical" || invitation.VendorType == "Participant") ? "Individual" : "Company",
             EntityName = !string.IsNullOrEmpty(companyName) ? companyName : contactName,
             TaxId = taxId,
-            Address = new AddressInfo { Country = attributes.TryGetValue("country", out var c) ? c?.ToString() : "US" }
+            Address = new AddressInfo { Country = attributes.TryGetValue("country", out var c) ? (c?.ToString() ?? "US") : "US" }
         };
 
         var screeningResult = await _sanctionsService.ScreenEntityAsync(screeningRequest);

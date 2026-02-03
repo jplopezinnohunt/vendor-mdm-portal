@@ -28,6 +28,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.1" />
     <PackageReference Include="Microsoft.Identity.Web" Version="2.15.2" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
@@ -37,6 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\VendorMdm.Core.Framework\VendorMdm.Core.Framework.csproj" />
     <ProjectReference Include="..\VendorMdm.Shared\VendorMdm.Shared.csproj" />
     <ProjectReference Include="..\VendorMdm.Artifacts\VendorMdm.Artifacts.csproj" />
   </ItemGroup>
