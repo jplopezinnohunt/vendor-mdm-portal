@@ -126,7 +126,7 @@ public class InvitationService : IInvitationService
             InvitedBy = invitedBy,
             InvitedByName = invitedByName,
             CreatedAt = DateTime.UtcNow,
-            ExpiresAt = request.ExpiresAt ?? DateTime.UtcNow.AddDays(14), // Default 14 days
+            ExpiresAt = DateTime.UtcNow.AddDays(request.ExpirationDays > 0 ? request.ExpirationDays : 14), // Default 14 days
             Status = InvitationStatus.Pending,
             VendorType = request.VendorType ?? "Company",
             AccountGroup = request.AccountGroup ?? "Z001",
@@ -146,11 +146,11 @@ public class InvitationService : IInvitationService
 
         // AUDIT LOG
         await _auditLog.LogAsync(
-            entityType: "VendorInvitation", 
-            entityId: invitation.Id.ToString(), 
-            action: "Created", 
-            oldValues: null, 
-            newValues: request, 
+            entityType: "VendorInvitation",
+            entityId: invitation.Id,
+            action: "Created",
+            oldValues: null,
+            newValues: request,
             reason: "Initial user request");
 
         // SERVICE BUS: Queue Email
@@ -172,7 +172,7 @@ public class InvitationService : IInvitationService
         // SEND EMAIL DIRECTLY (Fallback/Immediate)
         var emailData = new InvitationEmailData
         {
-            InvitationId = invitation.Id,
+            InvitationId = invitation.Id.ToString(),
             VendorName = invitation.VendorLegalName,
             Email = invitation.PrimaryContactEmail,
             Token = invitation.InvitationToken,
@@ -451,7 +451,7 @@ public class InvitationService : IInvitationService
         // ✅ AUDIT LOG: Log invitation completion
         await _auditLog.LogAsync(
             entityType: "VendorInvitation",
-            entityId: invitation.Id.ToString(),
+            entityId: invitation.Id,
             action: "Completed",
             oldValues: new { Status = previousStatus },
             newValues: new { 

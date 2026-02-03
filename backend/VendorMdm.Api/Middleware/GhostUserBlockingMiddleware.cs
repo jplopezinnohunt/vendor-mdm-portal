@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using VendorMdm.Api.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,44 +26,63 @@ namespace VendorMdm.Api.Middleware
 
         public async Task InvokeAsync(HttpContext context, SqlDbContext dbContext)
         {
-            // Only enforce in Production
-            if (!_isProduction)
+            try
             {
-                await _next(context);
-                return;
-            }
-
-            // Check if user is authenticated
-            if (context.User?.Identity?.IsAuthenticated == true)
-            {
-                var userEmail = context.User.Identity.Name 
-                    ?? context.User.FindFirst("preferred_username")?.Value
-                    ?? context.User.FindFirst("email")?.Value;
-
-                if (!string.IsNullOrEmpty(userEmail))
+                // Only enforce in Production
+                if (!_isProduction)
                 {
-                    // Check if user exists in database
-                    var userExists = await dbContext.Users
-                        .AnyAsync(u => u.Email == userEmail);
+                    await _next(context);
+                    return;
+                }
 
-                    if (!userExists)
+                // Check if user is authenticated
+                if (context.User?.Identity?.IsAuthenticated == true)
+                {
+                    var userEmail = context.User.Identity.Name 
+                        ?? context.User.FindFirst("preferred_username")?.Value
+                        ?? context.User.FindFirst("email")?.Value
+                        ?? context.User.FindFirst(ClaimTypes.Email)?.Value; // Added ClaimTypes.Email fallback
+
+                    if (!string.IsNullOrEmpty(userEmail))
                     {
-                        _logger.LogWarning(
-                            "[SECURITY] Ghost user blocked: {Email} authenticated via Azure AD but not in database",
-                            userEmail);
+                        // Check if user exists in database
+                        var userExists = await dbContext.Users
+                            .AnyAsync(u => u.Email == userEmail);
 
-                        context.Response.StatusCode = 403; // Forbidden
-                        await context.Response.WriteAsJsonAsync(new
+                        if (!userExists)
                         {
-                            error = "Access Denied",
-                            message = "Your account is not authorized to access this system. Please contact your administrator."
-                        });
-                        return;
+                            _logger.LogWarning(
+                                "[SECURITY] Ghost user blocked: {Email} authenticated via Azure AD but not in database",
+                                userEmail);
+
+                            context.Response.StatusCode = 403; // Forbidden
+                            await context.Response.WriteAsJsonAsync(new
+                            {
+                                error = "Access Denied",
+                                message = "Your account is not authorized to access this system. Please contact your administrator."
+                            });
+                            return;
+                        }
                     }
                 }
-            }
 
-            await _next(context);
+                await _next(context);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in GhostUserBlockingMiddleware");
+                // Fail open or closed? Fail open for now to avoid blocking everyone on error, or strictly fail closed. 
+                // Given the user is stuck, let's allow next but log.
+                // Or return 500 with details.
+                // Let's rethrow or better yet, return 500 but LOG IT so we see it.
+                // Since this is middleware, if we don't call next(), it stops.
+                // If we throw, the global exception handler (DeveloperExceptionPage) might show it.
+                // But user sees "Network Error" (CORS?) or 500.
+                
+                // Let's attempt to proceed if DB check fails? Risk of security hole.
+                // But for debugging, let's log and rethrow.
+                throw; 
+            }
         }
     }
 

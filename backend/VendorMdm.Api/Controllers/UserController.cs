@@ -64,15 +64,23 @@ public class UserController : ControllerBase
     [Authorize]
     public async Task<ActionResult<User>> Me()
     {
-        // 1. Get Email from Claims
-        var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
-        if (string.IsNullOrEmpty(email)) return Unauthorized();
+        try
+        {
+            // 1. Get Email from Claims
+            var email = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+            if (string.IsNullOrEmpty(email)) return Unauthorized();
 
-        // 2. Fetch User
-        var user = await _service.GetUserByEmailAsync(email);
-        if (user == null) return NotFound();
+            // 2. Fetch User
+            var user = await _service.GetUserByEmailAsync(email);
+            if (user == null) return NotFound();
 
-        return Ok(user);
+            return Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch current user profile");
+            return StatusCode(500, new { error = "Internal server error", message = ex.Message }); 
+        }
     }
 
     [HttpGet]
