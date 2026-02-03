@@ -18,7 +18,7 @@ public class InvitationServiceTests : TestBase
     {
         // Arrange
         var context = CreateInMemoryDbContext();
-        var logger = CreateMockLogger<InvitationService>();
+        var logger = CreateMockStructuredLogger();
         var mockServiceBus = new Mock<IServiceBusService>();
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
@@ -27,10 +27,12 @@ public class InvitationServiceTests : TestBase
         mockSanctions.Setup(s => s.ScreenEntityAsync(It.IsAny<VendorMdm.Shared.Models.Sanctions.ScreeningRequest>()))
             .ReturnsAsync(new VendorMdm.Shared.Models.Sanctions.ScreeningResult { OverallRisk = VendorMdm.Shared.Models.Sanctions.RiskLevel.Clear });
         
+        var mockAuditLog = new Mock<IAuditLogService>();
+
         var service = new InvitationService(
-            context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
-        
+            context, logger.Object, mockServiceBus.Object,
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object, mockAuditLog.Object);
+
         var request = new CreateInvitationRequest
         {
             VendorLegalName = "Test Vendor",
@@ -59,17 +61,18 @@ public class InvitationServiceTests : TestBase
     {
         // Arrange
         var context = CreateInMemoryDbContext();
-        var logger = CreateMockLogger<InvitationService>();
+        var logger = CreateMockStructuredLogger();
         var mockServiceBus = new Mock<IServiceBusService>();
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
         var mockSanctions = new Mock<ISanctionsScreeningService>();
-        
+        var mockAuditLog = new Mock<IAuditLogService>();
+
         var service = new InvitationService(
-            context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
-            
+            context, logger.Object, mockServiceBus.Object,
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object, mockAuditLog.Object);
+
         // Pre-seed an invitation
         context.VendorInvitations.Add(new VendorInvitation
         {
@@ -97,17 +100,18 @@ public class InvitationServiceTests : TestBase
     {
         // Arrange
         var context = CreateInMemoryDbContext();
-        var logger = CreateMockLogger<InvitationService>();
+        var logger = CreateMockStructuredLogger();
         var mockServiceBus = new Mock<IServiceBusService>();
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
         var mockSanctions = new Mock<ISanctionsScreeningService>();
-        
+        var mockAuditLog = new Mock<IAuditLogService>();
+
         var service = new InvitationService(
-            context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
-            
+            context, logger.Object, mockServiceBus.Object,
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object, mockAuditLog.Object);
+
         var token = "valid-token";
         context.VendorInvitations.Add(new VendorInvitation
         {
@@ -133,17 +137,18 @@ public class InvitationServiceTests : TestBase
     {
         // Arrange
         var context = CreateInMemoryDbContext();
-        var logger = CreateMockLogger<InvitationService>();
+        var logger = CreateMockStructuredLogger();
         var mockServiceBus = new Mock<IServiceBusService>();
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
         var mockSanctions = new Mock<ISanctionsScreeningService>();
-        
+        var mockAuditLog = new Mock<IAuditLogService>();
+
         var service = new InvitationService(
-            context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
-            
+            context, logger.Object, mockServiceBus.Object,
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object, mockAuditLog.Object);
+
         var token = "expired-token";
         context.VendorInvitations.Add(new VendorInvitation
         {
@@ -174,7 +179,7 @@ public class InvitationServiceTests : TestBase
     {
         // Arrange
         var context = CreateInMemoryDbContext();
-        var logger = CreateMockLogger<InvitationService>();
+        var logger = CreateMockStructuredLogger();
         var mockServiceBus = new Mock<IServiceBusService>();
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
@@ -182,10 +187,11 @@ public class InvitationServiceTests : TestBase
         var mockSanctions = new Mock<ISanctionsScreeningService>();
         mockSanctions.Setup(s => s.ScreenEntityAsync(It.IsAny<VendorMdm.Shared.Models.Sanctions.ScreeningRequest>()))
             .ReturnsAsync(new VendorMdm.Shared.Models.Sanctions.ScreeningResult { OverallRisk = VendorMdm.Shared.Models.Sanctions.RiskLevel.Clear });
-        
+        var mockAuditLog = new Mock<IAuditLogService>();
+
         var service = new InvitationService(
-            context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
+            context, logger.Object, mockServiceBus.Object,
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object, mockAuditLog.Object);
 
         var request = new CreateInvitationRequest
         {
@@ -222,16 +228,17 @@ public class InvitationServiceTests : TestBase
     {
         // Arrange
         var context = CreateInMemoryDbContext();
-        var logger = CreateMockLogger<InvitationService>();
+        var logger = CreateMockStructuredLogger();
         var mockServiceBus = new Mock<IServiceBusService>();
         var mockEmail = new Mock<IEmailService>();
         var mockConfig = MockHelpers.CreateMockConfiguration();
         var mockCosmosClient = MockHelpers.CreateMockCosmosClient();
         var mockSanctions = new Mock<ISanctionsScreeningService>();
-        
+        var mockAuditLog = new Mock<IAuditLogService>();
+
         var service = new InvitationService(
-            context, logger.Object, mockServiceBus.Object, 
-            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object);
+            context, logger.Object, mockServiceBus.Object,
+            mockEmail.Object, mockConfig, mockSanctions.Object, mockCosmosClient.Object, mockAuditLog.Object);
 
         var invitationId = Guid.NewGuid();
         var originalToken = "original-token";

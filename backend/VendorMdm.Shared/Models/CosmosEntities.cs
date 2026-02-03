@@ -8,7 +8,7 @@ public class ChangeRequestData
     public string Id { get; set; } = Guid.NewGuid().ToString(); // Matches SQL ChangeRequest.Id
 
     [JsonProperty("requestId")]
-    public string RequestId { get; set; } // Partition Key
+    public string? RequestId { get; set; } // Partition Key
 
     [JsonProperty("payload")]
     public object Payload { get; set; } = new object(); // Flexible JSON

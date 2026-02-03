@@ -40,6 +40,8 @@ public class SqlDbContext : DbContext
     public DbSet<WorkflowRoleBinding> WorkflowRoleBindings { get; set; }
     public DbSet<WorkflowFieldDefinition> WorkflowFieldDefinitions { get; set; }
 
+    // Core.Framework Entities
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
