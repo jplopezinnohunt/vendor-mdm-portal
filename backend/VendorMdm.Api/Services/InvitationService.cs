@@ -36,6 +36,7 @@ public class InvitationService : IInvitationService
     private readonly IConfiguration _configuration;
     private readonly Container _cosmosArtifactsContainer;
     private readonly Container _cosmosEventsContainer;
+    private readonly IAuditLogService _auditLog;
 
     public InvitationService(
         SqlDbContext context, 
@@ -44,7 +45,8 @@ public class InvitationService : IInvitationService
         IEmailService emailService,
         IConfiguration configuration,
         ISanctionsScreeningService sanctionsService,
-        CosmosClient cosmosClient)
+        CosmosClient cosmosClient,
+        IAuditLogService auditLog)
     {
         _context = context;
         _logger = logger;
@@ -54,6 +56,7 @@ public class InvitationService : IInvitationService
         _sanctionsService = sanctionsService;
         _cosmosArtifactsContainer = cosmosClient.GetContainer("VendorMdm", "InvitationArtifacts");
         _cosmosEventsContainer = cosmosClient.GetContainer("VendorMdm", "DomainEvents");
+        _auditLog = auditLog;
     }
 
     private readonly ISanctionsScreeningService _sanctionsService;
@@ -169,6 +172,21 @@ public class InvitationService : IInvitationService
         _logger.LogInformation(
             "Invitation created: {InvitationId} for {Email} by {InvitedBy}",
             invitation.Id, request.PrimaryContactEmail, invitedByName);
+
+        // ✅ AUDIT LOG: Log invitation creation
+        await _auditLog.LogAsync(
+            entityType: "VendorInvitation",
+            entityId: invitation.Id,
+            action: "Created",
+            newValues: new {
+                VendorLegalName = request.VendorLegalName,
+                PrimaryContactEmail = request.PrimaryContactEmail,
+                VendorType = request.VendorType,
+                Status = "Pending",
+                InvitedBy = invitedByName,
+                ExpiresAt = expiresAt
+            },
+            reason: "New vendor invitation created");
 
         // HYBRID ARCHITECTURE PATTERN IMPLEMENTATION
         // Following: SQL (State) → Cosmos (Artifact) → Cosmos (Event) → Service Bus (Integration)
@@ -496,6 +514,19 @@ public class InvitationService : IInvitationService
             "Invitation {InvitationId} status updated from {PreviousStatus} to Completed with application {ApplicationId}",
             invitation.Id, previousStatus, vendorApplicationId);
 
+        // ✅ AUDIT LOG: Log invitation completion
+        await _auditLog.LogAsync(
+            entityType: "VendorInvitation",
+            entityId: invitation.Id,
+            action: "Completed",
+            oldValues: new { Status = previousStatus },
+            newValues: new { 
+                Status = "Completed", 
+                VendorApplicationId = vendorApplicationId,
+                CompletedAt = DateTime.UtcNow
+            },
+            reason: "Vendor completed registration process");
+
         // B. COSMOS: Store completion artifact
         try
         {
@@ -649,6 +680,18 @@ public class InvitationService : IInvitationService
             "Invitation {InvitationId} resent by {RequestedBy}",
             invitationId, requestedBy);
 
+        // ✅ AUDIT LOG: Log invitation resend
+        await _auditLog.LogAsync(
+            entityType: "VendorInvitation",
+            entityId: invitationId,
+            action: "Resent",
+            newValues: new { 
+                NewToken = invitation.InvitationToken,
+                NewExpiresAt = invitation.ExpiresAt,
+                EmailSent = emailSent
+            },
+            reason: "Invitation resent with new token and extended expiration");
+
         var link = $"/invitation/register/{invitation.InvitationToken}";
         return (true, link, emailSent, emailError);
     }
@@ -677,6 +720,19 @@ public class InvitationService : IInvitationService
         _logger.LogInformation(
             "Invitation {InvitationId} status updated from {PreviousStatus} to Cancelled by {RequestedBy}",
             invitation.Id, previousStatus, requestedBy);
+
+        // ✅ AUDIT LOG: Log invitation cancellation
+        await _auditLog.LogAsync(
+            entityType: "VendorInvitation",
+            entityId: invitation.Id,
+            action: "Cancelled",
+            oldValues: new { Status = previousStatus },
+            newValues: new { 
+                Status = "Cancelled",
+                CancelledBy = requestedBy,
+                CancelledAt = DateTime.UtcNow
+            },
+            reason: "Invitation cancelled by administrator");
 
         // Emit domain event
         try
