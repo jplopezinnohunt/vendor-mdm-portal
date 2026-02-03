@@ -63,6 +63,11 @@ You are required to load and apply the following detailed standards based on the
 - **Standard**: Mirror SAP environments (D01, Q01, P01) across Git branches (`develop`, `release`, `main`).
 - **File**: [git-branching-sap-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/git-branching-sap-standards.md)
 
+### F. Audit Log Integration (Pattern 16)
+- **Standard**: Ontology-driven audit logging for all entities. Each entity MUST have an audit model that evolves with schema changes.
+- **File**: [audit-log-integration-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/audit-log-integration-standards.md)
+- **Status**: MANDATORY for all Create/Update/Delete operations
+
 ---
 
 ## 5. Build & Process Hygiene
@@ -102,4 +107,141 @@ You are required to load and apply the following detailed standards based on the
 ### C. Input Hygiene
 -   **Anti-XSS**: All DTO strings MUST be sanitized (`IInputSanitizer`) before reaching the Domain Layer.
 -   **DTO Enforcement**: Never accept raw JSONB or Entity objects from the client.
+
+---
+
+## 8. Pre-Commit Verification Protocol
+**MANDATORY CHECKS** before every commit:
+
+### 1. Build Verification
+```bash
+# Backend
+cd backend/VendorMdm.Api
+dotnet build --configuration Release
+# Expected: Build succeeded, 0 Error(s)
+
+# Frontend
+cd frontend
+npm run build
+# Expected: ✓ built in ~4s, 0 errors
+```
+
+### 2. Migration Size Check
+```bash
+ls -lh backend/VendorMdm.Api/Migrations/*.cs | grep -v Designer | grep -v Snapshot
+# All files must be < 50KB
+# If any file > 50KB, STOP and split migration
+```
+
+### 3. Alignment Verification
+```bash
+./scripts/verify-alignment.sh
+# Expected: ✓ ALL CHECKS PASSED
+```
+
+### 4. Git Status Review
+```bash
+git status
+# Review all changed files
+# Ensure no unintended changes
+# Verify no sensitive data (keys, passwords)
+```
+
+### 5. Warning Review
+```bash
+# Review all build warnings
+# Fix critical warnings immediately
+# Document acceptable warnings in commit message
+```
+
+**AGENT BEHAVIOR**:
+- Agent MUST run these checks before proposing commit
+- Agent MUST report any failures to user
+- Agent MUST NOT commit if checks fail
+- Agent MUST suggest fixes for any issues found
+
+**Exceptions**:
+- Hotfixes may skip alignment verification if time-critical
+- Must be explicitly approved by user
+- Must be documented in commit message
+
+---
+
+## 9. Warning Hygiene Policy
+
+**TARGET**: Zero warnings in production builds.
+
+### Acceptable Warnings
+- **Obsolete Property Warnings**: If migration to new pattern is planned and documented
+- **Nullable Reference Warnings**: If false positive (verified manually)
+- **Performance Suggestions**: If not critical to current release
+
+### Unacceptable Warnings
+- ❌ Duplicate keys in object literals
+- ❌ Unused variables or imports
+- ❌ Unreachable code
+- ❌ Type mismatches
+- ❌ Missing await on async calls
+
+### Warning Categories
+
+**Critical (Fix Immediately)**:
+```
+- CS0618: Obsolete member usage (if no migration plan)
+- CS8600-CS8629: Nullable reference warnings (potential NullReferenceException)
+- TS2322: Type mismatch
+- TS2345: Argument type mismatch
+```
+
+**Important (Fix Before Merge)**:
+```
+- CS0162: Unreachable code
+- CS0219: Variable assigned but never used
+- TS6133: Declared but never used
+- TS7006: Implicit 'any' type
+```
+
+**Minor (Fix When Convenient)**:
+```
+- CS1591: Missing XML documentation
+- Performance suggestions
+- Code style warnings
+```
+
+### Agent Behavior
+
+**Before Commit**:
+1. ✅ Review all warnings from build output
+2. ✅ Categorize warnings (Critical/Important/Minor)
+3. ✅ Fix all Critical warnings
+4. ✅ Fix all Important warnings
+5. ✅ Document Minor warnings in commit message
+
+**Commit Message Format**:
+```
+feat: Add new feature
+
+WARNINGS:
+- CS1591: Missing XML docs (will add in next PR)
+- Performance: Large bundle size (will optimize later)
+```
+
+**Reporting**:
+- Agent MUST report warning count to user
+- Agent MUST highlight critical warnings
+- Agent MUST suggest fixes for warnings
+- Agent MUST create issues for deferred warnings
+
+**Example**:
+```
+⚠️ Build Warnings Summary:
+- Critical: 0
+- Important: 2 (unused variables - fixed)
+- Minor: 5 (XML docs - deferred)
+
+All critical and important warnings resolved.
+Minor warnings documented in commit message.
+```
+
+---
 

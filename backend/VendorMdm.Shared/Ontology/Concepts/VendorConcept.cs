@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using VendorMdm.Core.Framework.Ontology;
 using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Shared.Models; // For SqlEntities if needed, or pure domain model if we had one.
+using VendorMdm.Shared.Ontology.Interfaces;
 // Using mapping to SqlEntities for now as per "Hybrid" appraoch, but wrapping logic.
 
 namespace VendorMdm.Shared.Ontology.Concepts
 {
-    public class VendorConcept : IOntologyConcept
+    public class VendorConcept : IOntologyConcept, IAuditableEntity
     {
         private readonly Guid _id;
         private readonly string _originContext;
@@ -133,5 +135,126 @@ namespace VendorMdm.Shared.Ontology.Concepts
         {
             return _domainEvents.AsReadOnly();
         }
+
+        #region IAuditableEntity Implementation
+
+        public string GetEntityType() => "Vendor";
+
+        public string LegalName => _legalName;
+        public string VendorType => _vendorType;
+        public string Status => _status;
+
+        public AuditableFields GetAuditableFields()
+        {
+            return new AuditableFields
+            {
+                // MUST audit these fields (critical for compliance)
+                CriticalFields = new List<string>
+                {
+                    "LegalName",
+                    "Status",
+                    "TaxId",
+                    "AccountGroup",
+                    "VendorType"
+                },
+
+                // SHOULD audit these fields (important but not critical)
+                StandardFields = new List<string>
+                {
+                    "PrimaryContactEmail",
+                    "PrimaryContactName",
+                    "Country",
+                    "Currency",
+                    "PaymentTerms"
+                },
+
+                // MUST NOT audit these fields (sensitive data)
+                SensitiveFields = new List<string>
+                {
+                    "BankAccountNumber",
+                    "IBAN",
+                    "SwiftCode",
+                    "TaxDocuments",
+                    "FinancialStatements",
+                    "PasswordHash"
+                }
+            };
+        }
+
+        public AuditLogEntry CreateAuditEntry(
+            string action,
+            object? oldState = null,
+            object? newState = null,
+            string? reason = null)
+        {
+            var auditableFields = GetAuditableFields();
+
+            return new AuditLogEntry
+            {
+                EntityType = GetEntityType(),
+                EntityId = _id,
+                Action = action,
+                OldValues = FilterAuditableValues(oldState, auditableFields),
+                NewValues = FilterAuditableValues(newState, auditableFields),
+                Reason = reason,
+                Metadata = new Dictionary<string, object>
+                {
+                    { "VendorType", _vendorType },
+                    { "AccountGroup", _accountGroup },
+                    { "OriginContext", _originContext },
+                    { "CurrentStatus", _status }
+                },
+                SchemaVersion = "v1.0.0"
+            };
+        }
+
+        public bool ShouldAudit(string action)
+        {
+            // Define which actions should be audited
+            var auditableActions = new[]
+            {
+                "Created", "Updated", "Deleted",
+                "Approved", "Rejected", "Suspended",
+                "Activated", "Deactivated",
+                "StatusChanged", "Submitted"
+            };
+
+            return auditableActions.Contains(action);
+        }
+
+        private object? FilterAuditableValues(object? state, AuditableFields auditableFields)
+        {
+            if (state == null) return null;
+
+            // If state is a Vendor entity, extract only auditable fields
+            if (state is Vendor vendor)
+            {
+                var filtered = new Dictionary<string, object?>();
+
+                // Add critical fields
+                if (auditableFields.CriticalFields.Contains("LegalName"))
+                    filtered["LegalName"] = vendor.LegalName;
+                if (auditableFields.CriticalFields.Contains("Status"))
+                    filtered["Status"] = vendor.Status;
+                if (auditableFields.CriticalFields.Contains("TaxId"))
+                    filtered["TaxId"] = vendor.TaxId;
+                if (auditableFields.CriticalFields.Contains("VendorType"))
+                    filtered["VendorType"] = _vendorType;
+                if (auditableFields.CriticalFields.Contains("AccountGroup"))
+                    filtered["AccountGroup"] = _accountGroup;
+
+                // Add standard fields
+                if (auditableFields.StandardFields.Contains("PrimaryContactEmail"))
+                    filtered["PrimaryContactEmail"] = vendor.PrimaryContactEmail;
+
+                return filtered;
+            }
+
+            // If state is already a dictionary or anonymous object, return as-is
+            // (assuming caller already filtered sensitive data)
+            return state;
+        }
+
+        #endregion
     }
 }
