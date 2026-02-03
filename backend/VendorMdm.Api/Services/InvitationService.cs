@@ -235,7 +235,7 @@ public class InvitationService : IInvitationService
             IsValid = true,
             InvitationId = invitation.Id,
             VendorName = invitation.VendorLegalName,
-            Email = invitation.PrimaryContactEmail,
+            PrimaryContactEmail = invitation.PrimaryContactEmail,
             Status = invitation.Status,
             CurrentStage = invitation.CurrentStage
         };
@@ -262,6 +262,29 @@ public class InvitationService : IInvitationService
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+
+        var invitations = items.Select(i => 
+        {
+            var emailSentIndex = true;
+            if (!string.IsNullOrEmpty(i.Attributes) && i.Attributes.Contains("\"emailSent\":false"))
+            {
+                emailSentIndex = false;
+            }
+
+            return new InvitationListItem
+            {
+                Id = i.Id,
+                VendorLegalName = i.VendorLegalName,
+                PrimaryContactEmail = i.PrimaryContactEmail,
+                Status = i.Status,
+                CurrentStage = i.CurrentStage,
+                InvitedByName = i.InvitedByName,
+                CreatedAt = i.CreatedAt,
+                ExpiresAt = i.ExpiresAt,
+                VendorApplicationId = i.VendorApplicationId,
+                EmailSent = emailSentIndex
+            };
+        }).ToList();
 
         return new InvitationListResponse
         {
