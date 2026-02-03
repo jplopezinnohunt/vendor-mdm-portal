@@ -146,9 +146,21 @@ public static class ServiceCollectionExtensions
         CoreFrameworkOptions options,
         IConfiguration configuration)
     {
-        // Register file storage service
-        // Implementation will be added later
-        // services.AddSingleton<IFileStorageService, AzureBlobStorageService>();
+        // Register Azure Blob Storage service
+        var blobConnectionString = configuration["Azure:BlobStorage:ConnectionString"];
+        if (!string.IsNullOrEmpty(blobConnectionString))
+        {
+            services.AddSingleton(sp => new Azure.Storage.Blobs.BlobServiceClient(blobConnectionString));
+            services.AddSingleton(new FileSystem.AzureBlobStorageOptions 
+            { 
+                ConnectionString = blobConnectionString,
+                DefaultContainer = configuration["Azure:BlobStorage:DefaultContainer"]
+            });
+            services.AddSingleton<FileSystem.IFileStorageService, FileSystem.AzureBlobStorageService>();
+        }
+
+        // Register Core Health Check Service
+        services.AddSingleton<HealthChecks.IHealthCheckService, HealthChecks.CoreHealthCheckService>();
     }
 
     private static void AddObservability(
@@ -180,10 +192,25 @@ public static class ServiceCollectionExtensions
         CoreFrameworkOptions options,
         IConfiguration configuration)
     {
-        // Security services
-        // Implementation will be added later
-        // services.AddSingleton<IAuthenticationService, JwtAuthenticationService>();
-        // services.AddSingleton<IAuthorizationService, RoleBasedAuthorizationService>();
+        // JWT Authentication Service
+        var jwtOptions = new Security.Authentication.JwtAuthenticationOptions
+        {
+            SecretKey = configuration["Jwt:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is required"),
+            Issuer = configuration["Jwt:Issuer"] ?? "VendorMDM",
+            Audience = configuration["Jwt:Audience"] ?? "VendorMDM",
+            AccessTokenExpirationMinutes = int.Parse(configuration["Jwt:AccessTokenExpirationMinutes"] ?? "15"),
+            RefreshTokenExpirationDays = int.Parse(configuration["Jwt:RefreshTokenExpirationDays"] ?? "30")
+        };
+        services.AddSingleton(jwtOptions);
+        
+        // Note: Apps must register IUserRepository and IRefreshTokenRepository
+        // services.AddScoped<Security.Authentication.IAuthenticationService, Security.Authentication.JwtAuthenticationService>();
+
+        // Role-Based Authorization Service
+        services.AddSingleton<Security.Authorization.IRolePermissionRepository, Security.Authorization.DefaultRolePermissionRepository>();
+        
+        // Note: Apps must register IUserRoleRepository
+        // services.AddScoped<Security.Authorization.IAuthorizationService, Security.Authorization.RoleBasedAuthorizationService>();
     }
 }
 
