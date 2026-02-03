@@ -40,6 +40,7 @@ public class ValidateInvitationResponse
     public string? VendorType { get; set; }
     public DateTime? ExpiresAt { get; set; }
     public string? CurrentStage { get; set; }
+    public string? Status { get; set; } // Added Status
     public Dictionary<string, object> Attributes { get; set; } = new();
 }
 

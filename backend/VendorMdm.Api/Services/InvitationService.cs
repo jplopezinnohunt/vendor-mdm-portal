@@ -265,7 +265,7 @@ public class InvitationService : IInvitationService
 
         return new InvitationListResponse
         {
-            Items = items,
+            Invitations = invitations,
             TotalCount = totalCount,
             Page = page,
             PageSize = pageSize
