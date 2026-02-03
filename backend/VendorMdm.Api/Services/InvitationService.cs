@@ -575,10 +575,10 @@ public class InvitationService : IInvitationService
         var domainEvent = new DomainEvent
         {
             Id = Guid.NewGuid().ToString(),
-            EventName = eventName,
+            EventType = eventName,
             EntityId = entityId,
-            Payload = payload,
-            OccurredAt = DateTime.UtcNow,
+            Data = payload,
+            Timestamp = DateTime.UtcNow,
             Source = "VendorMdm.Api"
         };
 
