@@ -51,7 +51,6 @@ export const EventDetail: React.FC = () => {
             await EventService.addParticipants(event.id, [{
                 ...newParticipant,
                 eventId: event.id,
-                eventId: event.id,
                 status: 'Draft',
                 attributes: '{}' // Default attributes
             } as EventParticipant]);

@@ -143,7 +143,19 @@ builder.Services.AddScoped<IInvitationService, InvitationService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 // builder.Services.AddScoped<ISapSimulationService, SapSimulationService>(); // Removed - Duplicate/Typo
-builder.Services.AddScoped<IFileStorageService, FileStorageAzureBlobService>(); 
+
+// FileStorage: Conditional registration based on UseMock config
+var useFileStorageMock = builder.Configuration.GetValue<bool>("Services:FileStorage:UseMock", true);
+if (useFileStorageMock)
+{
+    builder.Services.AddScoped<IFileStorageService, FileStorageSimulationService>();
+    Console.WriteLine("📦 FileStorage: Using Simulation Service");
+}
+else
+{
+    builder.Services.AddScoped<IFileStorageService, FileStorageAzureBlobService>();
+    Console.WriteLine("📦 FileStorage: Using Azure Blob Service");
+} 
 // builder.Services.AddScoped<VendorMdm.Api.Services.IAuthorizationService, VendorMdm.Api.Services.AuthorizationService>(); // Legacy - Removed as file not found auth migrated
 builder.Services.AddScoped<ICosmosRepository, CosmosRepository>(); // Helper
 builder.Services.AddTransient<CosmosRepository>(); 
@@ -218,6 +230,51 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowCredentials();
     });
+});
+
+// Configure Authentication
+// For local development, use cookie authentication with mock middleware
+// For production, Azure AD or JWT Bearer will be configured separately
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "Cookies";
+    options.DefaultChallengeScheme = "Cookies";
+})
+.AddCookie("Cookies", options =>
+{
+    options.Cookie.Name = "VendorMdmAuth";
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    options.SlidingExpiration = true;
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = 401;
+        return Task.CompletedTask;
+    };
+});
+
+// Configure Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    // ApproverOnly policy: Requires Approver, MDMAdmin, or ITAdmin role
+    options.AddPolicy("ApproverOnly", policy =>
+        policy.RequireAssertion(context =>
+            context.User.IsInRole("Approver") ||
+            context.User.IsInRole("MDMAdmin") ||
+            context.User.IsInRole("ITAdmin")));
+
+    // RequestorOnly policy: Requires Requestor role (or higher)
+    options.AddPolicy("RequestorOnly", policy =>
+        policy.RequireAssertion(context =>
+            context.User.IsInRole("Requestor") ||
+            context.User.IsInRole("Approver") ||
+            context.User.IsInRole("MDMAdmin") ||
+            context.User.IsInRole("ITAdmin")));
+
+    // AdminOnly policy: Requires MDMAdmin or ITAdmin role
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireAssertion(context =>
+            context.User.IsInRole("MDMAdmin") ||
+            context.User.IsInRole("ITAdmin")));
 });
 
 // Health Checks

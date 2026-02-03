@@ -63,9 +63,10 @@ You are required to load and apply the following detailed standards based on the
 - **Standard**: Mirror SAP environments (D01, Q01, P01) across Git branches (`develop`, `release`, `main`).
 - **File**: [git-branching-sap-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/git-branching-sap-standards.md)
 
-### F. Audit Log Integration (Pattern 16)
+### F. Audit Log Integration
 - **Standard**: Ontology-driven audit logging for all entities. Each entity MUST have an audit model that evolves with schema changes.
 - **File**: [audit-log-integration-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/audit-log-integration-standards.md)
+- **Pattern Reference**: See Section 10.3 Pattern 10 (Audit Trail)
 - **Status**: MANDATORY for all Create/Update/Delete operations
 
 ---
@@ -82,7 +83,7 @@ You are required to load and apply the following detailed standards based on the
 ## 6. The Architecture DNA (Micro-App Standard)
 **Status**: MANDATORY for all new features.
 
-1.  **The Ontology Rule**: Business Logic MUST exist in `VendorMdm.Shared/Ontology/Concepts`. Services are merely coordinators.
+1.  **The Ontology Rule**: See Section 10.1 Pattern 3 (Ontology-Driven Development) for full definition.
 2.  **The Core Framework**: Apps MUST depend on `VendorMdm.Core.Framework` for base interfaces (`IOntologyConcept`, `IUserContext`).
 3.  **App-Scoped Security**: Authorization MUST be Context-Aware. `IUserContext.HasRoleForApp` is the only valid check.
 4.  **No Entity Leaks**: APIs MUST return DTOs (`Shared.Contracts`). Returning SQL Entities is FORBIDDEN.
@@ -242,6 +243,159 @@ WARNINGS:
 All critical and important warnings resolved.
 Minor warnings documented in commit message.
 ```
+
+---
+
+## 10. Foundational Patterns (The Implementation DNA)
+
+**Status**: MANDATORY for all new features and refactoring.
+
+These 18 patterns define HOW the system is built. Every new feature MUST conform to these patterns.
+
+### 10.1 Architecture Patterns (3)
+
+**1. Hexagonal Architecture (Ports & Adapters)**
+- Core Domain MUST be in `VendorMdm.Shared/` with ZERO external dependencies
+- Inbound Ports: REST API Controllers (`VendorMdm.Api/Controllers/`)
+- Outbound Ports: Event Bus, SAP, Email (`VendorMdm.Api/Services/`)
+- **Rule**: Business logic NEVER in Controllers or Services
+
+**2. Hybrid Relational-Document Model**
+- **SQL Columns**: Foreign keys, indexes, ACID, universal fields
+- **JSONB**: Volatile data, context-specific, read-only payloads
+- **Reference**: [data-model-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/data-model-standards.md)
+
+**3. Ontology-Driven Development**
+- Business logic MUST exist in `VendorMdm.Shared/Ontology/Concepts/`
+- Services are coordinators, NOT decision-makers
+- Every Concept MUST implement `IOntologyConcept`
+
+---
+
+### 10.2 Core Patterns (4)
+
+**4. Result Pattern**
+- ALL service methods return `Result<T>` or `Result`
+- NEVER throw exceptions for business logic failures
+- Pattern: `return Result<T>.Success(value)` or `Result.Failure("error")`
+
+**5. Structured Logging**
+- Use `IStructuredLogger` from Core.Framework
+- Log format: `logger.LogInformation("Action completed", new { vendorId, status })`
+- NEVER use string interpolation in logs
+
+**6. Event Sourcing (Partial)**
+- Domain Events for state changes
+- Async side-effects: Email, SAP, Logging
+- Pattern: Publish events, don't await side-effects
+
+**7. State Machines**
+- Workflow transitions defined explicitly
+- Example: `Draft → Submitted → UnderReview → Approved → Integrated`
+- Validation before state changes
+
+---
+
+### 10.3 Security & Compliance Patterns (6)
+
+**8. Multi-Channel Authentication**
+- Azure AD (Production)
+- JWT (API clients)
+- Magic Links (Passwordless)
+- Cookie (Local dev with MockAuth)
+
+**9. Role-Based Authorization**
+- App-scoped RBAC: `IUserContext.HasRoleForApp(app, role)`
+- Roles: Requestor, Approver, MDMAdmin, ITAdmin
+- NEVER use global admin checks
+
+**10. Audit Trail**
+- ALL entities implement `IAuditableEntity`
+- Automatic tracking: CreatedAt, CreatedBy, UpdatedAt, UpdatedBy
+- Interceptor pattern for auto-population
+
+**11. Soft Delete**
+- NEVER hard delete data
+- Use `IsDeleted` flag
+- Filter queries: `.Where(x => !x.IsDeleted)`
+
+**12. PII Masking**
+- Mask sensitive data in logs
+- Pattern: `email.Substring(0, 3) + "***"`
+- NEVER log full credit cards, passwords, SSN
+
+**13. GDPR Compliance**
+- Right to be forgotten (anonymization)
+- Data export capability
+- Consent tracking
+
+---
+
+### 10.4 Integration & Infrastructure Patterns (5)
+
+**14. File Storage Abstraction**
+- Interface: `IFileStorageService`
+- Implementations: Simulation (local), AzureBlob (prod)
+- **UseMock pattern**: Configuration-driven selection
+
+**15. SAP RFC Integration**
+- Adapter pattern for SAP calls
+- Operations: ZBAPI_VENDOR_CREATE, ZBAPI_VENDOR_UPDATE
+- Simulation mode for local dev
+
+**16. Email Templating**
+- Interface: `IEmailService`
+- Channels: Azure Function, SMTP, Console (local)
+- Template-based rendering
+
+**17. Data Residency**
+- Region-aware storage
+- Configurable per deployment
+- Metadata: `DataRegion` field
+
+**18. Multi-Tenancy**
+- Tenant isolation via SQL filters
+- Pattern: `.Where(x => x.TenantId == currentTenant)`
+- NEVER expose cross-tenant data
+
+---
+
+### 10.5 Compliance Enforcement
+
+**Before Implementation**:
+1. Read relevant pattern definition above
+2. Check if pattern already exists in codebase
+3. Follow existing implementation style
+4. If pattern missing, implement per standard
+
+**During Code Review**:
+- Verify pattern compliance
+- Check for anti-patterns (e.g., business logic in controllers)
+- Ensure consistency with existing code
+
+**Pattern Violations**:
+- ❌ **FORBIDDEN**: Business logic in Controllers
+- ❌ **FORBIDDEN**: Hard deletes
+- ❌ **FORBIDDEN**: Hardcoded secrets
+- ❌ **FORBIDDEN**: Returning SQL Entities from API
+- ❌ **FORBIDDEN**: Throwing exceptions for business failures
+
+**Future Patterns (Roadmap)** - Not yet implemented:
+- [ ] API Versioning (Week 5)
+- [ ] Circuit Breaker (Week 3)
+- [ ] Response Caching (Week 6)
+- [ ] Background Jobs (Week 9)
+- [ ] Feature Flags (Week 10)
+- [ ] Code Splitting (Week 7)
+- [ ] Distributed Tracing (Week 6)
+
+---
+
+**Agent Behavior**:
+- When implementing a new feature, FIRST identify which patterns apply
+- THEN read the pattern definition above
+- THEN implement following the pattern
+- If uncertain, ask the user which pattern to follow
 
 ---
 
