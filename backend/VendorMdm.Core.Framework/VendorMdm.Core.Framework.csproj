@@ -34,6 +34,13 @@
     
     <!-- System.Data.SqlClient for resilience policies -->
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    
+    <!-- Azure Blob Storage -->
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.19.1" />
+    
+    <!-- JWT Authentication -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.1.2" />
   </ItemGroup>
 
 </Project>
