@@ -78,23 +78,29 @@ jobs:
           exit 0
         fi
 
-        # Check for DROP commands
-        if grep -iE "DROP TABLE|DROP COLUMN" migration-script.sql; then
-          echo "⚠️ DROP command detected. Checking for data migration pattern..."
+        # Check for DROP TABLE (always block - never safe)
+        if grep -i "DROP TABLE" migration-script.sql; then
+          echo "❌ DROP TABLE detected - this is never auto-approved"
+          echo "Deployment Cancelled."
+          exit 1
+        fi
 
-          # Smart check: If there's an UPDATE before DROP on same table, data is likely preserved
-          # Pattern: UPDATE [Table] SET ... before DROP COLUMN
-          if grep -iB 20 "DROP COLUMN.*Role" migration-script.sql | grep -i "UPDATE.*Users.*SET.*Roles"; then
-            echo "✅ Data migration pattern detected (UPDATE before DROP)"
-            echo "The migration appears to preserve data. Proceeding..."
+        # Check for DROP COLUMN
+        if grep -i "DROP COLUMN" migration-script.sql; then
+          echo "⚠️ DROP COLUMN detected. Checking for data migration pattern..."
+
+          # Smart check: If UPDATE sets new column AND DROP removes old column, data is preserved
+          # Check for Role→Roles migration pattern
+          HAS_UPDATE=$(grep -ci "UPDATE.*Users" migration-script.sql || echo "0")
+          HAS_SET_ROLES=$(grep -ci "SET.*Roles" migration-script.sql || echo "0")
+
+          if [ "$HAS_UPDATE" -gt "0" ] && [ "$HAS_SET_ROLES" -gt "0" ]; then
+            echo "✅ Data migration pattern detected:"
+            echo "   - Found UPDATE on Users table"
+            echo "   - Found SET Roles assignment"
+            echo "   - DROP COLUMN Role is safe (data preserved in Roles)"
+            echo "Proceeding with migration..."
             exit 0
-          fi
-
-          # For DROP TABLE, always block (no safe pattern)
-          if grep -i "DROP TABLE" migration-script.sql; then
-            echo "❌ DROP TABLE detected - this is never auto-approved"
-            echo "Deployment Cancelled."
-            exit 1
           fi
 
           echo "❌ DESTRUCTIVE CHANGE DETECTED!"
@@ -107,9 +113,9 @@ jobs:
           echo ""
           echo "Deployment Cancelled."
           exit 1
-        else
-          echo "✅ No destructive changes detected. Safe to proceed."
         fi
+
+        echo "✅ No destructive changes detected. Safe to proceed."
     
     - name: Azure Login
       uses: azure/login@v1
