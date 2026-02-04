@@ -244,16 +244,59 @@ public static class DocumentStatus
 {
     /// <summary>Uploaded but not yet verified</summary>
     public const string Pending = "Pending";
-    
+
+    /// <summary>Document has been uploaded successfully</summary>
+    public const string Uploaded = "Uploaded";
+
+    /// <summary>Document is being processed (OCR, virus scan, etc.)</summary>
+    public const string Processing = "Processing";
+
     /// <summary>Verified by compliance/approver</summary>
     public const string Verified = "Verified";
-    
+
     /// <summary>Rejected due to invalid/expired/poor quality</summary>
     public const string Rejected = "Rejected";
-    
+
     /// <summary>Archived after retention period or vendor termination</summary>
     public const string Archived = "Archived";
-    
+
     /// <summary>Expired (based on ExpiryDate)</summary>
     public const string Expired = "Expired";
+
+    // ============================================
+    // State Machine
+    // ============================================
+
+    private static readonly Dictionary<string, HashSet<string>> ValidTransitions = new()
+    {
+        [Pending] = new() { Uploaded, Processing, Rejected },
+        [Uploaded] = new() { Processing, Verified, Rejected },
+        [Processing] = new() { Verified, Rejected },
+        [Verified] = new() { Archived, Expired },
+        [Rejected] = new() { Pending }, // Allow re-upload
+        [Archived] = new() { }, // Terminal
+        [Expired] = new() { Pending } // Allow renewal
+    };
+
+    public static bool IsValidTransition(string from, string to)
+    {
+        return ValidTransitions.ContainsKey(from) &&
+               ValidTransitions[from].Contains(to);
+    }
+
+    public static string[] GetAllowedTransitions(string currentStatus)
+    {
+        return ValidTransitions.TryGetValue(currentStatus, out var transitions)
+            ? transitions.ToArray()
+            : Array.Empty<string>();
+    }
+
+    public static readonly string[] All =
+    {
+        Pending, Uploaded, Processing, Verified, Rejected, Archived, Expired
+    };
+
+    public static bool IsValid(string status) => All.Contains(status);
+
+    public static bool IsUsable(string status) => status == Verified;
 }
