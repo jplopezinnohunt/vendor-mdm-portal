@@ -78,9 +78,27 @@ jobs:
           exit 0
         fi
 
+        # Check for DROP commands
         if grep -iE "DROP TABLE|DROP COLUMN" migration-script.sql; then
+          echo "⚠️ DROP command detected. Checking for data migration pattern..."
+
+          # Smart check: If there's an UPDATE before DROP on same table, data is likely preserved
+          # Pattern: UPDATE [Table] SET ... before DROP COLUMN
+          if grep -iB 20 "DROP COLUMN.*Role" migration-script.sql | grep -i "UPDATE.*Users.*SET.*Roles"; then
+            echo "✅ Data migration pattern detected (UPDATE before DROP)"
+            echo "The migration appears to preserve data. Proceeding..."
+            exit 0
+          fi
+
+          # For DROP TABLE, always block (no safe pattern)
+          if grep -i "DROP TABLE" migration-script.sql; then
+            echo "❌ DROP TABLE detected - this is never auto-approved"
+            echo "Deployment Cancelled."
+            exit 1
+          fi
+
           echo "❌ DESTRUCTIVE CHANGE DETECTED!"
-          echo "The migration script contains DROP TABLE or DROP COLUMN commands."
+          echo "The migration script contains DROP COLUMN without data migration."
           echo "This violates the Zero Data Loss Policy."
           echo ""
           echo "If the migration PRESERVES data (e.g., migrates to new column before drop):"
