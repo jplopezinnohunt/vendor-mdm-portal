@@ -391,6 +391,90 @@ These 18 patterns define HOW the system is built. Every new feature MUST conform
 
 ---
 
+### 10.6 Entity Evolution Checklist
+
+**Status**: MANDATORY when adding or modifying entities.
+
+When adding a **new entity**:
+
+```
+□ 1. SEARCH for existing types
+     grep -r "class EntityName" backend/
+
+□ 2. INHERIT from CanonicalEntityBase
+     public class NewEntity : CanonicalEntityBase { }
+     // Automatically gets: Id, Status, SourceSystem, Data, timestamps, soft delete
+
+□ 3. ADD to SqlDbContext
+     public DbSet<NewEntity> NewEntities { get; set; }
+
+□ 4. CONFIGURE in ConfigureCanonicalEntities()
+     modelBuilder.Entity<NewEntity>(entity => {
+         entity.HasKey(e => e.Id);
+         entity.HasIndex(e => e.IsDeleted);
+         entity.HasQueryFilter(e => !e.IsDeleted);  // Pattern 11
+         entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+     });
+
+□ 5. CREATE DTO (Pattern 6: No Entity Leaks)
+     // Shared/Contracts/Dtos/NewEntityDto.cs
+     public class NewEntityDto { /* only public API fields */ }
+
+□ 6. ADD ToDto() mapping extension
+     // Shared/Contracts/Mappings/EntityMappingExtensions.cs
+     public static NewEntityDto ToDto(this NewEntity entity) => new() { ... };
+
+□ 7. CREATE Status Constants (if applicable)
+     // Shared/Constants/NewEntityStatus.cs with state machine
+
+□ 8. IMPLEMENT Concept (if business logic needed)
+     // Shared/Ontology/Concepts/NewEntityConcept.cs : IOntologyConcept, IAuditableEntity
+
+□ 9. CREATE Migration
+     dotnet ef migrations add AddNewEntity
+     // Verify migration < 50KB
+```
+
+When **modifying an existing entity**:
+
+```
+□ 1. UPDATE entity fields (CanonicalEntityBase or entity-specific)
+
+□ 2. UPDATE DTO if API contract changes
+     // Add new fields to DTO, map in ToDto()
+
+□ 3. UPDATE Concept if business rules change
+
+□ 4. CREATE Migration for schema changes
+     dotnet ef migrations add UpdateEntityName
+     // Verify migration < 50KB
+
+□ 5. UPDATE Status Constants if workflow changes
+
+□ 6. RUN verification script
+     ./scripts/verification/verify_foundational_patterns.sh
+```
+
+When **adding integrations**:
+
+```
+□ 1. USE ExternalSystemMapping for ID correlation
+     // Maps CanonicalEntityId ↔ ExternalSystemId
+
+□ 2. RESPECT Query Filters (soft delete automatic)
+
+□ 3. USE SourceSystem tracking
+     entity.SourceSystem = SourceSystems.Sap;  // or HR, Finance, etc.
+
+□ 4. RETURN DTOs, never entities
+     return entity.ToDto();
+
+□ 5. LOG with IStructuredLogger
+     _logger.LogInformation("Integration sync", new { entityId, source });
+```
+
+---
+
 **Agent Behavior**:
 - When implementing a new feature, FIRST identify which patterns apply
 - THEN read the pattern definition above

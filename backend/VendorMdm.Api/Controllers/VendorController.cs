@@ -1,9 +1,15 @@
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
+using VendorMdm.Shared.Contracts.Dtos;
+using VendorMdm.Shared.Contracts.Mappings;
 using VendorMdm.Shared.Models;
 
 namespace VendorMdm.Api.Controllers;
 
+/// <summary>
+/// Vendor API Controller.
+/// Pattern 6 Compliant: Returns DTOs, never SQL entities.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class VendorController : ControllerBase
@@ -18,7 +24,7 @@ public class VendorController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<Vendor>> CreateVendor([FromBody] Vendor vendor, [FromQuery] bool force = false)
+    public async Task<ActionResult<VendorDto>> CreateVendor([FromBody] CreateVendorRequestDto request, [FromQuery] bool force = false)
     {
         if (!ModelState.IsValid)
         {
@@ -27,8 +33,16 @@ public class VendorController : ControllerBase
 
         try
         {
+            // Map request DTO to entity
+            var vendor = new Vendor
+            {
+                LegalName = request.LegalName,
+                TaxId = request.TaxId,
+                PrimaryContactEmail = request.ContactEmail
+            };
+
             var createdVendor = await _service.CreateVendorAsync(vendor, force);
-            return CreatedAtAction(nameof(GetVendor), new { id = createdVendor.Id }, createdVendor);
+            return CreatedAtAction(nameof(GetVendor), new { id = createdVendor.Id }, createdVendor.ToDto());
         }
         catch (Exception ex)
         {
@@ -58,13 +72,13 @@ public class VendorController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<Vendor>> GetVendor(Guid id)
+    public async Task<ActionResult<VendorDto>> GetVendor(Guid id)
     {
-        try 
+        try
         {
             var vendor = await _service.GetVendorByIdAsync(id);
             if (vendor == null) return NotFound();
-            return Ok(vendor);
+            return Ok(vendor.ToDto());
         }
         catch (Exception ex)
         {
@@ -74,12 +88,12 @@ public class VendorController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Vendor>>> GetAllVendors()
+    public async Task<ActionResult<IEnumerable<VendorDto>>> GetAllVendors()
     {
         try
         {
             var vendors = await _service.GetAllVendorsAsync();
-            return Ok(vendors);
+            return Ok(vendors.ToDtoList());
         }
         catch (Exception ex)
         {
@@ -87,22 +101,22 @@ public class VendorController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+
     [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<Vendor>>> SearchVendors([FromQuery] string query)
+    public async Task<ActionResult<IEnumerable<VendorDto>>> SearchVendors([FromQuery] string query)
     {
-        // Simple search implementation
         try
         {
             var vendors = await _service.GetAllVendorsAsync();
             if (string.IsNullOrWhiteSpace(query))
             {
-                return Ok(vendors); // Return all if no query
+                return Ok(vendors.ToDtoList());
             }
 
-            var results = vendors.Where(v => 
+            var results = vendors.Where(v =>
                 (v.LegalName?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (v.TaxId?.Contains(query, StringComparison.OrdinalIgnoreCase) ?? false)
-            ).ToList();
+            ).ToDtoList();
 
             return Ok(results);
         }

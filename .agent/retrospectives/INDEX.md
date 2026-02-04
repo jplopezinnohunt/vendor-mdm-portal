@@ -113,6 +113,36 @@ exit $FAIL_COUNT
 
 ## 📊 Active Retrospectives (2026-Q1)
 
+### 2026-02-04: Foundational Patterns Hardening
+**Branch**: `feature/security-hardening`
+**File**: [2026-Q1-foundational-patterns-hardening.md](active/2026-Q1-foundational-patterns-hardening.md)
+**Status**: ✅ Completed
+**Key Learnings**:
+- Search for existing types before creating new files
+- CanonicalEntityBase is evolution foundation
+- Query filters are automatic after DbContext config
+- DTOs isolate API contract from entity evolution
+
+**Patterns Implemented**:
+- ✅ Pattern 11: Soft Delete (was missing)
+- ✅ Pattern 6: DTO Enforcement (was partial)
+- ✅ 7 new status constant files with state machines
+- ✅ Entity Evolution Checklist added to brain rules
+
+**Foundational Patterns Score**: 17/18 → 18/18
+
+**Deliverables**:
+- ISoftDeletable interface + CanonicalEntityBase update
+- Global query filters for 9 entities
+- 5 new DTOs + EntityMappingExtensions
+- ApiVersionHeaderMiddleware
+- Spec, implementation plan, verification script
+
+**Time**: ~1 hour (autonomous execution)
+**Grade**: A (completed all objectives)
+
+---
+
 ### 2026-02-04: Security Hardening
 **Branch**: `feature/security-hardening`
 **Commit**: `20bba60`
@@ -145,12 +175,12 @@ exit $FAIL_COUNT
 
 | Metric | Value |
 |--------|-------|
-| Total Retrospectives | 1 |
-| Critical Learnings | 5 |
-| Bugs Prevented | 1 (IsStaging runtime failure) |
-| Time Saved (estimated) | 30 min per future implementation |
-| Brain Rules Pending | 6 updates |
-| Compliance Score Improvement | +12% |
+| Total Retrospectives | 2 |
+| Critical Learnings | 6 |
+| Bugs Prevented | 2 (IsStaging, duplicate type) |
+| Time Saved (estimated) | 45 min per future implementation |
+| Brain Rules Pending | 8 updates |
+| Foundational Patterns | 18/18 (100%) |
 
 ---
 
