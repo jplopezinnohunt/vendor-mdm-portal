@@ -571,9 +571,13 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 3. Avoid documented mistakes
 
 **After Completing Work** (for significant features):
-1. Document issues encountered
+1. Document issues encountered in retrospective
 2. Update `INDEX.md` with top 3-5 learnings
-3. Note which brain rules need updates
+3. **MANDATORY: Apply learnings to brain rules immediately**
+   - Update relevant sections in this file (moderngoldenrules.md)
+   - Mark as `[x] Applied` in INDEX.md
+   - Commit rule updates with retrospective reference
+4. Do NOT leave "Pending" items - apply them before closing the task
 
 ### INDEX.md Format
 
