@@ -11,6 +11,27 @@ namespace VendorMdm.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // ZERO DATA LOSS: Add new columns BEFORE dropping old ones
+            // Step 1: Add new Roles column (will migrate data from Role)
+            migrationBuilder.AddColumn<string>(
+                name: "Roles",
+                table: "Users",
+                nullable: false,
+                defaultValue: "[]");
+
+            // Step 2: Migrate existing Role data to new Roles JSON array format
+            // This preserves all existing role assignments
+            migrationBuilder.Sql(@"
+                UPDATE [Users]
+                SET [Roles] = CASE
+                    WHEN [Role] IS NOT NULL AND [Role] <> ''
+                    THEN '[""' + [Role] + '""]'
+                    ELSE '[]'
+                END
+                WHERE [Role] IS NOT NULL
+            ");
+
+            // Step 3: NOW safe to drop the old Role column (data preserved in Roles)
             migrationBuilder.DropColumn(
                 name: "Role",
                 table: "Users");
@@ -83,12 +104,6 @@ namespace VendorMdm.Api.Migrations
                 name: "RecoveryCodes",
                 table: "Users",
                 nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Roles",
-                table: "Users",
-                nullable: false,
-                defaultValue: "[]");
 
             migrationBuilder.AddColumn<bool>(
                 name: "TwoFactorEnabled",

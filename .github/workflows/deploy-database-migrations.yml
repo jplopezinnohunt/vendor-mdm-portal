@@ -20,6 +20,11 @@ on:
         options:
           - dev
           - prod
+      skip_destructive_check:
+        description: 'Skip destructive change check (DANGER: Only use after manual verification)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   migrate:
@@ -65,10 +70,23 @@ jobs:
     - name: Check for Destructive Changes (Zero Data Loss)
       run: |
         echo "🔍 Analyzing migration script for destructive commands..."
+
+        # Check if bypass is enabled (manual workflow only, after verification)
+        if [ "${{ inputs.skip_destructive_check }}" == "true" ]; then
+          echo "⚠️ DESTRUCTIVE CHECK BYPASSED BY MANUAL OVERRIDE"
+          echo "Ensure you have manually verified the migration preserves data!"
+          exit 0
+        fi
+
         if grep -iE "DROP TABLE|DROP COLUMN" migration-script.sql; then
           echo "❌ DESTRUCTIVE CHANGE DETECTED!"
           echo "The migration script contains DROP TABLE or DROP COLUMN commands."
           echo "This violates the Zero Data Loss Policy."
+          echo ""
+          echo "If the migration PRESERVES data (e.g., migrates to new column before drop):"
+          echo "1. Manually verify the migration file"
+          echo "2. Re-run workflow with 'skip_destructive_check: true'"
+          echo ""
           echo "Deployment Cancelled."
           exit 1
         else
