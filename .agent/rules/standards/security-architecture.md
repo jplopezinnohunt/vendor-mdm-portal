@@ -1,7 +1,15 @@
-# Security Architecture - Zero-Trust Implementation
+# Security Architecture Standard
 
-## Overview
-This document describes the comprehensive security approach for the Vendor MDM Portal, implementing the "Iron Dome" Zero-Trust Security standard.
+**Category**: Security & Compliance
+**Pattern #**: 9
+**Status**: MANDATORY
+**Priority**: 🔴 CRITICAL
+
+---
+
+## Definition
+
+Comprehensive Zero-Trust security implementation (the "Iron Dome") for the Vendor MDM Portal.
 
 ---
 

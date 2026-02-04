@@ -1,8 +1,11 @@
-# Database Migrations & Build Operations - Best Practices
+# Database Migration Standard
 
-**Rule Type**: Operational Standard  
-**Applies To**: All EF Core migrations, database schema changes, and build operations  
-**Last Updated**: 2024-12-18
+**Category**: Operations & Quality
+**Pattern #**: 19
+**Status**: MANDATORY
+**Priority**: 🔴 CRITICAL
+
+**Applies To**: All EF Core migrations, database schema changes, and build operations
 
 ---
 
@@ -236,3 +239,93 @@ These rules are **mandatory** for all database schema changes. Violations will r
 4. Migration rollbacks and database resets
 
 **Auto-apply these rules in all EF Core migration workflows.**
+
+---
+
+## 7. Azure Deployment (CI/CD Pipeline)
+
+### Environment-Specific Process
+
+| Environment | Database | How to Apply Migrations |
+|-------------|----------|------------------------|
+| **Local** | SQLite | `dotnet ef database update` (direct) |
+| **Azure DEV/STAGING/PROD** | SQL Server | **GitHub Actions ONLY** |
+
+### NEVER Do This
+
+- ❌ Create manual SQL scripts for Azure
+- ❌ Run EF migrations directly against Azure SQL
+- ❌ Use Azure Portal SQL Query Editor for schema changes
+
+### ALWAYS Do This
+
+- ✅ Commit migration files to git
+- ✅ Merge to `develop` (or target branch)
+- ✅ Trigger **"Deploy Database Migrations"** workflow in GitHub Actions UI
+
+### GitHub Actions Migration Workflow
+
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click **"Deploy Database Migrations"**
+3. Click **"Run workflow"**
+4. Select environment (dev/staging/prod)
+5. Workflow automatically:
+   - Generates migration SQL from EF Core
+   - Patches `TEXT` → `nvarchar(max)` for SQL Server
+   - Applies to Azure SQL Database
+   - Shows preview before applying
+
+### Why GitHub Actions?
+
+- Automatic type conversion (SQLite ↔ SQL Server)
+- Audit trail in GitHub
+- Rollback capability
+- Environment isolation
+- Zero manual SQL script errors
+
+---
+
+## 8. CI/CD Troubleshooting Guide
+
+### Common Issues & Solutions
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| Script gen fails | "JWT SecretKey required" | Add dummy connection string env var in workflow |
+| DROP COLUMN blocked | Zero Data Loss check fails | Add data migration SQL BEFORE drop (UPDATE SET...) |
+| TEXT type error | `ALTER COLUMN TEXT` fails on SQL Server | Workflow patches TEXT→nvarchar(max) in script |
+| Azure AD token too long | sqlcmd `-P` fails (128 char limit) | Use PowerShell `Invoke-Sqlcmd` with `-AccessToken` |
+| FK constraint error | Can't alter column with FK | Drop FK first, alter, recreate FK |
+
+### SQLite vs SQL Server Type Mapping
+
+```
+SQLite          → SQL Server
+TEXT            → nvarchar(max)
+INTEGER         → int / bigint
+REAL            → float
+BLOB            → varbinary(max)
+```
+
+### Migration Workflow Flow
+
+```
+1. Generate SQL script (EF Core)    ← Uses SqlDbContextFactory
+2. Patch TEXT → nvarchar(max)       ← sed replacement
+3. Check for destructive changes    ← Zero Data Loss
+4. Add firewall rule               ← GitHub runner IP
+5. Execute via PowerShell          ← Invoke-Sqlcmd with AAD token
+6. Remove firewall rule            ← Cleanup
+```
+
+### CRITICAL Rule
+
+**NEVER** use `dotnet ef database update` for Azure - it uses migration code directly which has SQLite types. Always use the workflow which executes the PATCHED SQL script.
+
+---
+
+## Reference
+
+- **CI/CD Standard**: [cicd-setup-standards.md](cicd-setup-standards.md)
+- **Zero Data Loss**: [zero-data-loss-standard.md](zero-data-loss-standard.md)
+- **Golden Rules**: Section 8 (Pre-Commit Protocol)

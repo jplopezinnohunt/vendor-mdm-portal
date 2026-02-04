@@ -4,8 +4,33 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
+**Version**: 1.2.0 | **Last Updated**: 2026-02-04 | **Standards**: 34 (6 categories)
+
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
+---
+
+## Table of Contents
+
+| Section | Title | Priority |
+|---------|-------|----------|
+| [0](#0-critical-zero-data-loss-policy-the-atomic-rule) | Zero Data Loss Policy | 🔴 CRITICAL |
+| [1](#1-compliance-logic) | Compliance Logic | 🔴 CRITICAL |
+| [2](#2-governance-spec-driven-development-sdd) | SDD Workflow | 🔴 CRITICAL |
+| [3](#3-performance--design-dna) | Performance & Design DNA | 🟠 IMPORTANT |
+| [4](#4-the-standards-brain-references) | Standards Brain (34 standards) | 🟠 IMPORTANT |
+| [5](#5-build--process-hygiene) | Build & Process Hygiene | 🟠 IMPORTANT |
+| [6](#6-the-architecture-dna-micro-app-standard) | Architecture DNA | 🟠 IMPORTANT |
+| [7](#7-security-high-standards-the-iron-dome) | Security Standards | 🔴 CRITICAL |
+| [8](#8-pre-commit-verification-protocol) | Pre-Commit Protocol | 🟠 IMPORTANT |
+| [9](#9-warning-hygiene-policy) | Warning Hygiene | 🟡 STANDARD |
+| [10](#10-retrospective-governance-continuous-improvement) | Retrospective Governance | 🟡 STANDARD |
+| [11](#11-event-driven-architecture-eda-governance) | EDA Governance | 🟠 IMPORTANT |
+
+**Priority Legend**: 🔴 CRITICAL = Must follow always | 🟠 IMPORTANT = Must follow for new code | 🟡 STANDARD = Recommended
+
+**Quick Reference**: See [QUICK-REFERENCE.md](QUICK-REFERENCE.md) for 1-page cheat sheet.
+**Decisions**: See [decisions/INDEX.md](../decisions/INDEX.md) for Architecture Decision Records.
 
 ---
 
@@ -18,7 +43,7 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 
 ## 1. Compliance Logic
 - **Primary Source**: This file is your "System Logic".
-- **Brain Architecture**: See [BRAIN-ARCHITECTURE.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/BRAIN-ARCHITECTURE.md) for documentation hierarchy.
+- **Brain Architecture**: See [BRAIN-ARCHITECTURE.md](BRAIN-ARCHITECTURE.md) for documentation hierarchy.
 - **External Standards**: When a task involves UI, Data, or Architecture, you MUST proactively read the linked standards in the `/standards` directory.
 - **Citation**: Every Specification (`specs/spec_*.md`) must cite WHICH standard was followed.
 - **Architecture Maintenance**: When adding new patterns/standards, you MUST update:
@@ -38,7 +63,25 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 ---
 
 ## 3. Performance & Design DNA
-- **Latencey (UI)**: Follow the **Doherty Threshold** (<400ms). Mandatory loading states and skeleton loaders.
+
+### 3.1 Performance Targets (KPIs)
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| **UI Response** | < 400ms | Time to interactive (Doherty Threshold) |
+| **API Response (p50)** | < 100ms | Backend response time |
+| **API Response (p95)** | < 500ms | Backend response time |
+| **API Response (p99)** | < 1000ms | Backend response time |
+| **Database Query** | < 50ms | Single query execution |
+| **Build Time (Backend)** | < 60s | `dotnet build` |
+| **Build Time (Frontend)** | < 30s | `npm run build` |
+| **Test Coverage** | > 75% | Combined unit + integration |
+| **Lighthouse Score** | > 90 | Performance + Accessibility |
+| **Bundle Size** | < 500KB | Initial JS bundle (gzipped) |
+
+### 3.2 Design Rules
+
+- **Latency (UI)**: Follow the **Doherty Threshold** (<400ms). Mandatory loading states and skeleton loaders.
 - **Search (Data)**: Use **PostgreSQL Generated Columns** + Indexes for frequent search targets in JSONB.
 - **Async Side-Effects**: Use Domain Events for non-transactional work (Email, SAP, Logging).
 
@@ -46,37 +89,40 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 
 ## 4. The Standards Brain (References)
 
-**Index**: See [standards/README.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/README.md) for full list.
+**Index**: See [standards/README.md](standards/README.md) for full list.
 
-**30 standards** organized in **6 categories**:
+**34 standards** organized in **6 categories**:
 
 | Category | Count |
 |----------|-------|
-| Architecture & Design | 4 |
-| Core Development | 4 |
+| Architecture & Design | 5 |
+| Core Development | 6 |
 | Security & Compliance | 4 |
 | Integration & Infrastructure | 5 |
-| Operations & Quality | 6 |
+| Operations & Quality | 7 |
 | Governance & Process | 7 |
-| **Total** | **30** |
+| **Total** | **34** |
 
 You MUST load and apply the relevant standard based on task type.
 
-### Category 1: Architecture & Design (4 standards)
+### Category 1: Architecture & Design (5 standards)
 | Pattern | Standard |
 |---------|----------|
 | Hexagonal Architecture | [hexagonal-architecture-standards.md](standards/hexagonal-architecture-standards.md) |
 | Hybrid Data Model | [data-model-standards.md](standards/data-model-standards.md) |
 | Ontology Modeling | [ontology-modeling-standard.md](standards/ontology-modeling-standard.md) |
 | Repository Pattern | [repository-pattern-standard.md](standards/repository-pattern-standard.md) |
+| API Versioning | [api-versioning-standard.md](standards/api-versioning-standard.md) |
 
-### Category 2: Core Development (4 standards)
+### Category 2: Core Development (6 standards)
 | Pattern | Standard |
 |---------|----------|
 | Result Pattern | [result-pattern-standard.md](standards/result-pattern-standard.md) |
 | Structured Logging | [logging-standard.md](standards/logging-standard.md) |
 | State Machines | [state-machine-standard.md](standards/state-machine-standard.md) |
 | Event-Driven Architecture | [event-driven-architecture-standard.md](standards/event-driven-architecture-standard.md) |
+| Testing | [testing-standard.md](standards/testing-standard.md) |
+| Error Handling | [error-handling-standard.md](standards/error-handling-standard.md) |
 
 ### Category 3: Security & Compliance (4 standards)
 | Pattern | Standard |
@@ -95,7 +141,7 @@ You MUST load and apply the relevant standard based on task type.
 | Multi-Tenancy | [multi-tenancy-standard.md](standards/multi-tenancy-standard.md) |
 | Data Residency | [data-residency-standard.md](standards/data-residency-standard.md) |
 
-### Category 5: Operations & Quality (6 standards)
+### Category 5: Operations & Quality (7 standards)
 | Pattern | Standard |
 |---------|----------|
 | CI/CD Setup | [cicd-setup-standards.md](standards/cicd-setup-standards.md) |
@@ -104,6 +150,7 @@ You MUST load and apply the relevant standard based on task type.
 | Rate Limiting | [rate-limiting-standard.md](standards/rate-limiting-standard.md) |
 | Performance | [performance-generated-columns.md](standards/performance-generated-columns.md) |
 | UI Design | [ui-design-standards.md](standards/ui-design-standards.md) |
+| Accessibility (WCAG) | [accessibility-standard.md](standards/accessibility-standard.md) |
 
 ### Category 6: Governance & Process (7 standards)
 | Pattern | Standard | Section |
@@ -115,6 +162,48 @@ You MUST load and apply the relevant standard based on task type.
 | Pre-Commit Protocol | [pre-commit-standard.md](standards/pre-commit-standard.md) | 8 |
 | Warning Hygiene | [warning-hygiene-standard.md](standards/warning-hygiene-standard.md) | 9 |
 | Retrospective Governance | [retrospective-standard.md](standards/retrospective-standard.md) | 10 |
+
+### Standard Selection Decision Tree
+
+```
+What are you implementing?
+│
+├─► New API endpoint?
+│   ├─► Read: hexagonal-architecture-standards.md
+│   ├─► Read: api-versioning-standard.md
+│   └─► Read: result-pattern-standard.md
+│
+├─► Database changes?
+│   ├─► Read: database-migration-standards.md
+│   └─► Read: data-model-standards.md
+│
+├─► State changes (status transitions)?
+│   ├─► Read: state-machine-standard.md
+│   └─► Read: event-driven-architecture-standard.md
+│
+├─► External integration (SAP, Email)?
+│   ├─► Read: sap-integration-standard.md (if SAP)
+│   ├─► Read: email-service-standard.md (if Email)
+│   └─► Read: event-driven-architecture-standard.md
+│
+├─► UI component?
+│   ├─► Read: ui-design-standards.md
+│   └─► Read: accessibility-standard.md
+│
+├─► Security feature?
+│   ├─► Read: security-architecture.md
+│   └─► Read: gdpr-pii-standard.md (if PII involved)
+│
+├─► Error handling?
+│   ├─► Read: error-handling-standard.md
+│   └─► Read: result-pattern-standard.md
+│
+├─► Testing?
+│   └─► Read: testing-standard.md
+│
+└─► Not sure?
+    └─► Start with: hexagonal-architecture-standards.md
+```
 
 ### Pattern Violations (FORBIDDEN)
 
@@ -128,7 +217,8 @@ You MUST load and apply the relevant standard based on task type.
 
 ### Future Patterns (Roadmap)
 
-- [ ] API Versioning
+- [x] API Versioning ✅ (now in standards)
+- [x] Accessibility (WCAG) ✅ (now in standards)
 - [ ] Circuit Breaker
 - [ ] Response Caching
 - [ ] Background Jobs
@@ -235,73 +325,15 @@ ls -lh backend/VendorMdm.Api/Migrations/*.cs | grep -v Designer | grep -v Snapsh
 
 ### 2.1 Database Migration Deployment (CRITICAL)
 
-**Environment-Specific Process**:
+**Quick Reference**:
+- **Local**: `dotnet ef database update` (direct)
+- **Azure**: GitHub Actions workflow ONLY (never direct EF commands)
 
-| Environment | Database | How to Apply Migrations |
-|-------------|----------|------------------------|
-| **Local** | SQLite | `dotnet ef database update` (direct) |
-| **Azure DEV/STAGING/PROD** | SQL Server | **GitHub Actions ONLY** |
-
-**NEVER**:
-- ❌ Create manual SQL scripts for Azure
-- ❌ Run EF migrations directly against Azure SQL
-- ❌ Use Azure Portal SQL Query Editor for schema changes
-
-**ALWAYS**:
-- ✅ Commit migration files to git
-- ✅ Merge to `develop` (or target branch)
-- ✅ Trigger **"Deploy Database Migrations"** workflow in GitHub Actions UI
-
-**GitHub Actions Migration Workflow**:
-1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
-2. Click **"Deploy Database Migrations"**
-3. Click **"Run workflow"**
-4. Select environment (dev/staging/prod)
-5. Workflow automatically:
-   - Generates migration SQL from EF Core
-   - Patches `TEXT` → `nvarchar(max)` for SQL Server
-   - Applies to Azure SQL Database
-   - Shows preview before applying
-
-**Why GitHub Actions?**
-- Automatic type conversion (SQLite ↔ SQL Server)
-- Audit trail in GitHub
-- Rollback capability
-- Environment isolation
-- Zero manual SQL script errors
-
-### 2.2 CI/CD Troubleshooting Guide (Retrospective Learnings)
-
-**Common CI/CD Issues & Solutions**:
-
-| Issue | Symptom | Solution |
-|-------|---------|----------|
-| Script gen fails | "JWT SecretKey required" | Add dummy connection string env var in workflow |
-| DROP COLUMN blocked | Zero Data Loss check fails | Add data migration SQL BEFORE drop (UPDATE SET...) |
-| TEXT type error | `ALTER COLUMN TEXT` fails on SQL Server | Workflow patches TEXT→nvarchar(max) in script |
-| Azure AD token too long | sqlcmd `-P` fails (128 char limit) | Use PowerShell `Invoke-Sqlcmd` with `-AccessToken` |
-| FK constraint error | Can't alter column with FK | Drop FK first, alter, recreate FK |
-
-**SQLite vs SQL Server Types**:
-```
-SQLite          → SQL Server
-TEXT            → nvarchar(max)
-INTEGER         → int / bigint
-REAL            → float
-BLOB            → varbinary(max)
-```
-
-**The migration workflow flow**:
-```
-1. Generate SQL script (EF Core)    ← Uses SqlDbContextFactory
-2. Patch TEXT → nvarchar(max)       ← sed replacement
-3. Check for destructive changes    ← Zero Data Loss
-4. Add firewall rule               ← GitHub runner IP
-5. Execute via PowerShell          ← Invoke-Sqlcmd with AAD token
-6. Remove firewall rule            ← Cleanup
-```
-
-**CRITICAL**: Never use `dotnet ef database update` for Azure - it uses migration code directly which has SQLite types. Always use the workflow which executes the PATCHED SQL script.
+**Full Details**: See [database-migration-standards.md](standards/database-migration-standards.md) for:
+- Environment-specific process
+- CI/CD troubleshooting guide
+- SQLite ↔ SQL Server type mapping
+- Workflow step-by-step
 
 ### 3. Alignment Verification
 ```bash
@@ -648,6 +680,8 @@ When creating a specification (`specs/spec_*.md`), evaluate and document:
 - [ ] Service Bus for external systems
 - [ ] SignalR for frontend push
 ```
+
+(See Section 11.2 checklist above)
 
 ### 11.3 Implementation Requirements
 

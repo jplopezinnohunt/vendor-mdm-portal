@@ -1,5 +1,7 @@
 # Brain Architecture: Documentation Hierarchy
 
+**Version**: 1.2.0 | **Last Updated**: 2026-02-04
+
 **Purpose**: Defines the single-source-of-truth documentation structure for all agents (Claude & Antigravity)
 
 ---
@@ -27,7 +29,7 @@
 │  Section 1:  Compliance Logic                                       │
 │  Section 2:  SDD Workflow                                           │
 │  Section 3:  Performance DNA                                        │
-│  Section 4:  Standards Brain (30 standards) ─────→ (references)     │
+│  Section 4:  Standards Brain (34 standards) ─────→ (references)     │
 │  Section 5:  Build Hygiene                                          │
 │  Section 6:  Architecture DNA                                       │
 │  Section 7:  Security Standards                                     │
@@ -42,14 +44,14 @@
 ┌───────────────────────────────┐  ┌─────────────────────────────────┐
 │   DETAILED STANDARDS          │  │   ORGANIZATIONAL MEMORY         │
 │   .agent/rules/standards/     │  │   .agent/retrospectives/        │
-│   (30 files in 6 categories)  │  │                                 │
+│   (34 files in 6 categories)  │  │                                 │
 ├───────────────────────────────┤  ├─────────────────────────────────┤
 │                               │  │ INDEX.md (Top Learnings)        │
-│ Category 1: Architecture (4)  │  │ active/*.md (Current Quarter)   │
-│ Category 2: Core Dev (4)      │  │ archived/*.md (Past Quarters)   │
+│ Category 1: Architecture (5)  │  │ active/*.md (Current Quarter)   │
+│ Category 2: Core Dev (6)      │  │ archived/*.md (Past Quarters)   │
 │ Category 3: Security (4)      │  │                                 │
 │ Category 4: Integration (5)   │  │ ↑ Feeds learnings BACK to       │
-│ Category 5: Operations (6)    │  │   Golden Rules (Section 10)     │
+│ Category 5: Operations (7)    │  │   Golden Rules (Section 10)     │
 │ Category 6: Governance (7)    │  │                                 │
 │                               │  │                                 │
 │ See standards/README.md       │  └─────────────────────────────────┘
@@ -58,19 +60,22 @@
 
 ---
 
-## Standards Organization (30 total in 6 categories)
+## Standards Organization (34 total in 6 categories)
 
-### Category 1: Architecture & Design (4)
+### Category 1: Architecture & Design (5)
 - hexagonal-architecture-standards.md
 - data-model-standards.md
 - ontology-modeling-standard.md
 - repository-pattern-standard.md
+- api-versioning-standard.md ← NEW
 
-### Category 2: Core Development (4)
+### Category 2: Core Development (6)
 - result-pattern-standard.md
 - logging-standard.md
 - state-machine-standard.md
 - event-driven-architecture-standard.md
+- testing-standard.md
+- error-handling-standard.md
 
 ### Category 3: Security & Compliance (4)
 - security-architecture.md
@@ -85,13 +90,14 @@
 - multi-tenancy-standard.md
 - data-residency-standard.md
 
-### Category 5: Operations & Quality (6)
+### Category 5: Operations & Quality (7)
 - cicd-setup-standards.md
 - database-migration-standards.md
 - git-branching-sap-standards.md
 - rate-limiting-standard.md
 - performance-generated-columns.md
 - ui-design-standards.md
+- accessibility-standard.md ← NEW
 
 ### Category 6: Governance & Process (7)
 - zero-data-loss-standard.md (Section 0)
@@ -110,7 +116,7 @@
 |-------|---------|---------|---------|
 | **Pointer** | CLAUDE.md, MEMORY.md | Entry points | Reference to Golden Rules ONLY |
 | **Master** | moderngoldenrules.md | Executive Directive | 12 sections of rules |
-| **Standards** | standards/*.md (30 files) | Task-specific details | Detailed implementation rules |
+| **Standards** | standards/*.md (34 files) | Task-specific details | Detailed implementation rules |
 | **Memory** | retrospectives/*.md | Organizational learning | Learnings feed back to Master |
 
 ---
@@ -136,7 +142,7 @@
 ### 4. Standards (standards/*.md)
 - Task-specific detailed rules
 - Referenced BY Golden Rules Section 4
-- **30 files** in **6 categories**
+- **34 files** in **6 categories**
 - Each section has exactly ONE standard
 
 ### 5. Retrospectives (retrospectives/*.md)
@@ -164,17 +170,20 @@ When adding new patterns/standards:
     └── standards/
         ├── README.md                   ← Standards index
         │
-        │── Architecture & Design (4)
+        │── Architecture & Design (5)
         ├── hexagonal-architecture-standards.md
         ├── data-model-standards.md
         ├── ontology-modeling-standard.md
         ├── repository-pattern-standard.md
+        ├── api-versioning-standard.md ← NEW
         │
-        │── Core Development (4)
+        │── Core Development (6)
         ├── result-pattern-standard.md
         ├── logging-standard.md
         ├── state-machine-standard.md
         ├── event-driven-architecture-standard.md
+        ├── testing-standard.md
+        ├── error-handling-standard.md
         │
         │── Security & Compliance (4)
         ├── security-architecture.md
@@ -189,13 +198,14 @@ When adding new patterns/standards:
         ├── multi-tenancy-standard.md
         ├── data-residency-standard.md
         │
-        │── Operations & Quality (6)
+        │── Operations & Quality (7)
         ├── cicd-setup-standards.md
         ├── database-migration-standards.md
         ├── git-branching-sap-standards.md
         ├── rate-limiting-standard.md
         ├── performance-generated-columns.md
         ├── ui-design-standards.md
+        ├── accessibility-standard.md ← NEW
         │
         │── Governance & Process (7)
         ├── zero-data-loss-standard.md

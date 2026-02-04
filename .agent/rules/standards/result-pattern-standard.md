@@ -90,4 +90,5 @@ public async Task<IActionResult> GetVendor(Guid id)
 ## Reference
 
 - **Implementation**: `Core.Framework/Common/Result.cs`
-- **Golden Rules**: Section 10.2 Pattern 4
+- **Error Handling**: [error-handling-standard.md](error-handling-standard.md)
+- **Golden Rules**: Section 4, Category 2 (Core Development)
