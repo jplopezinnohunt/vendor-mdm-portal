@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,8 @@ using VendorMdm.Shared.Models.Sanctions;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 public class InvitationController : ControllerBase
 {
@@ -43,29 +46,23 @@ public class InvitationController : ControllerBase
     [HttpPost("create")]
     public async Task<IActionResult> CreateInvitation([FromBody] CreateInvitationRequest request)
     {
-        try
-        {
-            // For now, using a dummy user until we parse the token properly
-            // In real impl: var userId = Guid.Parse(User.FindFirst("sub").Value);
-            var invitedBy = Guid.NewGuid();
-            var invitedByName = "Internal Approver"; // In production: User.Identity.Name
+        // For now, using a dummy user until we parse the token properly
+        // In real impl: var userId = Guid.Parse(User.FindFirst("sub").Value);
+        var invitedBy = Guid.NewGuid();
+        var invitedByName = "Internal Approver"; // In production: User.Identity.Name
 
-            var response = await _invitationService.CreateInvitationAsync(
-                request,
-                invitedBy,
-                invitedByName);
+        var result = await _invitationService.CreateInvitationAsync(
+            request,
+            invitedBy,
+            invitedByName);
 
-            return Ok(response);
-        }
-        catch (InvalidOperationException ex)
+        if (result.IsFailure)
         {
-            return BadRequest(new { message = ex.Message });
+            _logger.LogWarning("Invitation creation failed: {Error}", result.Error);
+            return BadRequest(new { message = result.Error });
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating invitation");
-            return StatusCode(500, new { error = "Failed to create invitation", detail = ex.Message, stack = ex.StackTrace });
-        }
+
+        return Ok(result.Value);
     }
 
     /// <summary>

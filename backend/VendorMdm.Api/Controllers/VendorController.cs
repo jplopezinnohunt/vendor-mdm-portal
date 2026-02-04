@@ -1,5 +1,7 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
+using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Shared.Contracts.Dtos;
 using VendorMdm.Shared.Contracts.Mappings;
 using VendorMdm.Shared.Models;
@@ -9,9 +11,12 @@ namespace VendorMdm.Api.Controllers;
 /// <summary>
 /// Vendor API Controller.
 /// Pattern 6 Compliant: Returns DTOs, never SQL entities.
+/// API Versioning: Supports /api/v1/vendor routes (Brain v1.2.0 compliance).
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
+[Route("api/[controller]")] // Backwards compatibility during migration
 public class VendorController : ControllerBase
 {
     private readonly IVendorService _service;
@@ -24,31 +29,28 @@ public class VendorController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<VendorDto>> CreateVendor([FromBody] CreateVendorRequestDto request, [FromQuery] bool force = false)
+    public async Task<IActionResult> CreateVendor([FromBody] CreateVendorRequestDto request, [FromQuery] bool force = false)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        try
+        // Map request DTO to entity
+        var vendor = new Vendor
         {
-            // Map request DTO to entity
-            var vendor = new Vendor
-            {
-                LegalName = request.LegalName,
-                TaxId = request.TaxId,
-                PrimaryContactEmail = request.ContactEmail
-            };
+            LegalName = request.LegalName,
+            TaxId = request.TaxId,
+            PrimaryContactEmail = request.ContactEmail
+        };
 
-            var createdVendor = await _service.CreateVendorAsync(vendor, force);
-            return CreatedAtAction(nameof(GetVendor), new { id = createdVendor.Id }, createdVendor.ToDto());
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create vendor");
-            return StatusCode(500, $"Internal server error: {ex.Message}");
-        }
+        var result = await _service.CreateVendorAsync(vendor, force);
+
+        // Use Result pattern - no try/catch needed for business logic errors
+        return result.ToCreatedResult(
+            actionName: nameof(GetVendor),
+            routeValuesFactory: v => new { id = v.Id },
+            dtoTransform: v => v.ToDto());
     }
 
     [HttpPut("{id}")]
@@ -59,16 +61,10 @@ public class VendorController : ControllerBase
             return BadRequest("ID mismatch");
         }
 
-        try
-        {
-            await _service.UpdateVendorAsync(vendor);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update vendor");
-            return StatusCode(500, $"Internal server error: {ex.Message}");
-        }
+        var result = await _service.UpdateVendorAsync(vendor);
+
+        // Use Result pattern - returns 204 NoContent on success, 400 BadRequest on failure
+        return result.ToActionResult(_ => NoContent());
     }
 
     [HttpGet("{id}")]

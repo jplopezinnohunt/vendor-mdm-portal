@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
 using VendorMdm.Api.Services.Helpers;
@@ -12,6 +13,8 @@ namespace VendorMdm.Api.Controllers;
 /// Validation Logic: From ibankit/international standards (ISO 13616, ISO 9362)
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/bank")]
 [Route("api/bank")]
 public class BankController : ControllerBase
 {

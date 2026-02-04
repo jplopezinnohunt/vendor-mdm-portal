@@ -11,6 +11,7 @@ using VendorMdm.Api.Controllers;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Models;
 using VendorMdm.Api.Services;
+using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Shared.Models;
 using Xunit;
 
@@ -71,9 +72,10 @@ namespace VendorMdm.Api.Tests.Controllers
                 }
             };
 
-            // Act
+            // Setup - Return a successful Result with a mock vendor
+            var mockVendor = new Vendor { Id = Guid.NewGuid(), LegalName = "New Name" };
             _vendorServiceMock.Setup(x => x.ApproveApplicationAsync(It.IsAny<Guid>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<bool>(), It.IsAny<string>()))
-                .Returns(Task.CompletedTask);
+                .ReturnsAsync(Result.Ok(mockVendor));
 
             // Set ControllerContext to avoid NullReference on User.Identity
             _controller.ControllerContext = new ControllerContext 

@@ -1,9 +1,12 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
 
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 public class HealthController : ControllerBase
 {

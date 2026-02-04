@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
@@ -6,6 +7,8 @@ using VendorMdm.Shared.Models;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 public class EmployeeController : ControllerBase
 {

@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
 using VendorMdm.Shared.Models.Sanctions;
@@ -8,6 +9,8 @@ namespace VendorMdm.Api.Controllers;
 /// Sanctions screening API - Check entities against global sanctions lists
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/sanctions")]
 [Route("api/sanctions")]
 [Produces("application/json")]
 public class SanctionsController : ControllerBase

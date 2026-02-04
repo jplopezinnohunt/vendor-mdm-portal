@@ -1,9 +1,14 @@
 using VendorMdm.Api.Data;
+using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Shared.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace VendorMdm.Api.Services;
 
+/// <summary>
+/// User Service - Brain v1.2.0 Compliant
+/// Pattern 4: Result Pattern - Returns Result instead of throwing exceptions for business logic.
+/// </summary>
 public class UserService : IUserService
 {
     private readonly SqlDbContext _context;
@@ -20,37 +25,42 @@ public class UserService : IUserService
         _logger = logger;
     }
 
-    public async Task<User> CreateUserAsync(User user)
+    public async Task<Result<User>> CreateUserAsync(User user)
     {
-        if (user == null) throw new ArgumentNullException(nameof(user));
+        // Validate input
+        if (user == null)
+            return Result.Fail<User>("User is required");
+
+        if (string.IsNullOrEmpty(user.Email))
+            return Result.Fail<User>("Email is required");
 
         // 1. Check if exists
         if (await _context.Users.AnyAsync(u => u.Email == user.Email))
         {
-            throw new InvalidOperationException($"User with email {user.Email} already exists.");
+            return Result.Fail<User>($"User with email {user.Email} already exists.");
         }
 
         // 2. Setup defaults
         if (user.Roles == null || !user.Roles.Any()) user.Roles = new List<string> { "Viewer" };
-        
+
         user.Id = Guid.NewGuid();
         user.CreatedAt = DateTime.UtcNow;
         user.UpdatedAt = DateTime.UtcNow;
         user.EntityVersion = 1;
         user.Status = "Active";
-        user.SourceSystem = "Portal"; 
+        user.SourceSystem = "Portal";
         user.SchemaVersion = "v1.0.0";
         user.AuthProvider = "Local"; // Default for API created users
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
-        
+
         _logger.LogInformation("User created in SQL: {Id} ({Roles})", user.Id, string.Join(",", user.Roles));
 
         // 3. Artifact & Event
         await LogUserArtifactAsync(user, "UserCreated");
 
-        return user;
+        return Result.Ok(user);
     }
 
     public async Task<User> UpdateUserAsync(User user)

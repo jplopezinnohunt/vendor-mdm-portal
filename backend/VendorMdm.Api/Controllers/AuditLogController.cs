@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
@@ -10,6 +11,8 @@ namespace VendorMdm.Api.Controllers;
 /// Provides endpoints for querying audit history with proper error handling.
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 [Authorize]
 public class AuditLogController : ControllerBase

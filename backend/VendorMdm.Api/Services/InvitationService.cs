@@ -5,16 +5,23 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Azure.Cosmos;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Models; // DTOs and Cosmos entities
+using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Shared.Models; // SQL entities
 using VendorMdm.Shared.Models.Sanctions;
 using CosmosModels = VendorMdm.Shared.Models; // Alias for disambiguation
 using VendorMdm.Core.Framework.Logging; // Added for IStructuredLogger
+// State machine alias to avoid conflict with VendorMdm.Shared.Models.InvitationStatus
+using InvitationStatusSM = VendorMdm.Shared.Constants.InvitationStatus;
 
 namespace VendorMdm.Api.Services;
 
+/// <summary>
+/// Invitation Service Interface - Brain v1.2.0 Compliant
+/// Pattern 4: Result Pattern - Returns Result instead of throwing exceptions for business logic.
+/// </summary>
 public interface IInvitationService
 {
-    Task<CreateInvitationResponse> CreateInvitationAsync(CreateInvitationRequest request, Guid invitedBy, string invitedByName);
+    Task<Result<CreateInvitationResponse>> CreateInvitationAsync(CreateInvitationRequest request, Guid invitedBy, string invitedByName);
     Task<ValidateInvitationResponse> ValidateInvitationAsync(string token);
     Task<VendorInvitation?> GetInvitationByTokenAsync(string token);
     Task<InvitationListResponse> GetInvitationsAsync(int page = 1, int pageSize = 20, string? status = null);
@@ -61,20 +68,30 @@ public class InvitationService : IInvitationService
         _auditLog = auditLog;
     }
 
-    public async Task<CreateInvitationResponse> CreateInvitationAsync(
-        CreateInvitationRequest request, 
-        Guid invitedBy, 
+    public async Task<Result<CreateInvitationResponse>> CreateInvitationAsync(
+        CreateInvitationRequest request,
+        Guid invitedBy,
         string invitedByName)
     {
+        // Validate input
+        if (request == null)
+            return Result.Fail<CreateInvitationResponse>("Request is required");
+
+        if (string.IsNullOrEmpty(request.PrimaryContactEmail))
+            return Result.Fail<CreateInvitationResponse>("Primary contact email is required");
+
+        if (string.IsNullOrEmpty(request.VendorLegalName))
+            return Result.Fail<CreateInvitationResponse>("Vendor legal name is required");
+
         // Check for existing pending invitation with same email
         var existingInvitation = await _context.VendorInvitations
-            .Where(i => i.PrimaryContactEmail == request.PrimaryContactEmail 
+            .Where(i => i.PrimaryContactEmail == request.PrimaryContactEmail
                      && (i.Status == InvitationStatus.Pending || i.Status == InvitationStatus.Accepted))
             .FirstOrDefaultAsync();
 
         if (existingInvitation != null)
         {
-            throw new InvalidOperationException(
+            return Result.Fail<CreateInvitationResponse>(
                 $"An active invitation already exists for {request.PrimaryContactEmail}");
         }
 
@@ -85,7 +102,7 @@ public class InvitationService : IInvitationService
 
         if (existingApplication != null)
         {
-            throw new InvalidOperationException(
+            return Result.Fail<CreateInvitationResponse>(
                 $"A vendor application already exists for {request.PrimaryContactEmail}");
         }
 
@@ -192,13 +209,13 @@ public class InvitationService : IInvitationService
                 ("Error", emailError ?? "Unknown"));
         }
 
-        return new CreateInvitationResponse
+        return Result.Ok(new CreateInvitationResponse
         {
             InvitationId = invitation.Id,
             InvitationToken = invitation.InvitationToken,
             ExpiresAt = invitation.ExpiresAt,
             EmailSent = emailSuccess
-        };
+        });
     }
 
     public async Task<ValidateInvitationResponse> ValidateInvitationAsync(string token)
@@ -415,10 +432,24 @@ public class InvitationService : IInvitationService
         var invitation = await _context.VendorInvitations.FindAsync(invitationId);
         if (invitation == null) return false;
 
+        // Validate state transition using state machine
+        if (!InvitationStatusSM.IsValidTransition(invitation.Status, InvitationStatus.Cancelled))
+        {
+            _logger.LogWarning("Invalid state transition for cancellation",
+                ("InvitationId", invitation.Id),
+                ("CurrentStatus", invitation.Status),
+                ("AllowedTransitions", string.Join(", ", InvitationStatusSM.GetAllowedTransitions(invitation.Status))));
+            return false;
+        }
+
+        var previousStatus = invitation.Status;
         invitation.Status = InvitationStatus.Cancelled;
         await _context.SaveChangesAsync();
-        
-        _logger.LogInformation("Invitation cancelled", ("InvitationId", invitation.Id), ("RequestedBy", requestedBy));
+
+        _logger.LogInformation("Invitation cancelled",
+            ("InvitationId", invitation.Id),
+            ("PreviousStatus", previousStatus),
+            ("RequestedBy", requestedBy));
         return true;
     }
 
@@ -429,9 +460,13 @@ public class InvitationService : IInvitationService
 
         if (invitation == null) return false;
 
-        if (invitation.Status == InvitationStatus.Completed)
+        // Validate state transition using state machine
+        if (!InvitationStatusSM.IsValidTransition(invitation.Status, InvitationStatus.Completed))
         {
-            _logger.LogWarning("Invitation already completed", ("InvitationId", invitation.Id), ("ApplicationId", vendorApplicationId));
+            _logger.LogWarning("Invalid state transition for completion",
+                ("InvitationId", invitation.Id),
+                ("CurrentStatus", invitation.Status),
+                ("AllowedTransitions", string.Join(", ", InvitationStatusSM.GetAllowedTransitions(invitation.Status))));
             return false;
         }
 
@@ -510,15 +545,27 @@ public class InvitationService : IInvitationService
         var invitation = await _context.VendorInvitations
             .FirstOrDefaultAsync(i => i.Id == invitationId);
 
-        if (invitation == null || invitation.Status == InvitationStatus.Completed)
+        if (invitation == null)
         {
-            return (false, null, false, "Invitation not found or completed");
+            return (false, null, false, "Invitation not found");
+        }
+
+        // Validate state transition - check if we can transition to Resent first
+        var targetStatus = InvitationStatusSM.Resent;
+        if (!InvitationStatusSM.IsValidTransition(invitation.Status, targetStatus))
+        {
+            // If can't transition to Resent, try Pending (for expired invitations)
+            targetStatus = InvitationStatus.Pending;
+            if (!InvitationStatusSM.IsValidTransition(invitation.Status, targetStatus))
+            {
+                return (false, null, false, $"Cannot resend invitation in status '{invitation.Status}'");
+            }
         }
 
         // Generate new token and extend expiration
         invitation.InvitationToken = GenerateSecureToken();
         invitation.ExpiresAt = DateTime.UtcNow.AddDays(14);
-        invitation.Status = InvitationStatus.Pending;
+        invitation.Status = targetStatus;
         invitation.CurrentStage = InvitationStage.InvitationSent;
 
         await _context.SaveChangesAsync();
@@ -570,16 +617,28 @@ public class InvitationService : IInvitationService
             .Where(i => i.Status == InvitationStatus.Pending && i.ExpiresAt < DateTime.UtcNow)
             .ToListAsync();
 
+        var expiredCount = 0;
         foreach (var invitation in expiredInvitations)
         {
-            invitation.Status = InvitationStatus.Expired;
-            _logger.LogInformation("Invitation expired", ("InvitationId", invitation.Id));
+            // Validate state transition using state machine
+            if (InvitationStatusSM.IsValidTransition(invitation.Status, InvitationStatus.Expired))
+            {
+                invitation.Status = InvitationStatus.Expired;
+                expiredCount++;
+                _logger.LogInformation("Invitation expired", ("InvitationId", invitation.Id));
+            }
+            else
+            {
+                _logger.LogWarning("Could not expire invitation - invalid state transition",
+                    ("InvitationId", invitation.Id),
+                    ("CurrentStatus", invitation.Status));
+            }
         }
 
-        if (expiredInvitations.Any())
+        if (expiredCount > 0)
         {
             await _context.SaveChangesAsync();
-            _logger.LogInformation("Expired overdue invitations", ("Count", expiredInvitations.Count));
+            _logger.LogInformation("Expired overdue invitations", ("Count", expiredCount));
         }
     }
 

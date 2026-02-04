@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
@@ -6,6 +7,8 @@ using VendorMdm.Shared.Models;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/events")]
 [Route("api/events")]
 [Authorize(Roles = "Requestor,MasterDataUnit,Admin")] // Enforcing Role Requirement
 public class EventController : ControllerBase

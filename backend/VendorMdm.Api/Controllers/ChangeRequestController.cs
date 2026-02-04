@@ -1,10 +1,14 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
+using VendorMdm.Shared.Constants;
 using VendorMdm.Shared.Models;
 
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 public class ChangeRequestController : ControllerBase
 {
@@ -27,7 +31,7 @@ public class ChangeRequestController : ControllerBase
             Id = Guid.NewGuid(),
             RequesterId = dto.RequesterId,
             SapVendorId = dto.SapVendorId,
-            Status = "Draft"
+            Status = ChangeRequestStatus.Draft
         };
 
         var createdRequest = await _repository.CreateRequestAsync(request, dto.Payload);
@@ -58,6 +62,11 @@ public class ChangeRequestController : ControllerBase
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+        catch (InvalidOperationException ex)
+        {
+            // State machine validation failure
+            return BadRequest(new { message = ex.Message });
         }
     }
 

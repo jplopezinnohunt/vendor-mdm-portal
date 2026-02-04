@@ -40,8 +40,9 @@ public class InvitationLifecycleIntegrationTests : IClassFixture<IntegrationTest
             ExpirationDays = 14
         };
 
-        var createResponse = await service.CreateInvitationAsync(request, Guid.NewGuid(), "Tester");
-        var token = createResponse.InvitationToken;
+        var createResult = await service.CreateInvitationAsync(request, Guid.NewGuid(), "Tester");
+        createResult.IsSuccess.Should().BeTrue();
+        var token = createResult.Value.InvitationToken;
 
         // Verify Status
         var inv1 = await context.VendorInvitations.FirstOrDefaultAsync(i => i.InvitationToken == token);

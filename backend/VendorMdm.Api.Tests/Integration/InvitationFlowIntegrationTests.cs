@@ -42,10 +42,13 @@ public class InvitationFlowIntegrationTests : IClassFixture<IntegrationTestFixtu
         // Act
         var result = await service.CreateInvitationAsync(
             request, Guid.NewGuid(), "Integration Test");
-        
+
+        // Assert: Result should be successful
+        result.IsSuccess.Should().BeTrue();
+
         // Assert A: SQL Database (State)
         var sqlInvitation = await context.VendorInvitations
-            .FirstOrDefaultAsync(i => i.Id == result.InvitationId);
+            .FirstOrDefaultAsync(i => i.Id == result.Value.InvitationId);
         sqlInvitation.Should().NotBeNull();
         sqlInvitation.Status.Should().Be(InvitationStatus.Pending);
         sqlInvitation.VendorLegalName.Should().Be("Integration Test Vendor");

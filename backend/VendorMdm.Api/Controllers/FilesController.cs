@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
 using VendorMdm.Shared.Models.FileStorage;
@@ -8,6 +9,8 @@ namespace VendorMdm.Api.Controllers;
 /// File storage API for managing vendor documents
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/files")]
 [Route("api/files")]
 [Produces("application/json")]
 public class FilesController : ControllerBase

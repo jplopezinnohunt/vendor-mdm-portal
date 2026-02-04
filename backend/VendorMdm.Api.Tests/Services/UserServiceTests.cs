@@ -43,8 +43,9 @@ namespace VendorMdm.Api.Tests.Services
             var result = await _service.CreateUserAsync(user);
 
             // Assert
-            Assert.Contains("Admin", result.Roles);
-            Assert.Equal("Local", result.AuthProvider);
+            Assert.True(result.IsSuccess);
+            Assert.Contains("Admin", result.Value.Roles);
+            Assert.Equal("Local", result.Value.AuthProvider);
             Assert.NotNull(_context.Users.FirstOrDefault(u => u.Email == "test@example.com"));
         }
 
@@ -63,7 +64,36 @@ namespace VendorMdm.Api.Tests.Services
             var result = await _service.CreateUserAsync(user);
 
             // Assert
-            Assert.Contains("Viewer", result.Roles);
+            Assert.True(result.IsSuccess);
+            Assert.Contains("Viewer", result.Value.Roles);
+        }
+
+        [Fact]
+        public async Task CreateUser_ShouldFail_WhenDuplicateEmail()
+        {
+            // Arrange
+            var existingUser = new User
+            {
+                Username = "existing",
+                Email = "duplicate@example.com",
+                Roles = new List<string> { "Viewer" }
+            };
+            _context.Users.Add(existingUser);
+            await _context.SaveChangesAsync();
+
+            var newUser = new User
+            {
+                Username = "newuser",
+                Email = "duplicate@example.com", // Same email
+                Roles = new List<string> { "Admin" }
+            };
+
+            // Act
+            var result = await _service.CreateUserAsync(newUser);
+
+            // Assert
+            Assert.True(result.IsFailure);
+            Assert.Contains("already exists", result.Error);
         }
 
         [Fact]

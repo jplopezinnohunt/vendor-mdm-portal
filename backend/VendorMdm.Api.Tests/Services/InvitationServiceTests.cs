@@ -26,7 +26,7 @@ public class InvitationServiceTests : TestBase
         var mockSanctions = new Mock<ISanctionsScreeningService>();
         mockSanctions.Setup(s => s.ScreenEntityAsync(It.IsAny<VendorMdm.Shared.Models.Sanctions.ScreeningRequest>()))
             .ReturnsAsync(new VendorMdm.Shared.Models.Sanctions.ScreeningResult { OverallRisk = VendorMdm.Shared.Models.Sanctions.RiskLevel.Clear });
-        
+
         var mockAuditLog = new Mock<IAuditLogService>();
 
         var service = new InvitationService(
@@ -40,24 +40,25 @@ public class InvitationServiceTests : TestBase
             ExpirationDays = 14,
             Notes = "Test Notes"
         };
-        
+
         // Act
         var result = await service.CreateInvitationAsync(
             request, Guid.NewGuid(), "Test Admin");
-        
+
         // Assert
-        result.Should().NotBeNull();
-        result.InvitationId.Should().NotBeEmpty();
-        
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value.InvitationId.Should().NotBeEmpty();
+
         var invitation = await context.VendorInvitations
-            .FirstOrDefaultAsync(i => i.Id == result.InvitationId);
+            .FirstOrDefaultAsync(i => i.Id == result.Value.InvitationId);
         invitation.Should().NotBeNull();
         invitation.VendorLegalName.Should().Be("Test Vendor");
         invitation.Status.Should().Be(InvitationStatus.Pending);
     }
-    
+
     [Fact]
-    public async Task CreateInvitationAsync_DuplicateEmail_ThrowsException()
+    public async Task CreateInvitationAsync_DuplicateEmail_ReturnsFailure()
     {
         // Arrange
         var context = CreateInMemoryDbContext();
@@ -82,17 +83,20 @@ public class InvitationServiceTests : TestBase
             Status = InvitationStatus.Pending
         });
         await context.SaveChangesAsync();
-        
+
         var request = new CreateInvitationRequest
         {
             VendorLegalName = "New Vendor",
             PrimaryContactEmail = "duplicate@vendor.com", // Duplicate
             ExpirationDays = 14
         };
-        
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => 
-            service.CreateInvitationAsync(request, Guid.NewGuid(), "Test Admin"));
+
+        // Act
+        var result = await service.CreateInvitationAsync(request, Guid.NewGuid(), "Test Admin");
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Should().Contain("already exists");
     }
     
     [Fact]
@@ -209,9 +213,10 @@ public class InvitationServiceTests : TestBase
             request, Guid.NewGuid(), "Admin");
 
         // Assert
+        result.IsSuccess.Should().BeTrue();
         var invitation = await context.VendorInvitations
-            .FirstOrDefaultAsync(i => i.Id == result.InvitationId);
-        
+            .FirstOrDefaultAsync(i => i.Id == result.Value.InvitationId);
+
         invitation.Should().NotBeNull();
         invitation.Attributes.Should().NotBeNullOrEmpty();
         invitation.Attributes.Should().Contain("USD");
