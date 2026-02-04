@@ -168,6 +168,43 @@ ls -lh backend/VendorMdm.Api/Migrations/*.cs | grep -v Designer | grep -v Snapsh
 # If any file > 50KB, STOP and split migration
 ```
 
+### 2.1 Database Migration Deployment (CRITICAL)
+
+**Environment-Specific Process**:
+
+| Environment | Database | How to Apply Migrations |
+|-------------|----------|------------------------|
+| **Local** | SQLite | `dotnet ef database update` (direct) |
+| **Azure DEV/STAGING/PROD** | SQL Server | **GitHub Actions ONLY** |
+
+**NEVER**:
+- ❌ Create manual SQL scripts for Azure
+- ❌ Run EF migrations directly against Azure SQL
+- ❌ Use Azure Portal SQL Query Editor for schema changes
+
+**ALWAYS**:
+- ✅ Commit migration files to git
+- ✅ Merge to `develop` (or target branch)
+- ✅ Trigger **"Deploy Database Migrations"** workflow in GitHub Actions UI
+
+**GitHub Actions Migration Workflow**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click **"Deploy Database Migrations"**
+3. Click **"Run workflow"**
+4. Select environment (dev/staging/prod)
+5. Workflow automatically:
+   - Generates migration SQL from EF Core
+   - Patches `TEXT` → `nvarchar(max)` for SQL Server
+   - Applies to Azure SQL Database
+   - Shows preview before applying
+
+**Why GitHub Actions?**
+- Automatic type conversion (SQLite ↔ SQL Server)
+- Audit trail in GitHub
+- Rollback capability
+- Environment isolation
+- Zero manual SQL script errors
+
 ### 3. Alignment Verification
 ```bash
 ./scripts/verify-alignment.sh
