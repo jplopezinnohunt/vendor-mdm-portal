@@ -1,6 +1,6 @@
-
 using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
+using VendorMdm.Shared.Constants;
 using VendorMdm.Shared.Models; // SQL and Cosmos entities
 
 namespace VendorMdm.Api.Services;
@@ -65,8 +65,15 @@ public class ChangeRequestRepository : IChangeRequestRepository
         var request = await _sqlContext.ChangeRequests.FindAsync(id);
         if (request == null) throw new KeyNotFoundException("Request not found");
 
+        // Validate state transition using state machine
+        if (!ChangeRequestStatus.CanApprove(request.Status))
+            throw new InvalidOperationException($"Cannot approve change request in status '{request.Status}'. Allowed from: Submitted, UnderReview.");
+
+        if (!ChangeRequestStatus.IsValidTransition(request.Status, ChangeRequestStatus.Approved))
+            throw new InvalidOperationException($"Invalid transition from '{request.Status}' to 'Approved'.");
+
         // 1. Update SQL State
-        request.Status = "Approved";
+        request.Status = ChangeRequestStatus.Approved;
         request.UpdatedAt = DateTime.UtcNow;
         await _sqlContext.SaveChangesAsync();
 
@@ -103,7 +110,7 @@ public class ChangeRequestRepository : IChangeRequestRepository
 
         // 2. Find LATEST Pending Change Request for this SAP Vendor
         var pendingRequest = await _sqlContext.ChangeRequests
-            .Where(r => r.SapVendorId == sapVendorId && r.Status == "Submitted")
+            .Where(r => r.SapVendorId == sapVendorId && r.Status == ChangeRequestStatus.Submitted)
             .OrderByDescending(r => r.CreatedAt)
             .FirstOrDefaultAsync();
 

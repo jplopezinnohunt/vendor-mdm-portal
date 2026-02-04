@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using VendorMdm.Api.Services;
@@ -6,6 +7,8 @@ using VendorMdm.Shared.Models;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 public class UserController : ControllerBase
 {
@@ -27,20 +30,19 @@ public class UserController : ControllerBase
             return BadRequest(ModelState);
         }
 
-        try
+        var result = await _service.CreateUserAsync(user);
+
+        if (result.IsFailure)
         {
-            var createdUser = await _service.CreateUserAsync(user);
-            return CreatedAtAction(nameof(GetById), new { id = createdUser.Id }, createdUser);
+            // Check if it's a conflict (duplicate) error
+            if (result.Error.Contains("already exists"))
+            {
+                return Conflict(new { message = result.Error });
+            }
+            return BadRequest(new { error = result.Error });
         }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to create user");
-            return StatusCode(500, $"Internal server error: {ex.Message}");
-        }
+
+        return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
     }
 
     [HttpPut("{id}/roles")]

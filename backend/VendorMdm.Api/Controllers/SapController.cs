@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
 using VendorMdm.Shared.Models.SapSimulation;
@@ -10,6 +11,8 @@ namespace VendorMdm.Api.Controllers;
 /// Supports both simulation and real SAP RFC implementations
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/sap")]
 [Route("api/sap")]
 [Produces("application/json")]
 public class SapController : ControllerBase

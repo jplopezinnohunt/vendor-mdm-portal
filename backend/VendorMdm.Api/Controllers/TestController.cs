@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Data;
 using VendorMdm.Shared.Models;
@@ -7,6 +8,8 @@ using Microsoft.AspNetCore.Authorization;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 public class TestController : ControllerBase
 {

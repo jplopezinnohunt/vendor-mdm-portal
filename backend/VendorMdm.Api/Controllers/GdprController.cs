@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,8 @@ namespace VendorMdm.Api.Controllers;
 /// Pattern 17: Data Privacy & Masking (GDPR).
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/gdpr")]
 [Route("api/gdpr")]
 [Authorize]
 public class GdprController : ControllerBase

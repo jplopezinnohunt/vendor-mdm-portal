@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
@@ -11,6 +12,8 @@ namespace VendorMdm.Api.Controllers;
 /// System administration and monitoring endpoints.
 /// </summary>
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 [Microsoft.AspNetCore.Authorization.AllowAnonymous]
 public class SystemController : ControllerBase

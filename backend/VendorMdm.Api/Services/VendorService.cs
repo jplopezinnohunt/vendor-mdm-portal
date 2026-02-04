@@ -1,6 +1,7 @@
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Services.Events;
 using VendorMdm.Core.Framework.Events;
+using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Shared.Models;
 using VendorMdm.Shared.Models.Sanctions;
 using Microsoft.EntityFrameworkCore;
@@ -29,9 +30,17 @@ public class VendorService : IVendorService
         _eventDispatcher = eventDispatcher;
     }
 
-    public async Task<Vendor> CreateVendorAsync(Vendor vendor, bool forceCreation = false)
+    public async Task<Result<Vendor>> CreateVendorAsync(Vendor vendor, bool forceCreation = false)
     {
-        if (vendor == null) throw new ArgumentNullException(nameof(vendor));
+        // Validate required input
+        if (vendor == null)
+            return Result.Fail<Vendor>("Vendor is required");
+
+        if (string.IsNullOrEmpty(vendor.LegalName))
+            return Result.Fail<Vendor>("Legal Name is required");
+
+        if (string.IsNullOrEmpty(vendor.PrimaryContactEmail))
+            return Result.Fail<Vendor>("Primary Contact Email is required");
 
         // 1. SQL Persistence
         vendor.Id = Guid.NewGuid();
@@ -43,12 +52,12 @@ public class VendorService : IVendorService
         if (string.IsNullOrEmpty(vendor.SourceSystem) || vendor.SourceSystem == SourceSystems.Portal) vendor.SourceSystem = SourceSystems.GetDefaultSource(typeof(Vendor));
 
         // --- SECURITY & VALIDATION CHECKS ---
-        
+
         // 1. Duplicate Check (Email or Tax ID)
         var existingVendor = await _context.Vendors
-            .FirstOrDefaultAsync(v => v.PrimaryContactEmail == vendor.PrimaryContactEmail || 
+            .FirstOrDefaultAsync(v => v.PrimaryContactEmail == vendor.PrimaryContactEmail ||
                                      (v.TaxId != null && v.TaxId == vendor.TaxId));
-                                     
+
         if (existingVendor != null)
         {
             if (forceCreation)
@@ -58,21 +67,21 @@ public class VendorService : IVendorService
             else
             {
                 _logger.LogWarning("Blocked duplicate vendor creation. Existing ID: {ExistingId}", existingVendor.Id);
-                throw new InvalidOperationException($"Vendor already exists with Email '{vendor.PrimaryContactEmail}' or Tax ID '{vendor.TaxId}'");
+                return Result.Fail<Vendor>($"Vendor already exists with Email '{vendor.PrimaryContactEmail}' or Tax ID '{vendor.TaxId}'");
             }
         }
 
         // 2. Sanctions Screening
         var screeningRequest = new VendorMdm.Shared.Models.Sanctions.ScreeningRequest
         {
-            VendorId = vendor.Id.ToString(), // Pre-generated ID not available yet effectively, but we can assign one if needed or use placeholder
+            VendorId = vendor.Id.ToString(),
             EntityName = vendor.LegalName ?? "",
-            EntityType = "Organization", // Default for Direct Creation usually, or derive if Vendor has Type property
-            Address = new VendorMdm.Shared.Models.Sanctions.AddressInfo { Country = "US" } // Defaulting to US as Country is not directly available on Vendor root
+            EntityType = "Organization",
+            Address = new VendorMdm.Shared.Models.Sanctions.AddressInfo { Country = "US" }
         };
 
         var screeningResult = await _sanctionsService.ScreenEntityAsync(screeningRequest);
-        if (screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.High || 
+        if (screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.High ||
             screeningResult.OverallRisk == VendorMdm.Shared.Models.Sanctions.RiskLevel.Critical)
         {
             if (forceCreation)
@@ -82,16 +91,11 @@ public class VendorService : IVendorService
             else
             {
                 _logger.LogWarning("Blocked vendor creation due to Sanctions Risk: {RiskLevel}", screeningResult.OverallRisk);
-                throw new InvalidOperationException("High-risk match found in Sanctions Screening. Vendor cannot be created.");
+                return Result.Fail<Vendor>("High-risk match found in Sanctions Screening. Vendor cannot be created.");
             }
         }
 
-        
         // ------------------------------------
-
-        // Validate required fields (optional double-check)
-        if (string.IsNullOrEmpty(vendor.LegalName)) throw new ArgumentException("Legal Name is required");
-        if (string.IsNullOrEmpty(vendor.PrimaryContactEmail)) throw new ArgumentException("Primary Contact Email is required");
 
         // Create domain event for the new vendor
         // Note: AccountGroup is determined by business logic in the Concept layer, default to empty here
@@ -139,10 +143,10 @@ public class VendorService : IVendorService
             _logger.LogError(ex, "Failed to emit VendorCreated event: {Id}", vendor.Id);
         }
 
-        return vendor;
+        return Result.Ok(vendor);
     }
 
-    public async Task<Vendor> UpdateVendorAsync(Vendor vendor)
+    public async Task<Result<Vendor>> UpdateVendorAsync(Vendor vendor)
     {
         // Get the original to detect status changes
         var original = await _context.Vendors
@@ -192,7 +196,7 @@ public class VendorService : IVendorService
         };
         await _cosmosRepository.LogDomainEventAsync(cosmosDomainEvent);
 
-        return vendor;
+        return Result.Ok(vendor);
     }
 
     public async Task<Vendor?> GetVendorByIdAsync(Guid id)

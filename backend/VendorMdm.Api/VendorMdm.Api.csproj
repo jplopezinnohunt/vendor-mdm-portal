@@ -35,13 +35,15 @@
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- API Versioning -->
+    <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
+    <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\VendorMdm.Core.Framework\VendorMdm.Core.Framework.csproj" />
     <ProjectReference Include="..\VendorMdm.Shared\VendorMdm.Shared.csproj" />
     <ProjectReference Include="..\VendorMdm.Artifacts\VendorMdm.Artifacts.csproj" />
-    <ProjectReference Include="..\VendorMdm.Core.Framework\VendorMdm.Core.Framework.csproj" />
   </ItemGroup>
 
 </Project>

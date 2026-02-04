@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
+using VendorMdm.Core.Framework.Primitives;
+using VendorMdm.Shared.Constants;
 using VendorMdm.Shared.Models;
 using VendorMdm.Shared.Models.Sanctions;
 using VendorMdm.Shared.Models.SapSimulation;
@@ -8,11 +10,16 @@ using VendorMdm.Shared.DomainEvents;
 
 namespace VendorMdm.Api.Services;
 
+/// <summary>
+/// Vendor Application Service - Brain v1.2.0 Compliant
+/// Pattern 4: Result Pattern - Returns Result instead of throwing exceptions for business logic.
+/// Pattern 5: State Machine - Uses ApplicationStatus.IsValidTransition() for state changes.
+/// </summary>
 public interface IVendorApplicationService
 {
     Task<VendorApplication?> GetApplicationAsync(Guid id);
-    Task ApproveApplicationAsync(Guid applicationId, Dictionary<string, object>? enrichedAttributes, bool forceSanctionsOverride = false, string approverId = "System");
-    Task RejectApplicationAsync(Guid applicationId, string reason, string approverId = "System");
+    Task<Result<Vendor>> ApproveApplicationAsync(Guid applicationId, Dictionary<string, object>? enrichedAttributes, bool forceSanctionsOverride = false, string approverId = "System");
+    Task<Result> RejectApplicationAsync(Guid applicationId, string reason, string approverId = "System");
 }
 
 public class VendorApplicationService : IVendorApplicationService
@@ -45,15 +52,18 @@ public class VendorApplicationService : IVendorApplicationService
         return await _context.VendorApplications.FindAsync(id);
     }
 
-    public async Task ApproveApplicationAsync(Guid applicationId, Dictionary<string, object>? enrichedAttributes, bool forceSanctionsOverride = false, string approverId = "System")
+    public async Task<Result<Vendor>> ApproveApplicationAsync(Guid applicationId, Dictionary<string, object>? enrichedAttributes, bool forceSanctionsOverride = false, string approverId = "System")
     {
         var app = await _context.VendorApplications.FindAsync(applicationId);
-        if (app == null) throw new KeyNotFoundException($"Application {applicationId} not found");
+        if (app == null)
+            return Result.Fail<Vendor>($"Application {applicationId} not found");
 
-        if (app.Status != "PendingReview" && app.Status != "Submitted") 
+        // Validate state transition using state machine
+        if (!ApplicationStatus.IsValidTransition(app.Status, ApplicationStatus.Approved))
         {
-            _logger.LogWarning("Attempted to approve application {Id} with status {Status}", applicationId, app.Status);
-            throw new InvalidOperationException($"Application is in status {app.Status}, cannot approve."); 
+            _logger.LogWarning("Invalid state transition for approval. Application {Id} with status {Status}. Allowed from: {Allowed}",
+                applicationId, app.Status, string.Join(", ", ApplicationStatus.GetAllowedTransitions(app.Status)));
+            return Result.Fail<Vendor>($"Application is in status {app.Status}, cannot approve. Allowed transitions: [{string.Join(", ", ApplicationStatus.GetAllowedTransitions(app.Status))}]");
         }
 
         // 1. Merge Attributes (Logic moved from Controller)
@@ -173,7 +183,7 @@ public class VendorApplicationService : IVendorApplicationService
         };
 
         RiskLevel risk = RiskLevel.Low;
-        try 
+        try
         {
             var result = await _sanctionsService.ScreenEntityAsync(screeningRequest);
             risk = result.OverallRisk;
@@ -183,26 +193,32 @@ public class VendorApplicationService : IVendorApplicationService
             if (!forceSanctionsOverride)
             {
                 _logger.LogError(ex, "Sanctions check failed during approval for {AppId}. Fail-Closed triggered.", applicationId);
-                 throw new InvalidOperationException("Sanctions screening failed. Cannot proceed without override.");
+                return Result.Fail<Vendor>("Sanctions screening failed. Cannot proceed without override.");
             }
             _logger.LogWarning("Sanctions connectivity failed, but FORCE OVERRIDE is enabled. Proceeding.");
         }
 
         if ((risk == RiskLevel.High || risk == RiskLevel.Critical) && !forceSanctionsOverride)
         {
-            throw new InvalidOperationException($"High Risk Sanctions Match detected ({risk}). Approval Blocked.");
+            return Result.Fail<Vendor>($"High Risk Sanctions Match detected ({risk}). Approval Blocked.");
         }
 
 
         // 4. CALL CORE VENDOR SERVICE (Reusable Logic)
         // This ensures Duplicate Checks, SQL Persistence, Cosmos Artifacts, and Domain Events
         // are identical to the Direct Creation flow.
-        var createdVendor = await _vendorService.CreateVendorAsync(vendor, forceCreation: forceSanctionsOverride);
+        var vendorResult = await _vendorService.CreateVendorAsync(vendor, forceCreation: forceSanctionsOverride);
 
+        if (vendorResult.IsFailure)
+        {
+            return Result.Fail<Vendor>($"Vendor creation failed: {vendorResult.Error}");
+        }
+
+        var createdVendor = vendorResult.Value;
 
         // 5. SAP INTEGRATION (Simulated or Real)
         // Rule 9: Simulation First - Do not swallow exceptions unless explicit fallback.
-        try 
+        try
         {
             // Map Canonical Vendor to SAP Request
             var sapRequest = new VendorCreateRequest
@@ -231,52 +247,65 @@ public class VendorApplicationService : IVendorApplicationService
              // If SAP fails, we have a partial state (SQL Vendor created, SAP not).
              // Decision: Log Error and allow "Retry" later (Async consistency), OR rollback SQL.
              // Given this is "Approve Application", we probably want to Fail the Approval if SAP fails.
-             
+
              _logger.LogError(ex, "SAP Integration Failed. Rolling back Vendor Creation.");
-             
+
              // Compensating Transaction (Delete the just-created vendor)
              // In a real scenario, we'd use a TransactionScope, but here we manually compensate for now.
-             // await _vendorService.DeleteVendorAsync(createdVendor.Id); 
-             
-             throw new InvalidOperationException("SAP Integration failed. Application cannot be approved.", ex);
+             // await _vendorService.DeleteVendorAsync(createdVendor.Id);
+
+             return Result.Fail<Vendor>("SAP Integration failed. Application cannot be approved.");
         }
 
         // 6. FINALIZE APPLICATION STATUS
-        app.Status = "Approved";
-        
+        app.Status = ApplicationStatus.Approved;
+
         // Link the canonical Vendor ID
-        // Note: VendorApplication entity might need a 'VendorId' column in future, for now we store in Attributes? 
+        // Note: VendorApplication entity might need a 'VendorId' column in future, for now we store in Attributes?
         // Or if 'IntegrationStatus' is needed.
-        
+
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Application {AppId} approved. Vendor {VendorId} created.", applicationId, createdVendor.Id);
-        
+
         // 7. PUBLISH DOMAIN EVENT (Rule 10)
         var evt = new ApplicationApprovedEvent(applicationId, createdVendor.Id, approverId);
         await _serviceBus.PublishEventAsync(evt.EventType, evt);
+
+        return Result.Ok(createdVendor);
     }
 
-    public async Task RejectApplicationAsync(Guid applicationId, string reason, string approverId = "System")
+    public async Task<Result> RejectApplicationAsync(Guid applicationId, string reason, string approverId = "System")
     {
         var app = await _context.VendorApplications.FindAsync(applicationId);
-        if (app == null) throw new KeyNotFoundException($"Application {applicationId} not found");
+        if (app == null)
+            return Result.Fail($"Application {applicationId} not found");
 
-        app.Status = "Rejected";
-        
+        // Validate state transition using state machine
+        if (!ApplicationStatus.IsValidTransition(app.Status, ApplicationStatus.Rejected))
+        {
+            _logger.LogWarning("Invalid state transition for rejection. Application {Id} with status {Status}",
+                applicationId, app.Status);
+            return Result.Fail($"Application is in status {app.Status}, cannot reject. Allowed transitions: [{string.Join(", ", ApplicationStatus.GetAllowedTransitions(app.Status))}]");
+        }
+
+        app.Status = ApplicationStatus.Rejected;
+
         // Store reason in attributes
-        var attrs = string.IsNullOrEmpty(app.Attributes) 
-            ? new Dictionary<string,object>() 
-            : JsonSerializer.Deserialize<Dictionary<string,object>>(app.Attributes) ?? new();
-            
+        var attrs = string.IsNullOrEmpty(app.Attributes)
+            ? new Dictionary<string, object>()
+            : JsonSerializer.Deserialize<Dictionary<string, object>>(app.Attributes) ?? new();
+
         attrs["rejectionReason"] = reason;
         app.Attributes = JsonSerializer.Serialize(attrs);
 
         await _context.SaveChangesAsync();
         _logger.LogInformation("Application {AppId} rejected. Reason: {Reason}", applicationId, reason);
-        
+
         // PUBLISH DOMAIN EVENT (Rule 10)
         var evt = new ApplicationRejectedEvent(applicationId, reason, approverId);
         await _serviceBus.PublishEventAsync(evt.EventType, evt);
+
+        return Result.Ok();
     }
 }

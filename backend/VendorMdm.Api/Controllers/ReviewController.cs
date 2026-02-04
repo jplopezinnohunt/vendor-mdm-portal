@@ -1,3 +1,4 @@
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +11,8 @@ using System.Security.Claims;
 namespace VendorMdm.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")]
 [Authorize] // Allow all authenticated users
 public class ReviewController : ControllerBase
@@ -125,55 +128,42 @@ public class ReviewController : ControllerBase
 
     /// <summary>
     /// Approve a vendor application (Approvers only)
+    /// Pattern 4: Result Pattern - Uses Result<T> for clean error handling.
     /// </summary>
     [HttpPost("{id}/approve")]
     [Authorize(Policy = "ApproverOnly")]
     public async Task<IActionResult> ApproveApplication(Guid id, [FromBody] ApprovalRequest request)
     {
-        try 
+        var approverId = User.Identity?.Name ?? "System";
+        var result = await _applicationService.ApproveApplicationAsync(id, request.EnrichedAttributes, request.ForceSanctionsOverride, approverId);
+
+        if (result.IsFailure)
         {
-            var approverId = User.Identity?.Name ?? "System";
-            await _applicationService.ApproveApplicationAsync(id, request.EnrichedAttributes, request.ForceSanctionsOverride, approverId);
-            return Ok(new { message = "Application approved", status = "Approved" });
+            _logger.LogWarning("Approval failed for {Id}: {Error}", id, result.Error);
+            return BadRequest(new { error = result.Error });
         }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Approval failed for {Id}", id);
-            return BadRequest(new { error = ex.Message });
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Approval failed unexpectedly for {Id}", id);
-            return StatusCode(500, new { error = "Internal server error" });
-        }
+
+        return Ok(new { message = "Application approved", status = "Approved", vendorId = result.Value.Id });
     }
 
     /// <summary>
     /// Reject a vendor application (Approvers only)
+    /// Pattern 4: Result Pattern - Uses Result for clean error handling.
     /// </summary>
     [HttpPost("{id}/reject")]
     [Authorize(Policy = "ApproverOnly")]
     public async Task<IActionResult> RejectApplication(Guid id, [FromBody] RejectionRequest request)
     {
-        try
+        var approverId = User.Identity?.Name ?? "System";
+        var result = await _applicationService.RejectApplicationAsync(id, request.Reason, approverId);
+
+        if (result.IsFailure)
         {
-            var approverId = User.Identity?.Name ?? "System";
-            await _applicationService.RejectApplicationAsync(id, request.Reason, approverId);
-            return Ok(new { message = "Application rejected", status = "Rejected" });
+            _logger.LogWarning("Rejection failed for {Id}: {Error}", id, result.Error);
+            return BadRequest(new { error = result.Error });
         }
-        catch (KeyNotFoundException)
-        {
-             return NotFound();
-        }
-        catch (Exception ex)
-        {
-             _logger.LogError(ex, "Rejection failed for {Id}", id);
-             return StatusCode(500, new { error = "Internal server error" });
-        }
+
+        return Ok(new { message = "Application rejected", status = "Rejected" });
     }
 }
 
