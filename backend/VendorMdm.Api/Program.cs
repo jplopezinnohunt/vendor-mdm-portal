@@ -231,9 +231,10 @@ string[] GetAllowedOrigins(IConfiguration config, IWebHostEnvironment env)
             ? new[] { "https://victorious-water-095da360f.5.azurestaticapps.net" }
             : new[] { baseUrl };
     }
-    else if (env.IsStaging())
+    else if (env.EnvironmentName == "Staging")
     {
         // Staging: BaseUrl + localhost for testing
+        // Note: IsStaging() doesn't exist in ASP.NET Core - use EnvironmentName
         return new[]
         {
             baseUrl ?? "https://purple-moss-066604e03.4.azurestaticapps.net",
