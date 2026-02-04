@@ -198,6 +198,61 @@ try {
 } catch { /* Ignore - not in CI */ }
 ```
 
+### 15. ✅ Integration Test Fixtures Need ALL Dependencies
+**Issue**: `Unable to resolve service for type 'IStructuredLogger'` in integration tests
+**Root Cause**: IntegrationTestFixture registered InvitationService but not its dependencies
+**Solution**: ✅ Register ALL mock dependencies: IStructuredLogger, IAuditLogService, etc.
+**Impact**: Integration tests pass without DI failures
+**Source**: 2026-02-04 Result Pattern Compliance
+**Applied**: ✅ IntegrationTestFixture.cs
+
+```csharp
+// ✅ CORRECT: Register all dependencies before the service
+var mockStructuredLogger = new Mock<IStructuredLogger>();
+services.AddSingleton(mockStructuredLogger.Object);
+var mockAuditLog = new Mock<IAuditLogService>();
+services.AddSingleton(mockAuditLog.Object);
+// THEN register the service
+services.AddScoped<IInvitationService, InvitationService>();
+```
+
+### 16. ✅ NetArchTest Checks ALL Classes in Namespace
+**Issue**: Architecture test failed on `ChangeRequestStatusChangedEvent` - an event, not a concept
+**Root Cause**: `ResideInNamespace()` includes ALL classes, not just intended ones
+**Solution**: ✅ Use `HaveNameEndingWith("Concept")` to filter to actual concept classes
+**Impact**: Architecture tests correctly validate only intended types
+**Source**: 2026-02-04 Result Pattern Compliance
+**Applied**: ✅ ArchitectureTests.cs
+
+```csharp
+// ❌ BROKEN: Catches Event classes too
+Types.InAssembly(assembly)
+    .That().ResideInNamespace("VendorMdm.Shared.Ontology.Concepts")
+    .Should().ImplementInterface(typeof(IOntologyConcept))
+
+// ✅ CORRECT: Filter to only *Concept classes
+Types.InAssembly(assembly)
+    .That().ResideInNamespace("VendorMdm.Shared.Ontology.Concepts")
+    .And().HaveNameEndingWith("Concept")  // Filter!
+    .Should().ImplementInterface(typeof(IOntologyConcept))
+```
+
+### 17. ✅ Mock Verify Needs Exact Event Names
+**Issue**: Mock verification failed - test expected "invitation-created", service publishes "InvitationCreated"
+**Root Cause**: Event names are case-sensitive and must match exactly
+**Solution**: ✅ Check actual service code for exact event name string
+**Impact**: Integration test mock verifications pass
+**Source**: 2026-02-04 Result Pattern Compliance
+**Applied**: ✅ InvitationFlowIntegrationTests.cs
+
+```csharp
+// ❌ BROKEN: Wrong event name
+_fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync("invitation-created", ...))
+
+// ✅ CORRECT: Match actual service event name
+_fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync("InvitationCreated", ...))
+```
+
 ---
 
 ## 📋 Pending Brain Rule Updates
