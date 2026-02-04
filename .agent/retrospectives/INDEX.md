@@ -137,6 +137,44 @@ Pointer (3 lines) → Golden Rules → Load only relevant standard
 **Source**: 2026-02-04 Brain Architecture Consolidation
 **Applied**: ✅ 7 new governance standards created
 
+### 10. ✅ Vitest MSAL Mock Pattern
+**Issue**: `vi.fn().mockReturnValue({...})` makes useMsal return undefined
+**Solution**: ✅ Use direct function returns: `useMsal: () => ({ instance, accounts, inProgress })`
+**Impact**: Frontend auth context tests work correctly
+**Source**: 2026-02-04 Brain v1.2.0 Compliance
+**Applied**: ✅ frontend/tests/setup.ts
+
+```typescript
+// ❌ BROKEN (useMsal returns undefined)
+useMsal: vi.fn().mockReturnValue({ instance, accounts })
+
+// ✅ CORRECT (direct function)
+useMsal: () => ({ instance: mockMsalInstance, accounts: [], inProgress: 'none' })
+```
+
+### 11. ✅ SignalR Mock Must Be Class
+**Issue**: `HubConnectionBuilder: vi.fn()` doesn't support method chaining
+**Solution**: ✅ Create actual class `MockHubConnectionBuilder` with method chaining
+**Impact**: SignalR context tests work with build().start() pattern
+**Source**: 2026-02-04 Brain v1.2.0 Compliance
+**Applied**: ✅ frontend/tests/setup.ts
+
+```typescript
+// ✅ CORRECT: Actual class with method chaining
+class MockHubConnectionBuilder {
+  withUrl() { return this; }
+  withAutomaticReconnect() { return this; }
+  build() { return mockConnection; }
+}
+```
+
+### 12. ✅ AccessibleModal aria-hidden Pitfall
+**Issue**: `aria-hidden="true"` on backdrop hides entire dialog from accessibility tree
+**Solution**: ✅ Remove aria-hidden from backdrop div, use `role="dialog"` and `aria-modal="true"` on content
+**Impact**: getByRole('dialog') works in tests, screen readers see modal
+**Source**: 2026-02-04 Brain v1.2.0 Compliance
+**Applied**: ✅ AccessibleModal.tsx
+
 ---
 
 ## 📋 Pending Brain Rule Updates
