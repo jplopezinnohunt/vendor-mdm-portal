@@ -4,6 +4,7 @@ using Serilog;
 using Serilog.Formatting.Json;
 using VendorMdm.Core.Framework.Logging;
 using VendorMdm.Core.Framework.Resilience;
+using VendorMdm.Core.Framework.Security;
 
 namespace VendorMdm.Core.Framework.Extensions;
 
@@ -190,6 +191,9 @@ public static class ServiceCollectionExtensions
         CoreFrameworkOptions options,
         IConfiguration configuration)
     {
+        // Input Sanitization (Section 7.C - Input Hygiene)
+        services.AddSingleton<IInputSanitizer, InputSanitizer>();
+
         // JWT Authentication Service
         var jwtOptions = new Security.Authentication.JwtAuthenticationOptions
         {
@@ -200,13 +204,13 @@ public static class ServiceCollectionExtensions
             RefreshTokenExpirationDays = int.Parse(configuration["Jwt:RefreshTokenExpirationDays"] ?? "30")
         };
         services.AddSingleton(jwtOptions);
-        
+
         // Note: Apps must register IUserRepository and IRefreshTokenRepository
         // services.AddScoped<Security.Authentication.IAuthenticationService, Security.Authentication.JwtAuthenticationService>();
 
         // Role-Based Authorization Service
         services.AddSingleton<Security.Authorization.IRolePermissionRepository, Security.Authorization.DefaultRolePermissionRepository>();
-        
+
         // Note: Apps must register IUserRoleRepository
         // services.AddScoped<Security.Authorization.IAuthorizationService, Security.Authorization.RoleBasedAuthorizationService>();
     }

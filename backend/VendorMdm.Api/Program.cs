@@ -94,8 +94,12 @@ Console.WriteLine($"Active Mode: {dataSourceMode}");
 
 // --- SERVICES REGISTRATION ---
 
-builder.Services.AddControllers()
-     .AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; });
+builder.Services.AddControllers(options =>
+{
+    // Global input sanitization filter (Section 7.C - Input Hygiene)
+    options.Filters.Add<VendorMdm.Api.Filters.InputSanitizationActionFilter>();
+})
+.AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -215,22 +219,56 @@ builder.Services.AddSingleton<CosmosClient>(sp => {
     return new CosmosClient(cosmosConnection, new DefaultAzureCredential());
 });
 
-// Configure CORS
+// Configure CORS (Environment-based - Section 7.B)
+string[] GetAllowedOrigins(IConfiguration config, IWebHostEnvironment env)
+{
+    var baseUrl = config["App:BaseUrl"];
+
+    if (env.IsProduction())
+    {
+        // Production: ONLY the configured BaseUrl (NO localhost)
+        return string.IsNullOrEmpty(baseUrl)
+            ? new[] { "https://victorious-water-095da360f.5.azurestaticapps.net" }
+            : new[] { baseUrl };
+    }
+    else if (env.IsStaging())
+    {
+        // Staging: BaseUrl + localhost for testing
+        return new[]
+        {
+            baseUrl ?? "https://purple-moss-066604e03.4.azurestaticapps.net",
+            "http://localhost:3000",
+            "http://localhost:5173"
+        };
+    }
+    else
+    {
+        // Development: localhost + any configured frontend URLs
+        return new[]
+        {
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "https://victorious-water-095da360f.5.azurestaticapps.net",
+            "https://purple-moss-066604e03.4.azurestaticapps.net",
+            "https://stvendormdmdev.blob.core.windows.net"
+        };
+    }
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",
-                "https://victorious-water-095da360f.5.azurestaticapps.net",
-                "https://purple-moss-066604e03.4.azurestaticapps.net",
-                "https://stvendormdmdev.blob.core.windows.net"
-            )
+        var allowedOrigins = GetAllowedOrigins(builder.Configuration, builder.Environment);
+
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
     });
 });
+
+Console.WriteLine($"🌐 CORS: Allowed origins: {string.Join(", ", GetAllowedOrigins(builder.Configuration, builder.Environment))}");
 
 // Configure Authentication
 // For local development, use cookie authentication with mock middleware
@@ -305,6 +343,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
     app.UseDeveloperExceptionPage();
 }
+
+// Security Headers (Section 7.B - MUST be BEFORE authentication)
+app.UseSecurityHeaders();
 
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
