@@ -134,6 +134,30 @@ public class InvitationService : IInvitationService
         }
 
         // Create Invitation
+        // Build attributes including internal data fields (used by MDU for pre-population)
+        var attributesObj = new Dictionary<string, object?>
+        {
+            ["RequestNotes"] = request.Notes,
+            ["InitialMarket"] = "US", // Default
+            ["IsVip"] = false
+        };
+
+        // Add internal data fields if provided
+        if (!string.IsNullOrEmpty(request.Currency))
+            attributesObj["Currency"] = request.Currency;
+
+        if (!string.IsNullOrEmpty(request.SapLanguage))
+            attributesObj["SapLanguage"] = request.SapLanguage;
+
+        if (!string.IsNullOrEmpty(request.TaxCode1))
+            attributesObj["TaxCode1"] = request.TaxCode1;
+
+        if (!string.IsNullOrEmpty(request.TaxCode2))
+            attributesObj["TaxCode2"] = request.TaxCode2;
+
+        if (!string.IsNullOrEmpty(request.PermittedPayee))
+            attributesObj["PermittedPayee"] = request.PermittedPayee;
+
         var invitation = new VendorInvitation
         {
             Id = Guid.NewGuid(),
@@ -148,12 +172,7 @@ public class InvitationService : IInvitationService
             VendorType = request.VendorType ?? "Company",
             AccountGroup = request.AccountGroup ?? "Z001",
             CurrentStage = InvitationStage.InvitationSent,
-            Attributes = JsonSerializer.Serialize(new 
-            {
-                RequestNotes = request.Notes,
-                InitialMarket = "US", // Default
-                IsVip = false
-            })
+            Attributes = JsonSerializer.Serialize(attributesObj)
         };
 
         _context.VendorInvitations.Add(invitation);
@@ -231,19 +250,27 @@ public class InvitationService : IInvitationService
 
         if (invitation.ExpiresAt < DateTime.UtcNow)
         {
+            // Update status to Expired if not already
+            if (invitation.Status != InvitationStatus.Expired &&
+                InvitationStatusSM.IsValidTransition(invitation.Status, InvitationStatus.Expired))
+            {
+                invitation.Status = InvitationStatus.Expired;
+                await _context.SaveChangesAsync();
+            }
+
             _logger.LogInformation("Expired invitation token attempt", ("InvitationId", invitation.Id));
             return new ValidateInvitationResponse { IsValid = false, ErrorMessage = "Invitation expired" };
         }
 
         if (invitation.Status != InvitationStatus.Pending && invitation.Status != InvitationStatus.Accepted)
         {
-            _logger.LogInformation("Invitation already completed or cancelled", 
-                ("InvitationId", invitation.Id), 
+            _logger.LogInformation("Invitation already completed or cancelled",
+                ("InvitationId", invitation.Id),
                 ("Status", invitation.Status));
-            return new ValidateInvitationResponse 
-            { 
-                IsValid = false, 
-                ErrorMessage = $"Invitation is {invitation.Status}" 
+            return new ValidateInvitationResponse
+            {
+                IsValid = false,
+                ErrorMessage = $"Invitation is {invitation.Status}"
             };
         }
 

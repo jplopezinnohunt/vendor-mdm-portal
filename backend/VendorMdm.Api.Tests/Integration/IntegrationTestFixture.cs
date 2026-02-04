@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using VendorMdm.Api.Data;
 using VendorMdm.Api.Models;
 using VendorMdm.Api.Services;
+using VendorMdm.Core.Framework.Logging;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Microsoft.Azure.Cosmos;
@@ -54,6 +55,14 @@ public class IntegrationTestFixture : IDisposable
             .Setup(s => s.ScreenEntityAsync(It.IsAny<VendorMdm.Shared.Models.Sanctions.ScreeningRequest>()))
             .ReturnsAsync(new VendorMdm.Shared.Models.Sanctions.ScreeningResult { OverallRisk = VendorMdm.Shared.Models.Sanctions.RiskLevel.Clear });
         services.AddSingleton(mockSanctions.Object);
+
+        // Mock Structured Logger (required by InvitationService)
+        var mockStructuredLogger = new Mock<IStructuredLogger>();
+        services.AddSingleton(mockStructuredLogger.Object);
+
+        // Mock Audit Log Service (required by InvitationService)
+        var mockAuditLog = new Mock<IAuditLogService>();
+        services.AddSingleton(mockAuditLog.Object);
 
         // Repositories & Services
         services.AddScoped<CosmosRepository>();

@@ -29,62 +29,74 @@ public class EventController : ControllerBase
 
         // Set CreatedBy from Claims if needed, but for now assuming it's passed or handled by service
         // Ideally: var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        
-        var created = await _eventService.CreateEventAsync(eventEntity);
-        return CreatedAtAction(nameof(GetEvent), new { id = created.Id }, created);
+
+        var result = await _eventService.CreateEventAsync(eventEntity);
+        if (result.IsFailure)
+            return BadRequest(new { message = result.Error });
+
+        return CreatedAtAction(nameof(GetEvent), new { id = result.Value.Id }, result.Value);
     }
 
     [HttpGet]
     public async Task<IActionResult> GetAllEvents()
     {
-        var events = await _eventService.GetAllEventsAsync();
-        return Ok(events);
+        var result = await _eventService.GetAllEventsAsync();
+        if (result.IsFailure)
+            return BadRequest(new { message = result.Error });
+
+        return Ok(result.Value);
     }
 
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEvent(Guid id)
     {
-        var evt = await _eventService.GetEventByIdAsync(id);
-        if (evt == null) return NotFound();
-        return Ok(evt);
+        var result = await _eventService.GetEventByIdAsync(id);
+        if (result.IsFailure)
+            return NotFound(new { message = result.Error });
+
+        return Ok(result.Value);
     }
 
     [HttpPost("{id}/participants")]
     public async Task<IActionResult> AddParticipants(Guid id, [FromBody] List<EventParticipant> participants)
     {
-        try
+        var result = await _eventService.AddParticipantsAsync(id, participants);
+        if (result.IsFailure)
         {
-            var added = await _eventService.AddParticipantsAsync(id, participants);
-            return Ok(added);
+            if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                return NotFound(new { message = result.Error });
+
+            return BadRequest(new { message = result.Error });
         }
-        catch (KeyNotFoundException)
-        {
-            return NotFound("Event not found");
-        }
+
+        return Ok(result.Value);
     }
 
     [HttpGet("{id}/participants")]
     public async Task<IActionResult> GetParticipants(Guid id)
     {
-        var participants = await _eventService.GetParticipantsAsync(id);
-        return Ok(participants);
+        var result = await _eventService.GetParticipantsAsync(id);
+        if (result.IsFailure)
+            return BadRequest(new { message = result.Error });
+
+        return Ok(result.Value);
     }
 
     [HttpPut("{id}/participants/{participantId}")]
     public async Task<IActionResult> UpdateParticipant(Guid id, Guid participantId, [FromBody] EventParticipant participant)
     {
         if (participantId != participant.Id) return BadRequest("ID mismatch");
-        
-        try
+
+        var result = await _eventService.UpdateParticipantAsync(id, participantId, participant);
+        if (result.IsFailure)
         {
-            var updated = await _eventService.UpdateParticipantAsync(id, participantId, participant);
-            if (updated == null) return NotFound();
-            return Ok(updated);
+            if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                return NotFound(new { message = result.Error });
+
+            return BadRequest(new { message = result.Error });
         }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(ex.Message);
-        }
+
+        return Ok(result.Value);
     }
 
     [HttpPost("{id}/invite-tier3")]
@@ -95,8 +107,11 @@ public class EventController : ControllerBase
         var requestedBy = Guid.Empty; // Should be User ID
         var requestedByName = User.Identity?.Name ?? "Unknown";
 
-        var count = await _eventService.InviteTier3ParticipantsAsync(id, request.ParticipantIds, requestedBy, requestedByName);
-        return Ok(new { InvitedCount = count });
+        var result = await _eventService.InviteTier3ParticipantsAsync(id, request.ParticipantIds, requestedBy, requestedByName);
+        if (result.IsFailure)
+            return BadRequest(new { message = result.Error });
+
+        return Ok(new { InvitedCount = result.Value });
     }
 }
 

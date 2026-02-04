@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VendorMdm.Api.Data;
+using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Shared.Constants;
 using VendorMdm.Shared.Models; // SQL and Cosmos entities
 
@@ -7,12 +8,12 @@ namespace VendorMdm.Api.Services;
 
 public interface IChangeRequestRepository
 {
-    Task<ChangeRequest> CreateRequestAsync(ChangeRequest request, object payload);
-    Task<ChangeRequest?> GetRequestAsync(Guid id);
-    Task ApproveRequestAsync(Guid id);
-    
+    Task<Result<ChangeRequest>> CreateRequestAsync(ChangeRequest request, object payload);
+    Task<Result<ChangeRequest>> GetRequestAsync(Guid id);
+    Task<Result> ApproveRequestAsync(Guid id);
+
     // Feature: Overlay Logic (SAP + Pending Changes)
-    Task<object?> GetEffectiveVendorStateAsync(string sapVendorId);
+    Task<Result<object>> GetEffectiveVendorStateAsync(string sapVendorId);
 }
 
 public class ChangeRequestRepository : IChangeRequestRepository
@@ -28,7 +29,7 @@ public class ChangeRequestRepository : IChangeRequestRepository
         _serviceBus = serviceBus;
     }
 
-    public async Task<ChangeRequest> CreateRequestAsync(ChangeRequest request, object payload)
+    public async Task<Result<ChangeRequest>> CreateRequestAsync(ChangeRequest request, object payload)
     {
         // 1. Save Metadata to SQL
         _sqlContext.ChangeRequests.Add(request);
@@ -44,33 +45,35 @@ public class ChangeRequestRepository : IChangeRequestRepository
         };
         await _cosmosRepo.SaveChangeRequestDataAsync(cosmosData);
 
-        return request;
+        return Result.Ok(request);
     }
 
-    public async Task<ChangeRequest?> GetRequestAsync(Guid id)
+    public async Task<Result<ChangeRequest>> GetRequestAsync(Guid id)
     {
         // 1. Get Metadata from SQL
         var request = await _sqlContext.ChangeRequests.FindAsync(id);
-        if (request == null) return null;
+        if (request == null)
+            return Result.Fail<ChangeRequest>($"Change request with ID '{id}' not found.");
 
         // 2. Get Payload from Cosmos (Optional: Merge into a DTO if needed, but here returning SQL entity + fetching payload separately if requested)
         // For this example, we aren't merging into a DTO in the repo, but typically you would.
         // Let's assume the Controller handles the DTO composition or we add a property to the entity (not mapped).
-        
-        return request; 
+
+        return Result.Ok(request);
     }
 
-    public async Task ApproveRequestAsync(Guid id)
+    public async Task<Result> ApproveRequestAsync(Guid id)
     {
         var request = await _sqlContext.ChangeRequests.FindAsync(id);
-        if (request == null) throw new KeyNotFoundException("Request not found");
+        if (request == null)
+            return Result.Fail($"Change request with ID '{id}' not found.");
 
         // Validate state transition using state machine
         if (!ChangeRequestStatus.CanApprove(request.Status))
-            throw new InvalidOperationException($"Cannot approve change request in status '{request.Status}'. Allowed from: Submitted, UnderReview.");
+            return Result.Fail($"Cannot approve change request in status '{request.Status}'. Allowed from: Submitted, UnderReview.");
 
         if (!ChangeRequestStatus.IsValidTransition(request.Status, ChangeRequestStatus.Approved))
-            throw new InvalidOperationException($"Invalid transition from '{request.Status}' to 'Approved'.");
+            return Result.Fail($"Invalid transition from '{request.Status}' to 'Approved'.");
 
         // 1. Update SQL State
         request.Status = ChangeRequestStatus.Approved;
@@ -89,6 +92,8 @@ public class ChangeRequestRepository : IChangeRequestRepository
 
         // 3. Publish to Service Bus
         await _serviceBus.PublishEventAsync("RequestApproved", new { RequestId = id, SapVendorId = request.SapVendorId });
+
+        return Result.Ok();
     }
 
     /// <summary>
@@ -96,14 +101,14 @@ public class ChangeRequestRepository : IChangeRequestRepository
     /// Scenario: User changed name to "NewName" (Pending). SAP has "OldName".
     /// Result: "NewName" is shown.
     /// </summary>
-    public async Task<object?> GetEffectiveVendorStateAsync(string sapVendorId)
+    public async Task<Result<object>> GetEffectiveVendorStateAsync(string sapVendorId)
     {
         // 1. Fetch Master Data from SAP (Mocked for now)
         // In real impl, this would call ISapService
-        var sapMasterData = new 
-        { 
-            VendorId = sapVendorId, 
-            LegalName = "Acme Corp (SAP Legacy)", 
+        var sapMasterData = new
+        {
+            VendorId = sapVendorId,
+            LegalName = "Acme Corp (SAP Legacy)",
             Status = "Active",
             Region = "US"
         };
@@ -117,30 +122,30 @@ public class ChangeRequestRepository : IChangeRequestRepository
         if (pendingRequest == null)
         {
             // No pending changes - return SAP data as is
-            return sapMasterData;
+            return Result.Ok<object>(sapMasterData);
         }
 
         // 3. Fetch the flexible payload from Cosmos
         // Note: ChangeRequestData.Payload is typically JObject/JsonElement
         var changeData = await _cosmosRepo.GetChangeRequestDataAsync(pendingRequest.Id.ToString());
-        
+
         if (changeData?.Payload == null)
         {
-            return sapMasterData;
+            return Result.Ok<object>(sapMasterData);
         }
 
         // 4. Overlay Logic (Simple Merge)
         // In a real implementation with JObject, use Merge(MergeSettings).
         // For this demo, we return a composite object to show the concept.
-        
-        return new 
+
+        return Result.Ok<object>(new
         {
             Meta = new { IsOverlay = true, PendingRequestId = pendingRequest.Id },
             Base = sapMasterData,
             Overlay = changeData.Payload,
             // "Effective" would be the Merged view
-            Effective = MergeObjects(sapMasterData, changeData.Payload) 
-        };
+            Effective = MergeObjects(sapMasterData, changeData.Payload)
+        });
     }
 
     private object MergeObjects(object original, object delta)
