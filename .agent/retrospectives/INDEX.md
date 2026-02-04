@@ -93,6 +93,26 @@ exit $FAIL_COUNT
 **Source**: 2026-02-04 Security Hardening
 **Applied**: ✅ Implemented, monitoring in production
 
+### 6. ❌ NEVER use `dotnet ef database update` for Azure
+**Issue**: Runs migration code with SQLite types (TEXT), fails on SQL Server
+**Solution**: ✅ Let GitHub Actions workflow execute PATCHED SQL script
+**Source**: 2026-02-04 CI/CD Database Migrations
+**Applied**: ✅ Workflow fixed, using PowerShell Invoke-Sqlcmd
+
+```bash
+# ❌ FORBIDDEN for Azure deployments
+dotnet ef database update
+
+# ✅ CORRECT: Trigger workflow that patches TEXT→nvarchar
+# GitHub Actions → Generate script → Patch → Execute via PowerShell
+```
+
+### 7. ✅ Use PowerShell Invoke-Sqlcmd for Azure AD Auth
+**Issue**: sqlcmd -P has 128 char limit, SQLCMDPASSWORD env var unreliable
+**Solution**: ✅ PowerShell `Invoke-Sqlcmd -AccessToken` handles long tokens
+**Source**: 2026-02-04 CI/CD Database Migrations
+**Applied**: ✅ Workflow updated
+
 ---
 
 ## 📋 Pending Brain Rule Updates
@@ -171,15 +191,42 @@ exit $FAIL_COUNT
 
 ---
 
+### 2026-02-04: CI/CD Database Migrations Hardening
+**Branch**: `feature/event-driven-architecture-completion`
+**File**: [2026-02-04-cicd-database-migrations.md](active/2026-02-04-cicd-database-migrations.md)
+**Status**: ✅ Completed
+**Key Learnings**:
+- SQLite TEXT types don't work on SQL Server
+- PowerShell Invoke-Sqlcmd handles Azure AD tokens correctly
+- Dummy connection string needed for script generation
+- Data migration pattern for safe DROP COLUMN
+
+**Issues Resolved**:
+- ✅ Script generation auth failure
+- ✅ Zero Data Loss false positive
+- ✅ SQLite type conversion
+- ✅ Azure AD token authentication
+
+**Deliverables**:
+- Fixed database migration workflow
+- Added path filter to frontend workflow
+- Added CI/CD Troubleshooting Guide to golden rules
+- EDA implementation deployed to Azure
+
+**Time**: ~1 hour (8 iterations)
+**Grade**: B+ (completed but many iterations needed)
+
+---
+
 ## 📈 Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total Retrospectives | 2 |
-| Critical Learnings | 6 |
-| Bugs Prevented | 2 (IsStaging, duplicate type) |
-| Time Saved (estimated) | 45 min per future implementation |
-| Brain Rules Applied | 8 updates |
+| Total Retrospectives | 3 |
+| Critical Learnings | 7 |
+| Bugs Prevented | 3 (IsStaging, duplicate type, SQLite types) |
+| Time Saved (estimated) | 60 min per future implementation |
+| Brain Rules Applied | 10 updates |
 | Brain Rules Pending | 0 |
 | Foundational Patterns | 18/18 (100%) |
 
