@@ -175,6 +175,29 @@ class MockHubConnectionBuilder {
 **Source**: 2026-02-04 Brain v1.2.0 Compliance
 **Applied**: ✅ AccessibleModal.tsx
 
+### 13. ✅ Azure Static Web Apps Deployment Race Condition
+**Issue**: Simultaneous pushes to develop and main cause "Deployment Canceled" error
+**Root Cause**: Azure SWA cancels older deployments when newer one starts
+**Solution**: ✅ This is expected behavior - main branch deployment takes priority
+**Impact**: Develop branch deployments may show as failed but main succeeds
+**Source**: 2026-02-04 Brain v1.2.0 Compliance CI
+**Applied**: N/A (expected Azure behavior, not a bug)
+
+### 14. ✅ Git Safe Directory in CI Docker Containers
+**Issue**: Azure SWA Oryx builds in Docker, doesn't inherit workflow git config
+**Error**: `fatal: detected dubious ownership in repository at '/github/workspace'`
+**Solution**: ✅ Run `git config --global --add safe.directory /github/workspace` in build script
+**Impact**: Cleaner CI logs, proper version info in builds
+**Source**: 2026-02-04 Brain v1.2.0 Compliance CI
+**Applied**: ✅ frontend/generate-version.js
+
+```javascript
+// ✅ CORRECT: Configure safe.directory before git commands
+try {
+  execSync('git config --global --add safe.directory /github/workspace', { stdio: 'pipe' });
+} catch { /* Ignore - not in CI */ }
+```
+
 ---
 
 ## 📋 Pending Brain Rule Updates
@@ -312,8 +335,8 @@ class MockHubConnectionBuilder {
 | Metric | Value |
 |--------|-------|
 | Total Retrospectives | 4 |
-| Critical Learnings | 9 |
-| Bugs Prevented | 4 (IsStaging, duplicate type, SQLite types, doc duplication) |
+| Critical Learnings | 14 |
+| Bugs Prevented | 5 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory) |
 | Time Saved (estimated) | 90 min per future implementation |
 | Brain Rules Applied | 17 updates |
 | Brain Rules Pending | 0 |
