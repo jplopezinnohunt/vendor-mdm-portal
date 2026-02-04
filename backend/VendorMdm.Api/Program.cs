@@ -21,6 +21,9 @@ using Microsoft.IdentityModel.Tokens;
 using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Core.Framework.Extensions;
 using VendorMdm.Core.Framework.Resilience; // Required for CorePolicyRegistry
+using VendorMdm.Core.Framework.Events;
+using VendorMdm.Api.Services.Events;
+using VendorMdm.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -190,6 +193,23 @@ builder.Services.AddSingleton<LevenshteinMatcher>();
 builder.Services.AddSingleton<IbanValidator>();
 builder.Services.AddSingleton<SwiftValidator>();
 builder.Services.AddSingleton<SapNameValidator>();
+
+// =====================================================
+// EVENT-DRIVEN ARCHITECTURE (EDA)
+// =====================================================
+// Core dispatcher
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
+// Event handlers (registered for each event type they handle)
+builder.Services.AddScoped<IEventHandler<VendorCreatedEvent>, SignalREventHandler>();
+builder.Services.AddScoped<IEventHandler<VendorStatusChangedEvent>, SignalREventHandler>();
+
+// Outbox processor for guaranteed delivery
+builder.Services.AddHostedService<OutboxProcessor>();
+
+// SignalR for real-time frontend updates
+builder.Services.AddSignalR();
+Console.WriteLine("📡 Event-Driven Architecture: Enabled (SignalR + Outbox)");
 
 // External Integrations
 builder.Services.AddAzureClients(clientBuilder => {
@@ -374,6 +394,9 @@ if (app.Environment.IsDevelopment())
 app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
+
+// SignalR Hub endpoint (Event-Driven Architecture)
+app.MapHub<EventHub>("/hubs/events");
 
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");

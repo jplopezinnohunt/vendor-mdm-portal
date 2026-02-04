@@ -4,6 +4,7 @@ import { NotFound } from './pages/NotFound';
 import { Unauthorized } from './pages/Unauthorized';
 import { FutureFeature } from './pages/FutureFeature';
 import { AuthProvider, useAuth, UserRole } from './context/AuthContext';
+import { SignalRProvider } from './context/SignalRContext';
 import { MainLayout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { VendorProfile } from './pages/VendorProfile';
@@ -66,8 +67,9 @@ import { DebugConsole } from './components/dev/DebugConsole';
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <DebugConsole />
-      <BrowserRouter>
+      <SignalRProvider>
+        <DebugConsole />
+        <BrowserRouter>
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
@@ -210,6 +212,7 @@ const App: React.FC = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      </SignalRProvider>
     </AuthProvider>
   );
 };

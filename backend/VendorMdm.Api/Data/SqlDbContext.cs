@@ -33,6 +33,9 @@ public class SqlDbContext : DbContext
     // Pattern 16: Audit Trail & Temporal
     public DbSet<AuditLog> AuditLogs { get; set; }
 
+    // Event-Driven Architecture: Outbox Pattern
+    public DbSet<OutboxEvent> OutboxEvents { get; set; }
+
     // Workflow Canonical Model
     public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
     public DbSet<WorkflowStep> WorkflowSteps { get; set; }
@@ -58,6 +61,9 @@ public class SqlDbContext : DbContext
         
         // Configure Audit Trail (Pattern 16)
         ConfigureAuditLog(modelBuilder);
+
+        // Configure Outbox Pattern (EDA)
+        ConfigureOutboxEvents(modelBuilder);
 
         // Seed Workflow States
         modelBuilder.Entity<WorkflowState>().HasData(
@@ -342,6 +348,34 @@ public class SqlDbContext : DbContext
             // Index for tenant-based queries (Pattern 15: Multi-Tenancy)
             entity.HasIndex(e => new { e.TenantId, e.ChangedAt })
                 .HasDatabaseName("IX_AuditLog_Tenant");
+        });
+    }
+
+    /// <summary>
+    /// Configure Outbox Events entity (Event-Driven Architecture: Outbox Pattern).
+    /// Indexes optimized for background processor queries.
+    /// </summary>
+    private void ConfigureOutboxEvents(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<OutboxEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Index for pending events processing
+            entity.HasIndex(e => new { e.Status, e.CreatedAt })
+                .HasDatabaseName("IX_OutboxEvent_Processing");
+
+            // Index for retry processing
+            entity.HasIndex(e => new { e.Status, e.NextRetryAt })
+                .HasDatabaseName("IX_OutboxEvent_Retry");
+
+            // Index for event type queries
+            entity.HasIndex(e => e.EventType)
+                .HasDatabaseName("IX_OutboxEvent_EventType");
+
+            // Index for correlation tracking
+            entity.HasIndex(e => e.CorrelationId)
+                .HasDatabaseName("IX_OutboxEvent_Correlation");
         });
     }
 }
