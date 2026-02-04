@@ -109,10 +109,39 @@ You are required to load and apply the following detailed standards based on the
 -   **Strict Headers**: `HSTS` (Strict-Transport-Security), `CSP` (Content-Security-Policy), and `X-Frame-Options: DENY` are MANDATORY.
 -   **CORS Strictness**: Production CORS MUST be restricted to the specific `App:BaseUrl`. NO Localhost allowed in Prod.
 -   **Rate Limiting**: All Public (`AllowAnonymous`) endpoints MUST have IP-based Rate Limiting (5 req/min).
+-   **Environment Detection**: NEVER use `env.IsStaging()` - it doesn't exist. Use `env.EnvironmentName == "Staging"`:
+    ```csharp
+    // ❌ BROKEN (compiles but fails at runtime)
+    if (env.IsStaging()) { ... }
+
+    // ✅ CORRECT
+    if (env.EnvironmentName == "Staging") { ... }
+    ```
+-   **Header Syntax**: Use indexer syntax, NOT `Add()` method (prevents ASP0019 warning):
+    ```csharp
+    // ❌ FORBIDDEN (throws on duplicate keys)
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+
+    // ✅ CORRECT (idempotent, no exceptions)
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    ```
 
 ### C. Input Hygiene
 -   **Anti-XSS**: All DTO strings MUST be sanitized (`IInputSanitizer`) before reaching the Domain Layer.
 -   **DTO Enforcement**: Never accept raw JSONB or Entity objects from the client.
+
+### D. Input Validation & Sanitization
+-   **Global Action Filter**: Register `InputSanitizationActionFilter` to scan all DTO properties automatically.
+-   **IInputSanitizer Interface**: Use `Core.Framework/Security/IInputSanitizer.cs` for consistent sanitization.
+-   **Performance Target**: <10ms per request for reflection-based property scanning.
+-   **Pattern**: Sanitize at API boundary, validate in Domain/Concept layer.
+    ```csharp
+    // Program.cs - Register global filter
+    builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<InputSanitizationActionFilter>();
+    });
+    ```
 
 ---
 
@@ -160,6 +189,26 @@ git status
 # Document acceptable warnings in commit message
 ```
 
+### 6. Verification Script Pattern
+**IMPORTANT**: Verification scripts must handle errors per-test, not exit on first failure:
+```bash
+# ❌ DON'T: Exit on first error (stops script early)
+set -e
+curl http://localhost:5001/health  # Fails → script stops
+
+# ✅ DO: Accumulate failures, exit at end
+FAIL_COUNT=0
+if ! curl -s http://localhost:5001/health; then
+    echo "FAIL: Health check"
+    ((FAIL_COUNT++))
+fi
+# ... more tests ...
+if [ $FAIL_COUNT -gt 0 ]; then
+    echo "FAILED: $FAIL_COUNT tests"
+    exit 1
+fi
+```
+
 **AGENT BEHAVIOR**:
 - Agent MUST run these checks before proposing commit
 - Agent MUST report any failures to user
@@ -195,6 +244,7 @@ git status
 ```
 - CS0618: Obsolete member usage (if no migration plan)
 - CS8600-CS8629: Nullable reference warnings (potential NullReferenceException)
+- ASP0019: Headers.Add() may throw on duplicate - use indexer syntax instead
 - TS2322: Type mismatch
 - TS2345: Argument type mismatch
 ```

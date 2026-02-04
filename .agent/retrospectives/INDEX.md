@@ -99,18 +99,14 @@ exit $FAIL_COUNT
 
 **Applied** (2026-02-04):
 - [x] **Section 5**: Added "Duplicate Type Check" rule with grep pattern
+- [x] **Section 7.B**: Added environment detection pattern (`env.EnvironmentName`)
+- [x] **Section 7.B**: Added header indexer syntax pattern (ASP0019)
+- [x] **Section 7.D**: Added Input Validation & Sanitization section
+- [x] **Section 8.6**: Added verification script error handling pattern
+- [x] **Section 9**: Added ASP0019 to Critical warnings table
 - [x] **Section 10.6**: Added Entity Evolution Checklist
 
-**High Priority**:
-- [ ] **Section 7.B**: Add environment detection pattern (`env.EnvironmentName`)
-- [ ] **Section 7.B**: Add header indexer syntax pattern
-- [ ] **Section 7.D**: Add Input Validation & Sanitization section (new)
-
-**Medium Priority**:
-- [ ] **Section 8**: Add verification script error handling pattern
-- [ ] **Section 9**: Add ASP0019 warning to categorization table
-
-**Low Priority**:
+**Low Priority** (Future):
 - [ ] **Section 10.2 Pattern 5**: Add security event logging examples
 
 ---
@@ -183,7 +179,8 @@ exit $FAIL_COUNT
 | Critical Learnings | 6 |
 | Bugs Prevented | 2 (IsStaging, duplicate type) |
 | Time Saved (estimated) | 45 min per future implementation |
-| Brain Rules Pending | 8 updates |
+| Brain Rules Applied | 7 updates |
+| Brain Rules Pending | 1 (low priority) |
 | Foundational Patterns | 18/18 (100%) |
 
 ---
