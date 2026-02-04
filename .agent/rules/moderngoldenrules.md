@@ -338,6 +338,21 @@ These 18 patterns define HOW the system is built. Every new feature MUST conform
 - Use `IStructuredLogger` from Core.Framework
 - Log format: `logger.LogInformation("Action completed", new { vendorId, status })`
 - NEVER use string interpolation in logs
+- **Security Events** (always log these):
+  ```csharp
+  // Authentication
+  _logger.LogInformation("User login", new { userId, authMethod, ipAddress });
+  _logger.LogWarning("Login failed", new { email, reason, ipAddress, attemptCount });
+
+  // Authorization
+  _logger.LogWarning("Access denied", new { userId, resource, action, requiredRole });
+
+  // Data access
+  _logger.LogInformation("Sensitive data accessed", new { userId, entityType, entityId });
+
+  // Soft delete
+  _logger.LogInformation("Entity soft deleted", new { entityType, entityId, deletedBy, reason });
+  ```
 
 **6. Event Sourcing (Partial)**
 - Domain Events for state changes

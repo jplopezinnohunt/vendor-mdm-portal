@@ -104,10 +104,10 @@ exit $FAIL_COUNT
 - [x] **Section 7.D**: Added Input Validation & Sanitization section
 - [x] **Section 8.6**: Added verification script error handling pattern
 - [x] **Section 9**: Added ASP0019 to Critical warnings table
+- [x] **Section 10.2 Pattern 5**: Added security event logging examples
 - [x] **Section 10.6**: Added Entity Evolution Checklist
 
-**Low Priority** (Future):
-- [ ] **Section 10.2 Pattern 5**: Add security event logging examples
+**Pending**: None (all learnings applied per Section 11 rule)
 
 ---
 
@@ -179,8 +179,8 @@ exit $FAIL_COUNT
 | Critical Learnings | 6 |
 | Bugs Prevented | 2 (IsStaging, duplicate type) |
 | Time Saved (estimated) | 45 min per future implementation |
-| Brain Rules Applied | 7 updates |
-| Brain Rules Pending | 1 (low priority) |
+| Brain Rules Applied | 8 updates |
+| Brain Rules Pending | 0 |
 | Foundational Patterns | 18/18 (100%) |
 
 ---
