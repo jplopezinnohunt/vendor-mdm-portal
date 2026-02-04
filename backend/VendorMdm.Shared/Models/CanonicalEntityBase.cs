@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using VendorMdm.Shared.Ontology.Interfaces;
 
 namespace VendorMdm.Shared.Models;
 
 /// <summary>
 /// Base class for all canonical entities in the Vendor Platform.
 /// MANDATORY: All domain entities MUST inherit from this base class.
-/// 
+///
 /// Provides:
 /// - Global immutable ID (UUID)
 /// - Entity versioning for optimistic concurrency
@@ -15,8 +16,9 @@ namespace VendorMdm.Shared.Models;
 /// - Semi-structured data storage (JSONB pattern)
 /// - Audit timestamps
 /// - Schema versioning
+/// - Soft delete support (Pattern 11)
 /// </summary>
-public abstract class CanonicalEntityBase
+public abstract class CanonicalEntityBase : ISoftDeletable
 {
     /// <summary>
     /// Global immutable identifier (UUID).
@@ -87,7 +89,69 @@ public abstract class CanonicalEntityBase
     [Required]
     [MaxLength(20)]
     public string SchemaVersion { get; set; } = "v1.0.0";
-    
+
+    // ============================================
+    // SOFT DELETE FIELDS (Pattern 11)
+    // ============================================
+
+    /// <summary>
+    /// Indicates if the entity has been soft deleted.
+    /// Default queries exclude records where IsDeleted=true.
+    /// Use IgnoreQueryFilters() to include deleted records.
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
+
+    /// <summary>
+    /// Timestamp when the entity was soft deleted (UTC).
+    /// Null if entity is not deleted.
+    /// </summary>
+    public DateTime? DeletedAt { get; set; }
+
+    /// <summary>
+    /// User who performed the soft delete (email or user ID).
+    /// Null if entity is not deleted.
+    /// </summary>
+    [MaxLength(256)]
+    public string? DeletedBy { get; set; }
+
+    /// <summary>
+    /// Perform a soft delete on this entity.
+    /// Sets IsDeleted=true, DeletedAt=now, DeletedBy=user.
+    /// IMPORTANT: Caller must log this action via IStructuredLogger and AuditLog.
+    /// </summary>
+    /// <param name="deletedBy">User performing the delete (email or ID)</param>
+    public void SoftDelete(string deletedBy)
+    {
+        if (string.IsNullOrWhiteSpace(deletedBy))
+            throw new ArgumentException("DeletedBy is required for audit trail", nameof(deletedBy));
+
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        DeletedBy = deletedBy;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Restore a soft-deleted entity.
+    /// Sets IsDeleted=false, clears DeletedAt and DeletedBy.
+    /// IMPORTANT: Caller must log this action via IStructuredLogger and AuditLog.
+    /// </summary>
+    /// <param name="restoredBy">User performing the restore (for logging - not stored)</param>
+    public void Restore(string restoredBy)
+    {
+        if (string.IsNullOrWhiteSpace(restoredBy))
+            throw new ArgumentException("RestoredBy is required for audit trail", nameof(restoredBy));
+
+        IsDeleted = false;
+        DeletedAt = null;
+        DeletedBy = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    // ============================================
+    // ENTITY METHODS
+    // ============================================
+
     /// <summary>
     /// Increment entity version (for updates).
     /// Call before saving changes to database.

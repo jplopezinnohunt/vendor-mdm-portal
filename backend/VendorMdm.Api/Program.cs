@@ -21,6 +21,9 @@ using Microsoft.IdentityModel.Tokens;
 using VendorMdm.Core.Framework.Primitives;
 using VendorMdm.Core.Framework.Extensions;
 using VendorMdm.Core.Framework.Resilience; // Required for CorePolicyRegistry
+using VendorMdm.Core.Framework.Events;
+using VendorMdm.Api.Services.Events;
+using VendorMdm.Api.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,8 +97,12 @@ Console.WriteLine($"Active Mode: {dataSourceMode}");
 
 // --- SERVICES REGISTRATION ---
 
-builder.Services.AddControllers()
-     .AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; });
+builder.Services.AddControllers(options =>
+{
+    // Global input sanitization filter (Section 7.C - Input Hygiene)
+    options.Filters.Add<VendorMdm.Api.Filters.InputSanitizationActionFilter>();
+})
+.AddJsonOptions(options => { options.JsonSerializerOptions.PropertyNameCaseInsensitive = true; });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -187,6 +194,23 @@ builder.Services.AddSingleton<IbanValidator>();
 builder.Services.AddSingleton<SwiftValidator>();
 builder.Services.AddSingleton<SapNameValidator>();
 
+// =====================================================
+// EVENT-DRIVEN ARCHITECTURE (EDA)
+// =====================================================
+// Core dispatcher
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+
+// Event handlers (registered for each event type they handle)
+builder.Services.AddScoped<IEventHandler<VendorCreatedEvent>, SignalREventHandler>();
+builder.Services.AddScoped<IEventHandler<VendorStatusChangedEvent>, SignalREventHandler>();
+
+// Outbox processor for guaranteed delivery
+builder.Services.AddHostedService<OutboxProcessor>();
+
+// SignalR for real-time frontend updates
+builder.Services.AddSignalR();
+Console.WriteLine("📡 Event-Driven Architecture: Enabled (SignalR + Outbox)");
+
 // External Integrations
 builder.Services.AddAzureClients(clientBuilder => {
     if (!string.IsNullOrEmpty(serviceBusConnection)) clientBuilder.AddServiceBusClient(serviceBusConnection);
@@ -215,22 +239,57 @@ builder.Services.AddSingleton<CosmosClient>(sp => {
     return new CosmosClient(cosmosConnection, new DefaultAzureCredential());
 });
 
-// Configure CORS
+// Configure CORS (Environment-based - Section 7.B)
+string[] GetAllowedOrigins(IConfiguration config, IWebHostEnvironment env)
+{
+    var baseUrl = config["App:BaseUrl"];
+
+    if (env.IsProduction())
+    {
+        // Production: ONLY the configured BaseUrl (NO localhost)
+        return string.IsNullOrEmpty(baseUrl)
+            ? new[] { "https://victorious-water-095da360f.5.azurestaticapps.net" }
+            : new[] { baseUrl };
+    }
+    else if (env.EnvironmentName == "Staging")
+    {
+        // Staging: BaseUrl + localhost for testing
+        // Note: IsStaging() doesn't exist in ASP.NET Core - use EnvironmentName
+        return new[]
+        {
+            baseUrl ?? "https://purple-moss-066604e03.4.azurestaticapps.net",
+            "http://localhost:3000",
+            "http://localhost:5173"
+        };
+    }
+    else
+    {
+        // Development: localhost + any configured frontend URLs
+        return new[]
+        {
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "https://victorious-water-095da360f.5.azurestaticapps.net",
+            "https://purple-moss-066604e03.4.azurestaticapps.net",
+            "https://stvendormdmdev.blob.core.windows.net"
+        };
+    }
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",
-                "https://victorious-water-095da360f.5.azurestaticapps.net",
-                "https://purple-moss-066604e03.4.azurestaticapps.net",
-                "https://stvendormdmdev.blob.core.windows.net"
-            )
+        var allowedOrigins = GetAllowedOrigins(builder.Configuration, builder.Environment);
+
+        policy.WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
     });
 });
+
+Console.WriteLine($"🌐 CORS: Allowed origins: {string.Join(", ", GetAllowedOrigins(builder.Configuration, builder.Environment))}");
 
 // Configure Authentication
 // For local development, use cookie authentication with mock middleware
@@ -306,6 +365,9 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
+// Security Headers (Section 7.B - MUST be BEFORE authentication)
+app.UseSecurityHeaders();
+
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 
@@ -332,6 +394,9 @@ if (app.Environment.IsDevelopment())
 app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
+
+// SignalR Hub endpoint (Event-Driven Architecture)
+app.MapHub<EventHub>("/hubs/events");
 
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");

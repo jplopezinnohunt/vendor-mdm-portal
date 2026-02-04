@@ -33,6 +33,9 @@ public class SqlDbContext : DbContext
     // Pattern 16: Audit Trail & Temporal
     public DbSet<AuditLog> AuditLogs { get; set; }
 
+    // Event-Driven Architecture: Outbox Pattern
+    public DbSet<OutboxEvent> OutboxEvents { get; set; }
+
     // Workflow Canonical Model
     public DbSet<WorkflowDefinition> WorkflowDefinitions { get; set; }
     public DbSet<WorkflowStep> WorkflowSteps { get; set; }
@@ -58,6 +61,9 @@ public class SqlDbContext : DbContext
         
         // Configure Audit Trail (Pattern 16)
         ConfigureAuditLog(modelBuilder);
+
+        // Configure Outbox Pattern (EDA)
+        ConfigureOutboxEvents(modelBuilder);
 
         // Seed Workflow States
         modelBuilder.Entity<WorkflowState>().HasData(
@@ -139,6 +145,8 @@ public class SqlDbContext : DbContext
     /// <summary>
     /// Configure canonical entities per Canonical Domain Model standard.
     /// All canonical entities have: Id, EntityVersion, Status, SourceSystem, Data, timestamps.
+    /// Pattern 11: Soft Delete - All queries exclude IsDeleted=true by default.
+    /// Use .IgnoreQueryFilters() to include soft-deleted records (Admin only).
     /// </summary>
     private void ConfigureCanonicalEntities(ModelBuilder modelBuilder)
     {
@@ -150,11 +158,15 @@ public class SqlDbContext : DbContext
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.PrimaryContactEmail);
             entity.HasIndex(e => e.SourceSystem);
-            
+            // Pattern 11: Soft Delete - Partial index for active records
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Vendor_IsDeleted");
+
             entity.Property(e => e.Data)
-                
                 .IsRequired()
                 .HasDefaultValue("{}");
+
+            // Pattern 11: Global Query Filter - Exclude soft-deleted records
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // VendorInvitationCanonical
@@ -165,11 +177,14 @@ public class SqlDbContext : DbContext
             entity.HasIndex(e => e.PrimaryContactEmail);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.ExpiresAt);
-            
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_VendorInvitationCanonical_IsDeleted");
+
             entity.Property(e => e.Data)
-                
                 .IsRequired()
                 .HasDefaultValue("{}");
+
+            // Pattern 11: Global Query Filter
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // ChangeRequestCanonical
@@ -179,23 +194,27 @@ public class SqlDbContext : DbContext
             entity.HasIndex(e => e.VendorId); // Canonical Vendor ID (not SAP!)
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.RequesterId);
-            
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_ChangeRequestCanonical_IsDeleted");
+
             entity.Property(e => e.Data)
-                
                 .IsRequired()
                 .HasDefaultValue("{}");
+
+            // Pattern 11: Global Query Filter
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // ExternalSystemMapping - Anti-corruption layer for multi-system integration
+        // Note: ExternalSystemMapping does NOT inherit from CanonicalEntityBase, no soft delete
         modelBuilder.Entity<ExternalSystemMapping>(entity =>
         {
             entity.HasKey(e => e.Id);
-            
+
             // Unique constraint: one external system ID per canonical entity per system+environment
             entity.HasIndex(e => new { e.EntityType, e.ExternalSystemId, e.SystemName, e.SystemEnvironment })
                 .IsUnique()
                 .HasDatabaseName("IX_ExternalSystemMapping_Unique");
-            
+
             // Index for canonical ID lookups
             entity.HasIndex(e => new { e.CanonicalEntityId, e.EntityType, e.SystemName })
                 .HasDatabaseName("IX_ExternalSystemMapping_Canonical");
@@ -207,7 +226,10 @@ public class SqlDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.EmployeeId);
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Employee_IsDeleted");
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+            // Pattern 11: Global Query Filter
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // Project
@@ -215,7 +237,10 @@ public class SqlDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.ProjectCode);
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Project_IsDeleted");
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+            // Pattern 11: Global Query Filter
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // Fund
@@ -223,7 +248,10 @@ public class SqlDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.FundCode);
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Fund_IsDeleted");
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+            // Pattern 11: Global Query Filter
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // Customer
@@ -232,7 +260,10 @@ public class SqlDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.TaxId);
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_Customer_IsDeleted");
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+            // Pattern 11: Global Query Filter
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
 
         // User
@@ -242,7 +273,10 @@ public class SqlDbContext : DbContext
             entity.HasIndex(e => e.Username);
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.AzureAdObjectId); // Fast lookup for SSO
+            entity.HasIndex(e => e.IsDeleted).HasDatabaseName("IX_User_IsDeleted");
             entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
+            // Pattern 11: Global Query Filter
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
     }
     /// <summary>
@@ -314,6 +348,34 @@ public class SqlDbContext : DbContext
             // Index for tenant-based queries (Pattern 15: Multi-Tenancy)
             entity.HasIndex(e => new { e.TenantId, e.ChangedAt })
                 .HasDatabaseName("IX_AuditLog_Tenant");
+        });
+    }
+
+    /// <summary>
+    /// Configure Outbox Events entity (Event-Driven Architecture: Outbox Pattern).
+    /// Indexes optimized for background processor queries.
+    /// </summary>
+    private void ConfigureOutboxEvents(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<OutboxEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Index for pending events processing
+            entity.HasIndex(e => new { e.Status, e.CreatedAt })
+                .HasDatabaseName("IX_OutboxEvent_Processing");
+
+            // Index for retry processing
+            entity.HasIndex(e => new { e.Status, e.NextRetryAt })
+                .HasDatabaseName("IX_OutboxEvent_Retry");
+
+            // Index for event type queries
+            entity.HasIndex(e => e.EventType)
+                .HasDatabaseName("IX_OutboxEvent_EventType");
+
+            // Index for correlation tracking
+            entity.HasIndex(e => e.CorrelationId)
+                .HasDatabaseName("IX_OutboxEvent_Correlation");
         });
     }
 }

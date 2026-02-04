@@ -1,4 +1,6 @@
 using VendorMdm.Api.Data;
+using VendorMdm.Api.Services.Events;
+using VendorMdm.Core.Framework.Events;
 using VendorMdm.Shared.Models;
 using VendorMdm.Shared.Models.Sanctions;
 using Microsoft.EntityFrameworkCore;
@@ -11,17 +13,20 @@ public class VendorService : IVendorService
     private readonly CosmosRepository _cosmosRepository;
     private readonly ILogger<VendorService> _logger;
     private readonly ISanctionsScreeningService _sanctionsService;
+    private readonly IDomainEventDispatcher _eventDispatcher;
 
     public VendorService(
         SqlDbContext context,
         CosmosRepository cosmosRepository,
         ILogger<VendorService> logger,
-        ISanctionsScreeningService sanctionsService)
+        ISanctionsScreeningService sanctionsService,
+        IDomainEventDispatcher eventDispatcher)
     {
         _context = context;
         _cosmosRepository = cosmosRepository;
         _logger = logger;
         _sanctionsService = sanctionsService;
+        _eventDispatcher = eventDispatcher;
     }
 
     public async Task<Vendor> CreateVendorAsync(Vendor vendor, bool forceCreation = false)
@@ -88,13 +93,25 @@ public class VendorService : IVendorService
         if (string.IsNullOrEmpty(vendor.LegalName)) throw new ArgumentException("Legal Name is required");
         if (string.IsNullOrEmpty(vendor.PrimaryContactEmail)) throw new ArgumentException("Primary Contact Email is required");
 
+        // Create domain event for the new vendor
+        // Note: AccountGroup is determined by business logic in the Concept layer, default to empty here
+        var vendorCreatedEvent = new VendorCreatedEvent(
+            vendor.Id,
+            vendor.LegalName ?? "",
+            "");
+
+        // Add vendor and event to outbox in same transaction (guaranteed delivery)
         _context.Vendors.Add(vendor);
+        _context.AddToOutbox(vendorCreatedEvent);
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Vendor created in SQL: {Id}", vendor.Id);
 
+        // Dispatch event to in-process handlers (SignalR, etc.)
+        await _eventDispatcher.DispatchAsync(vendorCreatedEvent);
+
         // 2. Functional Log (Cosmos Artifact)
-        try   
+        try
         {
             await _cosmosRepository.SaveArtifactAsync(vendor.Id.ToString(), vendor);
         }
@@ -103,10 +120,10 @@ public class VendorService : IVendorService
             _logger.LogError(ex, "Failed to save Vendor artifact to Cosmos: {Id}", vendor.Id);
         }
 
-        // 3. Outbound Port (Event Bus)
+        // 3. Outbound Port (Event Bus) - Legacy Cosmos event log
         try
         {
-            var domainEvent = new DomainEvent
+            var cosmosDomainEvent = new VendorMdm.Shared.Models.DomainEvent
             {
                 EventType = "VendorCreated",
                 EntityId = vendor.Id.ToString(),
@@ -115,7 +132,7 @@ public class VendorService : IVendorService
                 Source = "VendorMdm.Api",
                 SchemaVersion = vendor.SchemaVersion
             };
-            await _cosmosRepository.LogDomainEventAsync(domainEvent);
+            await _cosmosRepository.LogDomainEventAsync(cosmosDomainEvent);
         }
         catch (Exception ex)
         {
@@ -127,18 +144,44 @@ public class VendorService : IVendorService
 
     public async Task<Vendor> UpdateVendorAsync(Vendor vendor)
     {
+        // Get the original to detect status changes
+        var original = await _context.Vendors
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == vendor.Id);
+
+        var oldStatus = original?.Status;
+
         // 1. SQL
         vendor.UpdatedAt = DateTime.UtcNow;
         vendor.IncrementVersion();
 
         _context.Vendors.Update(vendor);
+
+        // Check for status change and create event
+        var eventsToDispatch = new List<object>();
+        if (oldStatus != null && oldStatus != vendor.Status)
+        {
+            var statusChangedEvent = new VendorStatusChangedEvent(
+                vendor.Id,
+                oldStatus,
+                vendor.Status ?? "");
+            _context.AddToOutbox(statusChangedEvent);
+            eventsToDispatch.Add(statusChangedEvent);
+        }
+
         await _context.SaveChangesAsync();
+
+        // Dispatch events to in-process handlers (SignalR, etc.)
+        if (eventsToDispatch.Count > 0)
+        {
+            await _eventDispatcher.DispatchAsync(eventsToDispatch);
+        }
 
         // 2. Artifact
         await _cosmosRepository.SaveArtifactAsync(vendor.Id.ToString(), vendor);
 
-        // 3. Event
-        var domainEvent = new DomainEvent
+        // 3. Event - Legacy Cosmos event log
+        var cosmosDomainEvent = new VendorMdm.Shared.Models.DomainEvent
         {
             EventType = "VendorUpdated",
             EntityId = vendor.Id.ToString(),
@@ -147,7 +190,7 @@ public class VendorService : IVendorService
             Source = "VendorMdm.Api",
             SchemaVersion = vendor.SchemaVersion
         };
-        await _cosmosRepository.LogDomainEventAsync(domainEvent);
+        await _cosmosRepository.LogDomainEventAsync(cosmosDomainEvent);
 
         return vendor;
     }

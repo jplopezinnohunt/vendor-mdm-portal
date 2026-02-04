@@ -18,8 +18,13 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 
 ## 1. Compliance Logic
 - **Primary Source**: This file is your "System Logic".
-- **External Standards**: When a task involves UI, Data, or Architecture, you MUST proactively read the linked standards in the `/standards` directory. 
+- **Brain Architecture**: See [BRAIN-ARCHITECTURE.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/BRAIN-ARCHITECTURE.md) for documentation hierarchy.
+- **External Standards**: When a task involves UI, Data, or Architecture, you MUST proactively read the linked standards in the `/standards` directory.
 - **Citation**: Every Specification (`specs/spec_*.md`) must cite WHICH standard was followed.
+- **Architecture Maintenance**: When adding new patterns/standards, you MUST update:
+  1. `BRAIN-ARCHITECTURE.md` (hierarchy diagram)
+  2. `standards/README.md` (standards index)
+  3. Section 4 of this file (Standards Brain)
 
 ---
 
@@ -40,40 +45,105 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 ---
 
 ## 4. The Standards Brain (References)
-You are required to load and apply the following detailed standards based on the task type:
 
-### A. UI Design & UX
-- **Standard**: 4 Pillars (Uniformity, Proximity, Feedback, Aesthetics), 12-Column Grid.
-- **File**: [ui-design-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/ui-design-standards.md)
+**Index**: See [standards/README.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/README.md) for full list.
 
-### B. Data Model & Schema
-- **Standard**: Hybrid Relational-Document Model matrix.
-- **File**: [data-model-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/data-model-standards.md)
+**30 standards** organized in **6 categories**:
 
-### C. Architecture & Integration
-- **Standard**: Hexagonal Adapters, Simulation First, EDA/Event-Driven logic.
-- **File**: [hexagonal-architecture-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/hexagonal-architecture-standards.md)
+| Category | Count |
+|----------|-------|
+| Architecture & Design | 4 |
+| Core Development | 4 |
+| Security & Compliance | 4 |
+| Integration & Infrastructure | 5 |
+| Operations & Quality | 6 |
+| Governance & Process | 7 |
+| **Total** | **30** |
 
-### D. Production Readiness & CI/CD
-- **Standard**: Zero-downtime, Middleware sequencing, Asset integrity.
-- **File**: [database-migration-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/database-migration-standards.md)
-- **CI/CD Setup**: [cicd-setup-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/cicd-setup-standards.md)
+You MUST load and apply the relevant standard based on task type.
 
-### E. Git & SAP Alignment
-- **Standard**: Mirror SAP environments (D01, Q01, P01) across Git branches (`develop`, `release`, `main`).
-- **File**: [git-branching-sap-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/git-branching-sap-standards.md)
+### Category 1: Architecture & Design (4 standards)
+| Pattern | Standard |
+|---------|----------|
+| Hexagonal Architecture | [hexagonal-architecture-standards.md](standards/hexagonal-architecture-standards.md) |
+| Hybrid Data Model | [data-model-standards.md](standards/data-model-standards.md) |
+| Ontology Modeling | [ontology-modeling-standard.md](standards/ontology-modeling-standard.md) |
+| Repository Pattern | [repository-pattern-standard.md](standards/repository-pattern-standard.md) |
 
-### F. Audit Log Integration
-- **Standard**: Ontology-driven audit logging for all entities. Each entity MUST have an audit model that evolves with schema changes.
-- **File**: [audit-log-integration-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/audit-log-integration-standards.md)
-- **Pattern Reference**: See Section 10.3 Pattern 10 (Audit Trail)
-- **Status**: MANDATORY for all Create/Update/Delete operations
+### Category 2: Core Development (4 standards)
+| Pattern | Standard |
+|---------|----------|
+| Result Pattern | [result-pattern-standard.md](standards/result-pattern-standard.md) |
+| Structured Logging | [logging-standard.md](standards/logging-standard.md) |
+| State Machines | [state-machine-standard.md](standards/state-machine-standard.md) |
+| Event-Driven Architecture | [event-driven-architecture-standard.md](standards/event-driven-architecture-standard.md) |
+
+### Category 3: Security & Compliance (4 standards)
+| Pattern | Standard |
+|---------|----------|
+| Security Architecture | [security-architecture.md](standards/security-architecture.md) |
+| Audit Logging | [audit-log-integration-standards.md](standards/audit-log-integration-standards.md) |
+| Soft Delete | [soft-delete-standard.md](standards/soft-delete-standard.md) |
+| GDPR & PII | [gdpr-pii-standard.md](standards/gdpr-pii-standard.md) |
+
+### Category 4: Integration & Infrastructure (5 standards)
+| Pattern | Standard |
+|---------|----------|
+| SAP Integration | [sap-integration-standard.md](standards/sap-integration-standard.md) |
+| File Storage | [file-storage-standard.md](standards/file-storage-standard.md) |
+| Email Service | [email-service-standard.md](standards/email-service-standard.md) |
+| Multi-Tenancy | [multi-tenancy-standard.md](standards/multi-tenancy-standard.md) |
+| Data Residency | [data-residency-standard.md](standards/data-residency-standard.md) |
+
+### Category 5: Operations & Quality (6 standards)
+| Pattern | Standard |
+|---------|----------|
+| CI/CD Setup | [cicd-setup-standards.md](standards/cicd-setup-standards.md) |
+| Database Migrations | [database-migration-standards.md](standards/database-migration-standards.md) |
+| Git & SAP Branching | [git-branching-sap-standards.md](standards/git-branching-sap-standards.md) |
+| Rate Limiting | [rate-limiting-standard.md](standards/rate-limiting-standard.md) |
+| Performance | [performance-generated-columns.md](standards/performance-generated-columns.md) |
+| UI Design | [ui-design-standards.md](standards/ui-design-standards.md) |
+
+### Category 6: Governance & Process (7 standards)
+| Pattern | Standard | Section |
+|---------|----------|---------|
+| Zero Data Loss | [zero-data-loss-standard.md](standards/zero-data-loss-standard.md) | 0 |
+| Compliance Logic | [compliance-logic-standard.md](standards/compliance-logic-standard.md) | 1 |
+| SDD Workflow | [sdd-workflow-standard.md](standards/sdd-workflow-standard.md) | 2 |
+| Build Hygiene | [build-hygiene-standard.md](standards/build-hygiene-standard.md) | 5 |
+| Pre-Commit Protocol | [pre-commit-standard.md](standards/pre-commit-standard.md) | 8 |
+| Warning Hygiene | [warning-hygiene-standard.md](standards/warning-hygiene-standard.md) | 9 |
+| Retrospective Governance | [retrospective-standard.md](standards/retrospective-standard.md) | 10 |
+
+### Pattern Violations (FORBIDDEN)
+
+❌ Business logic in Controllers or Services
+❌ Hard deletes (use soft delete)
+❌ Hardcoded secrets (use KeyVault/UserSecrets)
+❌ Returning SQL Entities from API (use DTOs)
+❌ Throwing exceptions for business failures (use Result)
+❌ String interpolation in logs
+❌ Cross-tenant data access without admin check
+
+### Future Patterns (Roadmap)
+
+- [ ] API Versioning
+- [ ] Circuit Breaker
+- [ ] Response Caching
+- [ ] Background Jobs
+- [ ] Feature Flags
 
 ---
 
 ## 5. Build & Process Hygiene
 - **Clean Sweep Protocol**: Before builds or migrations, execute `pkill -f dotnet` and clean `bin/obj` artifacts to prevent Exit Code 143/134.
 - **Interface Integrity**: When changing an interface, update ALL implementations (Mock, Real, Simulation, Test) in one atomic turn.
+- **Duplicate Type Check**: Before creating new classes/constants, ALWAYS search for existing definitions:
+  ```bash
+  grep -r "class TypeName\|static class TypeName" backend/
+  ```
+  **Rationale**: Prevents CS0101 duplicate type errors (learned from DocumentStatus incident).
 - **Hygiene**: Pinned dependencies, `no-any` TypeScript, mandatory verification scripts with auth headers.
 - **Observability**: `traceparent` propagation + `TraceId` UI overlays.
 - **Simulation**: [SIMULATION MODE] logs for all external mocks.
@@ -83,7 +153,7 @@ You are required to load and apply the following detailed standards based on the
 ## 6. The Architecture DNA (Micro-App Standard)
 **Status**: MANDATORY for all new features.
 
-1.  **The Ontology Rule**: See Section 10.1 Pattern 3 (Ontology-Driven Development) for full definition.
+1.  **The Ontology Rule**: See [ontology-modeling-standard.md](standards/ontology-modeling-standard.md) for full definition.
 2.  **The Core Framework**: Apps MUST depend on `VendorMdm.Core.Framework` for base interfaces (`IOntologyConcept`, `IUserContext`).
 3.  **App-Scoped Security**: Authorization MUST be Context-Aware. `IUserContext.HasRoleForApp` is the only valid check.
 4.  **No Entity Leaks**: APIs MUST return DTOs (`Shared.Contracts`). Returning SQL Entities is FORBIDDEN.
@@ -104,10 +174,39 @@ You are required to load and apply the following detailed standards based on the
 -   **Strict Headers**: `HSTS` (Strict-Transport-Security), `CSP` (Content-Security-Policy), and `X-Frame-Options: DENY` are MANDATORY.
 -   **CORS Strictness**: Production CORS MUST be restricted to the specific `App:BaseUrl`. NO Localhost allowed in Prod.
 -   **Rate Limiting**: All Public (`AllowAnonymous`) endpoints MUST have IP-based Rate Limiting (5 req/min).
+-   **Environment Detection**: NEVER use `env.IsStaging()` - it doesn't exist. Use `env.EnvironmentName == "Staging"`:
+    ```csharp
+    // ❌ BROKEN (compiles but fails at runtime)
+    if (env.IsStaging()) { ... }
+
+    // ✅ CORRECT
+    if (env.EnvironmentName == "Staging") { ... }
+    ```
+-   **Header Syntax**: Use indexer syntax, NOT `Add()` method (prevents ASP0019 warning):
+    ```csharp
+    // ❌ FORBIDDEN (throws on duplicate keys)
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+
+    // ✅ CORRECT (idempotent, no exceptions)
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    ```
 
 ### C. Input Hygiene
 -   **Anti-XSS**: All DTO strings MUST be sanitized (`IInputSanitizer`) before reaching the Domain Layer.
 -   **DTO Enforcement**: Never accept raw JSONB or Entity objects from the client.
+
+### D. Input Validation & Sanitization
+-   **Global Action Filter**: Register `InputSanitizationActionFilter` to scan all DTO properties automatically.
+-   **IInputSanitizer Interface**: Use `Core.Framework/Security/IInputSanitizer.cs` for consistent sanitization.
+-   **Performance Target**: <10ms per request for reflection-based property scanning.
+-   **Pattern**: Sanitize at API boundary, validate in Domain/Concept layer.
+    ```csharp
+    // Program.cs - Register global filter
+    builder.Services.AddControllers(options =>
+    {
+        options.Filters.Add<InputSanitizationActionFilter>();
+    });
+    ```
 
 ---
 
@@ -134,6 +233,76 @@ ls -lh backend/VendorMdm.Api/Migrations/*.cs | grep -v Designer | grep -v Snapsh
 # If any file > 50KB, STOP and split migration
 ```
 
+### 2.1 Database Migration Deployment (CRITICAL)
+
+**Environment-Specific Process**:
+
+| Environment | Database | How to Apply Migrations |
+|-------------|----------|------------------------|
+| **Local** | SQLite | `dotnet ef database update` (direct) |
+| **Azure DEV/STAGING/PROD** | SQL Server | **GitHub Actions ONLY** |
+
+**NEVER**:
+- ❌ Create manual SQL scripts for Azure
+- ❌ Run EF migrations directly against Azure SQL
+- ❌ Use Azure Portal SQL Query Editor for schema changes
+
+**ALWAYS**:
+- ✅ Commit migration files to git
+- ✅ Merge to `develop` (or target branch)
+- ✅ Trigger **"Deploy Database Migrations"** workflow in GitHub Actions UI
+
+**GitHub Actions Migration Workflow**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click **"Deploy Database Migrations"**
+3. Click **"Run workflow"**
+4. Select environment (dev/staging/prod)
+5. Workflow automatically:
+   - Generates migration SQL from EF Core
+   - Patches `TEXT` → `nvarchar(max)` for SQL Server
+   - Applies to Azure SQL Database
+   - Shows preview before applying
+
+**Why GitHub Actions?**
+- Automatic type conversion (SQLite ↔ SQL Server)
+- Audit trail in GitHub
+- Rollback capability
+- Environment isolation
+- Zero manual SQL script errors
+
+### 2.2 CI/CD Troubleshooting Guide (Retrospective Learnings)
+
+**Common CI/CD Issues & Solutions**:
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| Script gen fails | "JWT SecretKey required" | Add dummy connection string env var in workflow |
+| DROP COLUMN blocked | Zero Data Loss check fails | Add data migration SQL BEFORE drop (UPDATE SET...) |
+| TEXT type error | `ALTER COLUMN TEXT` fails on SQL Server | Workflow patches TEXT→nvarchar(max) in script |
+| Azure AD token too long | sqlcmd `-P` fails (128 char limit) | Use PowerShell `Invoke-Sqlcmd` with `-AccessToken` |
+| FK constraint error | Can't alter column with FK | Drop FK first, alter, recreate FK |
+
+**SQLite vs SQL Server Types**:
+```
+SQLite          → SQL Server
+TEXT            → nvarchar(max)
+INTEGER         → int / bigint
+REAL            → float
+BLOB            → varbinary(max)
+```
+
+**The migration workflow flow**:
+```
+1. Generate SQL script (EF Core)    ← Uses SqlDbContextFactory
+2. Patch TEXT → nvarchar(max)       ← sed replacement
+3. Check for destructive changes    ← Zero Data Loss
+4. Add firewall rule               ← GitHub runner IP
+5. Execute via PowerShell          ← Invoke-Sqlcmd with AAD token
+6. Remove firewall rule            ← Cleanup
+```
+
+**CRITICAL**: Never use `dotnet ef database update` for Azure - it uses migration code directly which has SQLite types. Always use the workflow which executes the PATCHED SQL script.
+
 ### 3. Alignment Verification
 ```bash
 ./scripts/verify-alignment.sh
@@ -153,6 +322,26 @@ git status
 # Review all build warnings
 # Fix critical warnings immediately
 # Document acceptable warnings in commit message
+```
+
+### 6. Verification Script Pattern
+**IMPORTANT**: Verification scripts must handle errors per-test, not exit on first failure:
+```bash
+# ❌ DON'T: Exit on first error (stops script early)
+set -e
+curl http://localhost:5001/health  # Fails → script stops
+
+# ✅ DO: Accumulate failures, exit at end
+FAIL_COUNT=0
+if ! curl -s http://localhost:5001/health; then
+    echo "FAIL: Health check"
+    ((FAIL_COUNT++))
+fi
+# ... more tests ...
+if [ $FAIL_COUNT -gt 0 ]; then
+    echo "FAILED: $FAIL_COUNT tests"
+    exit 1
+fi
 ```
 
 **AGENT BEHAVIOR**:
@@ -190,6 +379,7 @@ git status
 ```
 - CS0618: Obsolete member usage (if no migration plan)
 - CS8600-CS8629: Nullable reference warnings (potential NullReferenceException)
+- ASP0019: Headers.Add() may throw on duplicate - use indexer syntax instead
 - TS2322: Type mismatch
 - TS2345: Argument type mismatch
 ```
@@ -246,156 +436,244 @@ Minor warnings documented in commit message.
 
 ---
 
-## 10. Foundational Patterns (The Implementation DNA)
+## 10. Retrospective Governance (Continuous Improvement)
 
-**Status**: MANDATORY for all new features and refactoring.
+**Status**: MANDATORY for agents after each significant implementation.
 
-These 18 patterns define HOW the system is built. Every new feature MUST conform to these patterns.
+### Purpose
+Capture lessons learned to prevent repeating mistakes and improve agent effectiveness across sessions.
 
-### 10.1 Architecture Patterns (3)
+### Value Proposition
+- **Prevents Bugs**: Document runtime issues (e.g., `env.IsStaging()` doesn't exist)
+- **Saves Time**: 15-30 min saved per future session by avoiding known pitfalls
+- **Improves Brain**: Retrospectives feed updates to this file
+- **Organizational Memory**: Future agents learn from past implementations
 
-**1. Hexagonal Architecture (Ports & Adapters)**
-- Core Domain MUST be in `VendorMdm.Shared/` with ZERO external dependencies
-- Inbound Ports: REST API Controllers (`VendorMdm.Api/Controllers/`)
-- Outbound Ports: Event Bus, SAP, Email (`VendorMdm.Api/Services/`)
-- **Rule**: Business logic NEVER in Controllers or Services
+### Structure
 
-**2. Hybrid Relational-Document Model**
-- **SQL Columns**: Foreign keys, indexes, ACID, universal fields
-- **JSONB**: Volatile data, context-specific, read-only payloads
-- **Reference**: [data-model-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/data-model-standards.md)
+```
+.agent/retrospectives/
+  ├── INDEX.md                  ← ALWAYS READ THIS FIRST (30 sec)
+  ├── active/                   ← Current quarter (max 10 files)
+  │   └── YYYY-QX-topic.md
+  ├── archived/                 ← Past quarters (reference only)
+  │   └── YYYY-QX-summary.md
+  └── learnings-database.md     ← Aggregated patterns (optional)
+```
 
-**3. Ontology-Driven Development**
-- Business logic MUST exist in `VendorMdm.Shared/Ontology/Concepts/`
-- Services are coordinators, NOT decision-makers
-- Every Concept MUST implement `IOntologyConcept`
+### Agent Workflow
+
+**Before Starting Work**:
+1. Read `.agent/retrospectives/INDEX.md` (if exists)
+2. Apply top learnings to current task
+3. Avoid documented mistakes
+
+**After Completing Work** (for significant features):
+1. Document issues encountered in retrospective
+2. Update `INDEX.md` with top 3-5 learnings
+3. **MANDATORY: Apply learnings to brain rules immediately**
+   - Update relevant sections in this file (moderngoldenrules.md)
+   - Mark as `[x] Applied` in INDEX.md
+   - Commit rule updates with retrospective reference
+4. Do NOT leave "Pending" items - apply them before closing the task
+
+### INDEX.md Format
+
+```markdown
+# Retrospectives Index
+**Last Updated**: YYYY-MM-DD
+
+## Top 5 Critical Learnings
+1. ❌ ISSUE → ✅ SOLUTION (Source: YYYY-MM-DD Topic)
+2. ...
+
+## Pending Brain Rule Updates
+- [ ] Section X.Y: Add pattern Z
+- [ ] Section A.B: Update example
+
+## Active Retrospectives (Current Quarter)
+- [YYYY-MM-DD: Topic](active/YYYY-QX-topic.md) - Key: ...
+```
+
+### Retention Policy
+
+**Keep Forever**:
+- `INDEX.md` (always current, max 200 lines)
+
+**Keep for 3 Months**:
+- Individual retrospectives in `active/`
+
+**Quarterly Aggregation**:
+- Combine `active/` → `archived/YYYY-QX-summary.md`
+- Clear `active/` folder
+- Update `INDEX.md` with aggregated learnings
+
+**Delete After 2 Years**:
+- Archived summaries (learnings already in brain rules)
+
+### What to Document
+
+**MUST Document**:
+- ❌ Bugs found after implementation (runtime issues)
+- ⚠️ Warnings that took >5 min to fix
+- 🔧 Tool workarounds needed
+- 📋 Patterns that should be in brain rules
+- ⏱️ Performance benchmarks achieved
+
+**DON'T Document**:
+- Expected behavior
+- User-specific preferences
+- One-time issues
+
+### Integration with Brain Rules
+
+**Retrospective → Brain Rule Lifecycle**:
+```
+1. Implementation finds issue
+   ↓
+2. Documented in retrospective
+   ↓
+3. Added to INDEX.md
+   ↓
+4. Brain rule updated (this file)
+   ↓
+5. Retrospective marked as "Applied: ✅"
+   ↓
+6. Future agents follow updated rule (no repeat bug)
+```
+
+### Example Learnings
+
+**ASP.NET Core Patterns**:
+- ❌ `env.IsStaging()` doesn't exist → ✅ Use `env.EnvironmentName == "Staging"`
+- ❌ `Headers.Add()` throws ASP0019 → ✅ Use `Headers["X-Frame"] = "DENY"`
+
+**Tool Workarounds**:
+- ✅ Write tool requires read first → Use bash heredoc for new files
+- ⚠️ Verification scripts with `set -e` exit early → Handle errors per-test
+
+**Performance Baselines**:
+- ✅ Input sanitization: <10ms per request (reflection-based)
+- ✅ Security headers: <5ms overhead (early pipeline)
+
+### Size Management
+
+**Target Sizes**:
+- `INDEX.md`: 50-200 lines (quick read)
+- Individual retrospective: 300-500 lines (detailed)
+- Learnings database: 500-1000 lines (comprehensive)
+
+**File Count Limits**:
+- Active: Max 10-12 files per quarter
+- Archived: Max 4-8 quarterly summaries
+- Total: ~15 files maximum (with 2-year purge)
+
+### Success Metrics
+
+**Effectiveness Indicators**:
+- Repeated bugs decrease over time
+- Implementation speed increases (fewer trial-and-error)
+- Brain rule updates cite retrospective evidence
+- New agents ramp up faster (read INDEX.md)
 
 ---
 
-### 10.2 Core Patterns (4)
+## 11. Event-Driven Architecture (EDA) Governance
 
-**4. Result Pattern**
-- ALL service methods return `Result<T>` or `Result`
-- NEVER throw exceptions for business logic failures
-- Pattern: `return Result<T>.Success(value)` or `Result.Failure("error")`
+**Status**: MANDATORY for all features involving state changes or integrations.
 
-**5. Structured Logging**
-- Use `IStructuredLogger` from Core.Framework
-- Log format: `logger.LogInformation("Action completed", new { vendorId, status })`
-- NEVER use string interpolation in logs
+### 11.1 Proactive Evaluation Requirement
 
-**6. Event Sourcing (Partial)**
-- Domain Events for state changes
-- Async side-effects: Email, SAP, Logging
-- Pattern: Publish events, don't await side-effects
+**CRITICAL**: Agents MUST proactively evaluate EDA requirements when:
+- Implementing features with state changes (status transitions, workflows)
+- Building integrations with external systems (SAP, Salesforce, Email)
+- Adding functionality that requires real-time frontend updates
+- Creating asynchronous side-effects (notifications, logging, sync)
 
-**7. State Machines**
-- Workflow transitions defined explicitly
-- Example: `Draft → Submitted → UnderReview → Approved → Integrated`
-- Validation before state changes
+**DO NOT** wait for the user to ask about events. Evaluate EDA applicability immediately.
 
----
+### 11.2 EDA Checklist (Mandatory During Spec Phase)
 
-### 10.3 Security & Compliance Patterns (6)
+When creating a specification (`specs/spec_*.md`), evaluate and document:
 
-**8. Multi-Channel Authentication**
-- Azure AD (Production)
-- JWT (API clients)
-- Magic Links (Passwordless)
-- Cookie (Local dev with MockAuth)
+```markdown
+## Event-Driven Architecture Evaluation
 
-**9. Role-Based Authorization**
-- App-scoped RBAC: `IUserContext.HasRoleForApp(app, role)`
-- Roles: Requestor, Approver, MDMAdmin, ITAdmin
-- NEVER use global admin checks
+### Events to Emit
+| Event Type | Trigger | Handlers Needed |
+|------------|---------|-----------------|
+| [EntityCreated] | [Create operation] | SignalR, Outbox |
+| [StatusChanged] | [Status transition] | SignalR, SAP Sync |
 
-**10. Audit Trail**
-- ALL entities implement `IAuditableEntity`
-- Automatic tracking: CreatedAt, CreatedBy, UpdatedAt, UpdatedBy
-- Interceptor pattern for auto-population
+### Real-Time Requirements
+- [ ] Frontend needs push updates
+- [ ] External system needs notification
+- [ ] Audit trail requires event logging
 
-**11. Soft Delete**
-- NEVER hard delete data
-- Use `IsDeleted` flag
-- Filter queries: `.Where(x => !x.IsDeleted)`
+### Integration Pattern
+- [ ] In-process dispatch (IEventHandler<T>)
+- [ ] Outbox for guaranteed delivery
+- [ ] Service Bus for external systems
+- [ ] SignalR for frontend push
+```
 
-**12. PII Masking**
-- Mask sensitive data in logs
-- Pattern: `email.Substring(0, 3) + "***"`
-- NEVER log full credit cards, passwords, SSN
+### 11.3 Implementation Requirements
 
-**13. GDPR Compliance**
-- Right to be forgotten (anonymization)
-- Data export capability
-- Consent tracking
+**Pattern 6 Extended: Event Sourcing**
 
----
+Every domain action that changes state MUST:
+1. Create a strongly-typed domain event (Core.Framework.Events)
+2. Add event to Outbox in same transaction as entity change
+3. Dispatch to in-process handlers after save
+4. Log to Cosmos for audit trail
 
-### 10.4 Integration & Infrastructure Patterns (5)
+**Example Implementation**:
+```csharp
+// After entity save
+var statusChangedEvent = new VendorStatusChangedEvent(vendor.Id, oldStatus, newStatus);
+_context.AddToOutbox(statusChangedEvent);  // Guaranteed delivery
+await _context.SaveChangesAsync();
+await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
+```
 
-**14. File Storage Abstraction**
-- Interface: `IFileStorageService`
-- Implementations: Simulation (local), AzureBlob (prod)
-- **UseMock pattern**: Configuration-driven selection
+### 11.4 SignalR Events (Frontend Push)
 
-**15. SAP RFC Integration**
-- Adapter pattern for SAP calls
-- Operations: ZBAPI_VENDOR_CREATE, ZBAPI_VENDOR_UPDATE
-- Simulation mode for local dev
+**Mandatory Events** (push to connected clients):
+- `StatusChanged`: Any entity status transition
+- `VendorCreated`: New vendor created
+- `TaskAssigned`: Workflow task assigned to user
+- `Notification`: User-targeted notifications
+- `SapSyncResult`: SAP integration completed/failed
 
-**16. Email Templating**
-- Interface: `IEmailService`
-- Channels: Azure Function, SMTP, Console (local)
-- Template-based rendering
+**Hub Endpoint**: `/hubs/events`
 
-**17. Data Residency**
-- Region-aware storage
-- Configurable per deployment
-- Metadata: `DataRegion` field
-
-**18. Multi-Tenancy**
-- Tenant isolation via SQL filters
-- Pattern: `.Where(x => x.TenantId == currentTenant)`
-- NEVER expose cross-tenant data
-
----
-
-### 10.5 Compliance Enforcement
+### 11.5 Agent Behavior
 
 **Before Implementation**:
-1. Read relevant pattern definition above
-2. Check if pattern already exists in codebase
-3. Follow existing implementation style
-4. If pattern missing, implement per standard
+1. ✅ Evaluate if feature involves state changes or integrations
+2. ✅ Document events in spec (Section 12.2 checklist)
+3. ✅ Identify real-time requirements
+4. ✅ Plan event handlers needed
 
-**During Code Review**:
-- Verify pattern compliance
-- Check for anti-patterns (e.g., business logic in controllers)
-- Ensure consistency with existing code
+**During Implementation**:
+1. ✅ Emit domain events from Concepts/Services
+2. ✅ Add to Outbox for guaranteed delivery
+3. ✅ Dispatch to in-process handlers
+4. ✅ Connect SignalR for frontend updates
 
-**Pattern Violations**:
-- ❌ **FORBIDDEN**: Business logic in Controllers
-- ❌ **FORBIDDEN**: Hard deletes
-- ❌ **FORBIDDEN**: Hardcoded secrets
-- ❌ **FORBIDDEN**: Returning SQL Entities from API
-- ❌ **FORBIDDEN**: Throwing exceptions for business failures
+**Violation**: Implementing state-changing features without EDA evaluation is a governance violation.
 
-**Future Patterns (Roadmap)** - Not yet implemented:
-- [ ] API Versioning (Week 5)
-- [ ] Circuit Breaker (Week 3)
-- [ ] Response Caching (Week 6)
-- [ ] Background Jobs (Week 9)
-- [ ] Feature Flags (Week 10)
-- [ ] Code Splitting (Week 7)
-- [ ] Distributed Tracing (Week 6)
+### 11.6 Reference Files
 
----
-
-**Agent Behavior**:
-- When implementing a new feature, FIRST identify which patterns apply
-- THEN read the pattern definition above
-- THEN implement following the pattern
-- If uncertain, ask the user which pattern to follow
+| Component | Location |
+|-----------|----------|
+| Domain Events | `Core.Framework/Events/DomainEvents.cs` |
+| Event Dispatcher | `Api/Services/Events/DomainEventDispatcher.cs` |
+| SignalR Hub | `Api/Hubs/EventHub.cs` |
+| Outbox Entity | `Shared/Models/OutboxEvent.cs` |
+| Frontend Context | `frontend/src/context/SignalRContext.tsx` |
+| Frontend Hooks | `frontend/src/hooks/useSignalR.ts` |
+| Standard | `.agent/rules/standards/event-driven-architecture-standard.md` |
 
 ---
 

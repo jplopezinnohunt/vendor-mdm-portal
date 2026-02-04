@@ -1,13 +1,67 @@
 # Event-Driven Architecture Implementation Standard
 
-## Status: IMPLEMENTED (Event Collection + Dispatcher Pattern)
+## Status: FULLY IMPLEMENTED (2026-02-04)
 
 ### Pattern Overview
-Domain Events enable async workflows and decouple side effects from core business logic.
+Domain Events enable async workflows, decouple side effects from core business logic, and provide real-time frontend updates via SignalR.
 
-### Implementation
+---
 
-#### Event Collection (✅ Complete)
+## Implementation Status
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| Event Collection (Concepts) | ✅ Complete | `VendorConcept.cs` |
+| Event Types | ✅ Complete | `Core.Framework/Events/DomainEvents.cs` |
+| Event Dispatcher | ✅ Complete | `Api/Services/Events/DomainEventDispatcher.cs` |
+| Event Handlers | ✅ Complete | `Api/Services/Events/SignalREventHandler.cs` |
+| SignalR Hub | ✅ Complete | `Api/Hubs/EventHub.cs` |
+| Outbox Pattern | ✅ Complete | `Shared/Models/OutboxEvent.cs` |
+| Outbox Processor | ✅ Complete | `Api/Services/Events/OutboxProcessor.cs` |
+| Frontend Context | ✅ Complete | `frontend/src/context/SignalRContext.tsx` |
+| Frontend Hooks | ✅ Complete | `frontend/src/hooks/useSignalR.ts` |
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         EVENT FLOW ARCHITECTURE                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐   │
+│  │  Domain Concept │────>│  Domain Event   │────>│  Event          │   │
+│  │  or Service     │     │  Dispatcher     │     │  Handlers       │   │
+│  └─────────────────┘     └────────┬────────┘     └────────┬────────┘   │
+│                                   │                       │             │
+│                          ┌────────┴────────┐              │             │
+│                          ▼                 ▼              ▼             │
+│                   ┌──────────┐     ┌──────────┐   ┌─────────────┐       │
+│                   │  Outbox  │     │  Cosmos  │   │  SignalR    │       │
+│                   │  (SQL)   │     │  Events  │   │  Handler    │       │
+│                   └────┬─────┘     └──────────┘   └──────┬──────┘       │
+│                        │                                 │              │
+│                        ▼                                 ▼              │
+│                   ┌──────────┐                    ┌─────────────┐       │
+│                   │  Outbox  │                    │  EventHub   │       │
+│                   │ Processor│                    │ /hubs/events│       │
+│                   └────┬─────┘                    └──────┬──────┘       │
+│                        │                                 │              │
+│                        ▼                                 │ WebSocket    │
+│                   ┌──────────┐                           ▼              │
+│                   │ Service  │                    ┌─────────────┐       │
+│                   │   Bus    │                    │  Frontend   │       │
+│                   └──────────┘                    │  React App  │       │
+│                                                   └─────────────┘       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Implementation Details
+
+### 1. Event Collection (Concepts)
 All Concepts collect domain events:
 ```csharp
 // VendorConcept.cs
@@ -21,9 +75,16 @@ protected void RaiseEvent(object domainEvent)
 public IEnumerable<object> GetDomainEvents() => _domainEvents.AsReadOnly();
 ```
 
-#### Event Types (✅ Complete)
+### 2. Event Types
 ```csharp
 // VendorMdm.Core.Framework/Events/DomainEvents.cs
+public abstract class DomainEvent
+{
+    public Guid EventId { get; } = Guid.NewGuid();
+    public DateTime OccurredAt { get; } = DateTime.UtcNow;
+    public string EventType => GetType().Name;
+}
+
 public class VendorCreatedEvent : DomainEvent
 {
     public Guid VendorId { get; }
@@ -39,74 +100,100 @@ public class VendorStatusChangedEvent : DomainEvent
 }
 ```
 
-#### State Machine Integration (✅ Complete)
+### 3. Event Dispatcher Interface
 ```csharp
-// VendorConcept.TransitionTo()
-var oldStatus = _status;
-_status = newStatus;
-RaiseEvent(new VendorStatusChangedEvent(Id, oldStatus, newStatus));
-```
-
-### Dispatcher Pattern (Documented)
-
-#### Interface
-```csharp
+// VendorMdm.Core.Framework/Events/IDomainEventDispatcher.cs
 public interface IDomainEventDispatcher
 {
-    Task DispatchAsync(IEnumerable<object> events);
+    Task DispatchAsync(IEnumerable<object> events, CancellationToken ct = default);
+    Task DispatchAsync<TEvent>(TEvent @event, CancellationToken ct = default) where TEvent : class;
 }
 ```
 
-#### Implementation (In-Memory)
+### 4. Event Handler Interface
 ```csharp
-public class DomainEventDispatcher : IDomainEventDispatcher
+// VendorMdm.Core.Framework/Events/IEventHandler.cs
+public interface IEventHandler<in TEvent> where TEvent : class
 {
-    private readonly IServiceProvider _serviceProvider;
+    Task HandleAsync(TEvent @event, CancellationToken ct = default);
+}
+```
 
-    public async Task DispatchAsync(IEnumerable<object> events)
+### 5. SignalR Event Handler
+```csharp
+// VendorMdm.Api/Services/Events/SignalREventHandler.cs
+public class SignalREventHandler :
+    IEventHandler<VendorCreatedEvent>,
+    IEventHandler<VendorStatusChangedEvent>
+{
+    private readonly IHubContext<EventHub> _hubContext;
+
+    public async Task HandleAsync(VendorStatusChangedEvent @event, CancellationToken ct)
     {
-        foreach (var @event in events)
-        {
-            var eventType = @event.GetType();
-            var handlerType = typeof(IEventHandler<>).MakeGenericType(eventType);
-            var handlers = _serviceProvider.GetServices(handlerType);
-            
-            foreach (var handler in handlers)
-            {
-                await ((dynamic)handler).HandleAsync((dynamic)@event);
-            }
-        }
+        await _hubContext.SendStatusChangedAsync(
+            "Vendor", @event.VendorId.ToString(), @event.OldStatus, @event.NewStatus);
     }
 }
 ```
 
-#### Handler Example
+### 6. Outbox Pattern
 ```csharp
-public class VendorCreatedEventHandler : IEventHandler<VendorCreatedEvent>
-{
-    private readonly IEmailService _emailService;
-
-    public async Task HandleAsync(VendorCreatedEvent @event)
-    {
-        // Send welcome email asynchronously
-        await _emailService.SendWelcomeEmailAsync(@event.VendorId);
-    }
-}
+// Usage in Services
+_context.Vendors.Add(vendor);
+_context.AddToOutbox(vendorCreatedEvent);  // Same transaction = guaranteed delivery
+await _context.SaveChangesAsync();
+await _dispatcher.DispatchAsync(vendorCreatedEvent);  // In-process handlers
 ```
 
-### Usage in Services
-```csharp
-// After saving entity
-var concept = new VendorConcept(...);
-await _repository.SaveAsync(concept);
+### 7. Frontend Integration
+```typescript
+// React hook usage
+import { useStatusChanged, useNotifications } from '../hooks/useSignalR';
 
-// Dispatch events
-await _dispatcher.DispatchAsync(concept.GetDomainEvents());
+// In component
+useStatusChanged((event) => {
+  toast.info(`Status changed: ${event.oldStatus} → ${event.newStatus}`);
+  refetchData();
+});
 ```
 
-### Benefits
-- ✅ Decoupling: Email sending separate from vendor creation
-- ✅ Async: Side effects don't block main transaction
-- ✅ Extensibility: Add new handlers without changing core logic
+---
 
-**Compliance**: 100% (Event collection implemented, dispatcher pattern documented)
+## SignalR Events Reference
+
+| Event Name | Payload | Target |
+|------------|---------|--------|
+| `VendorCreated` | vendorId, legalName, accountGroup | all |
+| `StatusChanged` | entityType, entityId, oldStatus, newStatus | all |
+| `VendorStatusChanged` | vendorId, oldStatus, newStatus | vendor:{id} |
+| `TaskAssigned` | taskType, entityId, description | user:{id} |
+| `Notification` | title, message, link | user:{id} |
+| `SapSyncResult` | vendorId, success, sapVendorNumber, error | user:{id} |
+
+---
+
+## DI Registration (Program.cs)
+
+```csharp
+// Event-Driven Architecture
+builder.Services.AddScoped<IDomainEventDispatcher, DomainEventDispatcher>();
+builder.Services.AddScoped<IEventHandler<VendorCreatedEvent>, SignalREventHandler>();
+builder.Services.AddScoped<IEventHandler<VendorStatusChangedEvent>, SignalREventHandler>();
+builder.Services.AddHostedService<OutboxProcessor>();
+builder.Services.AddSignalR();
+
+// In app pipeline
+app.MapHub<EventHub>("/hubs/events");
+```
+
+---
+
+## Benefits
+- ✅ **Decoupling**: Side effects separate from business logic
+- ✅ **Async**: Non-blocking event processing
+- ✅ **Real-Time**: Frontend updates via SignalR
+- ✅ **Guaranteed Delivery**: Outbox pattern prevents event loss
+- ✅ **Extensibility**: Add handlers without changing core logic
+- ✅ **Audit Trail**: All events logged to Cosmos DB
+
+**Compliance**: 100% IMPLEMENTED
