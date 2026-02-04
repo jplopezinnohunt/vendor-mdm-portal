@@ -186,13 +186,12 @@ jobs:
         echo "Using patched script with SQL Server types (nvarchar instead of TEXT)"
 
         # Get access token for Azure SQL using service principal
-        ACCESS_TOKEN=$(az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv)
+        export SQLCMDPASSWORD=$(az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv)
 
-        # Use sqlcmd with AAD access token
+        # Use sqlcmd with AAD access token (via env var to avoid length limit)
         /opt/mssql-tools18/bin/sqlcmd \
           -S "${SQL_SERVER}.database.windows.net" \
           -d "$DATABASE" \
-          -P "$ACCESS_TOKEN" \
           -G \
           -i migration-script.sql \
           -b \
