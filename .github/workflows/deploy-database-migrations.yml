@@ -185,19 +185,27 @@ jobs:
         echo "Applying PATCHED migration script to $SQL_SERVER (Database: $DATABASE)..."
         echo "Using patched script with SQL Server types (nvarchar instead of TEXT)"
 
-        # Get access token for Azure SQL using service principal
-        export SQLCMDPASSWORD=$(az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv)
+        # Use Invoke-Sqlcmd via PowerShell with Azure AD token
+        pwsh -Command "
+          \$token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
 
-        # Use sqlcmd with AAD access token (via env var to avoid length limit)
-        /opt/mssql-tools18/bin/sqlcmd \
-          -S "${SQL_SERVER}.database.windows.net" \
-          -d "$DATABASE" \
-          -G \
-          -i migration-script.sql \
-          -b \
-          -C
+          # Install SqlServer module if needed
+          if (-not (Get-Module -ListAvailable -Name SqlServer)) {
+            Install-Module -Name SqlServer -Force -AllowClobber -Scope CurrentUser
+          }
 
-        echo "✅ Migration script applied successfully"
+          # Read and execute the migration script
+          \$script = Get-Content -Path 'migration-script.sql' -Raw
+
+          Invoke-Sqlcmd -ServerInstance '${SQL_SERVER}.database.windows.net' ``
+            -Database '$DATABASE' ``
+            -AccessToken \$token ``
+            -Query \$script ``
+            -QueryTimeout 300 ``
+            -ErrorAction Stop
+
+          Write-Host '✅ Migration script applied successfully'
+        "
 
     - name: Remove Firewall Rule
       if: always()
