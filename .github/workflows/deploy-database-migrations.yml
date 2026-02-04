@@ -40,6 +40,9 @@ jobs:
     - name: Generate Migration Script
       env:
         DataSourceMode: Connected  # Force SQL Server provider instead of SQLite
+        # Provide a dummy connection string for script generation (no actual DB connection needed)
+        # This satisfies SQL Server provider validation without requiring authentication
+        ConnectionStrings__Sql: "Server=localhost;Database=VendorMdmDb;Trusted_Connection=True;TrustServerCertificate=True;"
       run: |
         cd backend/VendorMdm.Api
         dotnet ef migrations script \

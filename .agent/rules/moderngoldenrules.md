@@ -168,6 +168,43 @@ ls -lh backend/VendorMdm.Api/Migrations/*.cs | grep -v Designer | grep -v Snapsh
 # If any file > 50KB, STOP and split migration
 ```
 
+### 2.1 Database Migration Deployment (CRITICAL)
+
+**Environment-Specific Process**:
+
+| Environment | Database | How to Apply Migrations |
+|-------------|----------|------------------------|
+| **Local** | SQLite | `dotnet ef database update` (direct) |
+| **Azure DEV/STAGING/PROD** | SQL Server | **GitHub Actions ONLY** |
+
+**NEVER**:
+- ❌ Create manual SQL scripts for Azure
+- ❌ Run EF migrations directly against Azure SQL
+- ❌ Use Azure Portal SQL Query Editor for schema changes
+
+**ALWAYS**:
+- ✅ Commit migration files to git
+- ✅ Merge to `develop` (or target branch)
+- ✅ Trigger **"Deploy Database Migrations"** workflow in GitHub Actions UI
+
+**GitHub Actions Migration Workflow**:
+1. Go to: https://github.com/jplopezinnohunt/vendor-mdm-portal/actions
+2. Click **"Deploy Database Migrations"**
+3. Click **"Run workflow"**
+4. Select environment (dev/staging/prod)
+5. Workflow automatically:
+   - Generates migration SQL from EF Core
+   - Patches `TEXT` → `nvarchar(max)` for SQL Server
+   - Applies to Azure SQL Database
+   - Shows preview before applying
+
+**Why GitHub Actions?**
+- Automatic type conversion (SQLite ↔ SQL Server)
+- Audit trail in GitHub
+- Rollback capability
+- Environment isolation
+- Zero manual SQL script errors
+
 ### 3. Alignment Verification
 ```bash
 ./scripts/verify-alignment.sh
@@ -692,6 +729,105 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 - Implementation speed increases (fewer trial-and-error)
 - Brain rule updates cite retrospective evidence
 - New agents ramp up faster (read INDEX.md)
+
+---
+
+## 12. Event-Driven Architecture (EDA) Governance
+
+**Status**: MANDATORY for all features involving state changes or integrations.
+
+### 12.1 Proactive Evaluation Requirement
+
+**CRITICAL**: Agents MUST proactively evaluate EDA requirements when:
+- Implementing features with state changes (status transitions, workflows)
+- Building integrations with external systems (SAP, Salesforce, Email)
+- Adding functionality that requires real-time frontend updates
+- Creating asynchronous side-effects (notifications, logging, sync)
+
+**DO NOT** wait for the user to ask about events. Evaluate EDA applicability immediately.
+
+### 12.2 EDA Checklist (Mandatory During Spec Phase)
+
+When creating a specification (`specs/spec_*.md`), evaluate and document:
+
+```markdown
+## Event-Driven Architecture Evaluation
+
+### Events to Emit
+| Event Type | Trigger | Handlers Needed |
+|------------|---------|-----------------|
+| [EntityCreated] | [Create operation] | SignalR, Outbox |
+| [StatusChanged] | [Status transition] | SignalR, SAP Sync |
+
+### Real-Time Requirements
+- [ ] Frontend needs push updates
+- [ ] External system needs notification
+- [ ] Audit trail requires event logging
+
+### Integration Pattern
+- [ ] In-process dispatch (IEventHandler<T>)
+- [ ] Outbox for guaranteed delivery
+- [ ] Service Bus for external systems
+- [ ] SignalR for frontend push
+```
+
+### 12.3 Implementation Requirements
+
+**Pattern 6 Extended: Event Sourcing**
+
+Every domain action that changes state MUST:
+1. Create a strongly-typed domain event (Core.Framework.Events)
+2. Add event to Outbox in same transaction as entity change
+3. Dispatch to in-process handlers after save
+4. Log to Cosmos for audit trail
+
+**Example Implementation**:
+```csharp
+// After entity save
+var statusChangedEvent = new VendorStatusChangedEvent(vendor.Id, oldStatus, newStatus);
+_context.AddToOutbox(statusChangedEvent);  // Guaranteed delivery
+await _context.SaveChangesAsync();
+await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
+```
+
+### 12.4 SignalR Events (Frontend Push)
+
+**Mandatory Events** (push to connected clients):
+- `StatusChanged`: Any entity status transition
+- `VendorCreated`: New vendor created
+- `TaskAssigned`: Workflow task assigned to user
+- `Notification`: User-targeted notifications
+- `SapSyncResult`: SAP integration completed/failed
+
+**Hub Endpoint**: `/hubs/events`
+
+### 12.5 Agent Behavior
+
+**Before Implementation**:
+1. ✅ Evaluate if feature involves state changes or integrations
+2. ✅ Document events in spec (Section 12.2 checklist)
+3. ✅ Identify real-time requirements
+4. ✅ Plan event handlers needed
+
+**During Implementation**:
+1. ✅ Emit domain events from Concepts/Services
+2. ✅ Add to Outbox for guaranteed delivery
+3. ✅ Dispatch to in-process handlers
+4. ✅ Connect SignalR for frontend updates
+
+**Violation**: Implementing state-changing features without EDA evaluation is a governance violation.
+
+### 12.6 Reference Files
+
+| Component | Location |
+|-----------|----------|
+| Domain Events | `Core.Framework/Events/DomainEvents.cs` |
+| Event Dispatcher | `Api/Services/Events/DomainEventDispatcher.cs` |
+| SignalR Hub | `Api/Hubs/EventHub.cs` |
+| Outbox Entity | `Shared/Models/OutboxEvent.cs` |
+| Frontend Context | `frontend/src/context/SignalRContext.tsx` |
+| Frontend Hooks | `frontend/src/hooks/useSignalR.ts` |
+| Standard | `.agent/rules/standards/event-driven-architecture-standard.md` |
 
 ---
 
