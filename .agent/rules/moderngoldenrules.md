@@ -205,6 +205,39 @@ ls -lh backend/VendorMdm.Api/Migrations/*.cs | grep -v Designer | grep -v Snapsh
 - Environment isolation
 - Zero manual SQL script errors
 
+### 2.2 CI/CD Troubleshooting Guide (Retrospective Learnings)
+
+**Common CI/CD Issues & Solutions**:
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| Script gen fails | "JWT SecretKey required" | Add dummy connection string env var in workflow |
+| DROP COLUMN blocked | Zero Data Loss check fails | Add data migration SQL BEFORE drop (UPDATE SET...) |
+| TEXT type error | `ALTER COLUMN TEXT` fails on SQL Server | Workflow patches TEXT→nvarchar(max) in script |
+| Azure AD token too long | sqlcmd `-P` fails (128 char limit) | Use PowerShell `Invoke-Sqlcmd` with `-AccessToken` |
+| FK constraint error | Can't alter column with FK | Drop FK first, alter, recreate FK |
+
+**SQLite vs SQL Server Types**:
+```
+SQLite          → SQL Server
+TEXT            → nvarchar(max)
+INTEGER         → int / bigint
+REAL            → float
+BLOB            → varbinary(max)
+```
+
+**The migration workflow flow**:
+```
+1. Generate SQL script (EF Core)    ← Uses SqlDbContextFactory
+2. Patch TEXT → nvarchar(max)       ← sed replacement
+3. Check for destructive changes    ← Zero Data Loss
+4. Add firewall rule               ← GitHub runner IP
+5. Execute via PowerShell          ← Invoke-Sqlcmd with AAD token
+6. Remove firewall rule            ← Cleanup
+```
+
+**CRITICAL**: Never use `dotnet ef database update` for Azure - it uses migration code directly which has SQLite types. Always use the workflow which executes the PATCHED SQL script.
+
 ### 3. Alignment Verification
 ```bash
 ./scripts/verify-alignment.sh
