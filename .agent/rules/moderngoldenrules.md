@@ -453,10 +453,10 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 
 ```
 .agent/retrospectives/
-  ├── INDEX.md                  ← ALWAYS READ THIS FIRST (30 sec)
+  ├── INDEX.md                  ← Check Pending count (skip if 0)
   ├── active/                   ← Current quarter (max 10 files)
   │   └── YYYY-QX-topic.md
-  ├── archived/                 ← Past quarters (reference only)
+  ├── archived/                 ← Past quarters (historical only)
   │   └── YYYY-QX-summary.md
   └── learnings-database.md     ← Aggregated patterns (optional)
 ```
@@ -464,9 +464,9 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 ### Agent Workflow
 
 **Before Starting Work**:
-1. Read `.agent/retrospectives/INDEX.md` (if exists)
-2. Apply top learnings to current task
-3. Avoid documented mistakes
+1. Check INDEX.md for `Brain Rules Pending` count
+2. If Pending = 0 → Skip INDEX.md (brain already has all learnings)
+3. If Pending > 0 → Read and apply pending learnings first
 
 **After Completing Work** (for significant features):
 1. Document issues encountered in retrospective
@@ -476,6 +476,38 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
    - Mark as `[x] Applied` in INDEX.md
    - Commit rule updates with retrospective reference
 4. Do NOT leave "Pending" items - apply them before closing the task
+
+**Efficiency Principle**: Once applied to brain, retrospective is historical only
+
+### End of Conversation Protocol (MANDATORY)
+
+Before closing any significant conversation:
+
+```
+1. IDENTIFY learnings from this conversation
+   └── What bugs were found?
+   └── What patterns worked/failed?
+   └── What should future agents know?
+
+2. DOCUMENT in retrospective (INDEX.md)
+   └── Add to "Top Critical Learnings" section
+   └── Mark source and date
+
+3. APPLY to brain rules immediately ← CRITICAL
+   └── Update relevant section in moderngoldenrules.md
+   └── Update relevant standard in standards/*.md
+   └── Mark as [x] Applied in INDEX.md
+
+4. COMMIT all changes
+   └── Brain rules + retrospective + code
+   └── Push to develop
+
+5. VERIFY Pending = 0
+   └── No orphan learnings
+   └── Next conversation starts clean
+```
+
+**FORBIDDEN**: Closing conversation with Pending > 0
 
 ### INDEX.md Format
 

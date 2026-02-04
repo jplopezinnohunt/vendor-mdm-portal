@@ -14,11 +14,29 @@ Lessons learned MUST be captured after significant implementations to prevent re
 
 ## Rules
 
-1. **BEFORE WORK**: Read `INDEX.md` and apply top learnings
+1. **BEFORE WORK**: Check INDEX.md ONLY if `Pending > 0`. If all applied, skip - brain has everything
 2. **AFTER WORK**: Document issues encountered in retrospective
 3. **MANDATORY**: Apply learnings to brain rules immediately - no "Pending" items
 4. **RETENTION**: INDEX.md kept forever, active retrospectives for 3 months
 5. **SIZE LIMITS**: INDEX.md max 200 lines, individual retrospectives 300-500 lines
+6. **EFFICIENCY**: Once applied to brain, retrospective is historical only - don't re-read
+7. **END OF CONVERSATION**: MUST run end-of-conversation protocol before closing
+
+---
+
+## End of Conversation Protocol
+
+**MANDATORY** before closing any significant conversation:
+
+| Step | Action | Target |
+|------|--------|--------|
+| 1 | IDENTIFY | What learnings from this conversation? |
+| 2 | DOCUMENT | Add to INDEX.md (Top Critical Learnings) |
+| 3 | APPLY | Update moderngoldenrules.md + relevant standard |
+| 4 | COMMIT | Push brain rules + retrospective |
+| 5 | VERIFY | Pending = 0 (no orphan learnings) |
+
+**FORBIDDEN**: Closing with Pending > 0
 
 ---
 
