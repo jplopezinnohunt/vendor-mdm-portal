@@ -18,8 +18,13 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 
 ## 1. Compliance Logic
 - **Primary Source**: This file is your "System Logic".
-- **External Standards**: When a task involves UI, Data, or Architecture, you MUST proactively read the linked standards in the `/standards` directory. 
+- **Brain Architecture**: See [BRAIN-ARCHITECTURE.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/BRAIN-ARCHITECTURE.md) for documentation hierarchy.
+- **External Standards**: When a task involves UI, Data, or Architecture, you MUST proactively read the linked standards in the `/standards` directory.
 - **Citation**: Every Specification (`specs/spec_*.md`) must cite WHICH standard was followed.
+- **Architecture Maintenance**: When adding new patterns/standards, you MUST update:
+  1. `BRAIN-ARCHITECTURE.md` (hierarchy diagram)
+  2. `standards/README.md` (standards index)
+  3. Section 4 of this file (Standards Brain)
 
 ---
 
@@ -40,34 +45,94 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 ---
 
 ## 4. The Standards Brain (References)
-You are required to load and apply the following detailed standards based on the task type:
 
-### A. UI Design & UX
-- **Standard**: 4 Pillars (Uniformity, Proximity, Feedback, Aesthetics), 12-Column Grid.
-- **File**: [ui-design-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/ui-design-standards.md)
+**Index**: See [standards/README.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/README.md) for full list.
 
-### B. Data Model & Schema
-- **Standard**: Hybrid Relational-Document Model matrix.
-- **File**: [data-model-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/data-model-standards.md)
+**30 standards** organized in **6 categories**:
 
-### C. Architecture & Integration
-- **Standard**: Hexagonal Adapters, Simulation First, EDA/Event-Driven logic.
-- **File**: [hexagonal-architecture-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/hexagonal-architecture-standards.md)
+| Category | Count |
+|----------|-------|
+| Architecture & Design | 4 |
+| Core Development | 4 |
+| Security & Compliance | 4 |
+| Integration & Infrastructure | 5 |
+| Operations & Quality | 6 |
+| Governance & Process | 7 |
+| **Total** | **30** |
 
-### D. Production Readiness & CI/CD
-- **Standard**: Zero-downtime, Middleware sequencing, Asset integrity.
-- **File**: [database-migration-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/database-migration-standards.md)
-- **CI/CD Setup**: [cicd-setup-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/cicd-setup-standards.md)
+You MUST load and apply the relevant standard based on task type.
 
-### E. Git & SAP Alignment
-- **Standard**: Mirror SAP environments (D01, Q01, P01) across Git branches (`develop`, `release`, `main`).
-- **File**: [git-branching-sap-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/git-branching-sap-standards.md)
+### Category 1: Architecture & Design (4 standards)
+| Pattern | Standard |
+|---------|----------|
+| Hexagonal Architecture | [hexagonal-architecture-standards.md](standards/hexagonal-architecture-standards.md) |
+| Hybrid Data Model | [data-model-standards.md](standards/data-model-standards.md) |
+| Ontology Modeling | [ontology-modeling-standard.md](standards/ontology-modeling-standard.md) |
+| Repository Pattern | [repository-pattern-standard.md](standards/repository-pattern-standard.md) |
 
-### F. Audit Log Integration
-- **Standard**: Ontology-driven audit logging for all entities. Each entity MUST have an audit model that evolves with schema changes.
-- **File**: [audit-log-integration-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/audit-log-integration-standards.md)
-- **Pattern Reference**: See Section 10.3 Pattern 10 (Audit Trail)
-- **Status**: MANDATORY for all Create/Update/Delete operations
+### Category 2: Core Development (4 standards)
+| Pattern | Standard |
+|---------|----------|
+| Result Pattern | [result-pattern-standard.md](standards/result-pattern-standard.md) |
+| Structured Logging | [logging-standard.md](standards/logging-standard.md) |
+| State Machines | [state-machine-standard.md](standards/state-machine-standard.md) |
+| Event-Driven Architecture | [event-driven-architecture-standard.md](standards/event-driven-architecture-standard.md) |
+
+### Category 3: Security & Compliance (4 standards)
+| Pattern | Standard |
+|---------|----------|
+| Security Architecture | [security-architecture.md](standards/security-architecture.md) |
+| Audit Logging | [audit-log-integration-standards.md](standards/audit-log-integration-standards.md) |
+| Soft Delete | [soft-delete-standard.md](standards/soft-delete-standard.md) |
+| GDPR & PII | [gdpr-pii-standard.md](standards/gdpr-pii-standard.md) |
+
+### Category 4: Integration & Infrastructure (5 standards)
+| Pattern | Standard |
+|---------|----------|
+| SAP Integration | [sap-integration-standard.md](standards/sap-integration-standard.md) |
+| File Storage | [file-storage-standard.md](standards/file-storage-standard.md) |
+| Email Service | [email-service-standard.md](standards/email-service-standard.md) |
+| Multi-Tenancy | [multi-tenancy-standard.md](standards/multi-tenancy-standard.md) |
+| Data Residency | [data-residency-standard.md](standards/data-residency-standard.md) |
+
+### Category 5: Operations & Quality (6 standards)
+| Pattern | Standard |
+|---------|----------|
+| CI/CD Setup | [cicd-setup-standards.md](standards/cicd-setup-standards.md) |
+| Database Migrations | [database-migration-standards.md](standards/database-migration-standards.md) |
+| Git & SAP Branching | [git-branching-sap-standards.md](standards/git-branching-sap-standards.md) |
+| Rate Limiting | [rate-limiting-standard.md](standards/rate-limiting-standard.md) |
+| Performance | [performance-generated-columns.md](standards/performance-generated-columns.md) |
+| UI Design | [ui-design-standards.md](standards/ui-design-standards.md) |
+
+### Category 6: Governance & Process (7 standards)
+| Pattern | Standard | Section |
+|---------|----------|---------|
+| Zero Data Loss | [zero-data-loss-standard.md](standards/zero-data-loss-standard.md) | 0 |
+| Compliance Logic | [compliance-logic-standard.md](standards/compliance-logic-standard.md) | 1 |
+| SDD Workflow | [sdd-workflow-standard.md](standards/sdd-workflow-standard.md) | 2 |
+| Build Hygiene | [build-hygiene-standard.md](standards/build-hygiene-standard.md) | 5 |
+| Pre-Commit Protocol | [pre-commit-standard.md](standards/pre-commit-standard.md) | 8 |
+| Warning Hygiene | [warning-hygiene-standard.md](standards/warning-hygiene-standard.md) | 9 |
+| Retrospective Governance | [retrospective-standard.md](standards/retrospective-standard.md) | 10 |
+
+### Pattern Violations (FORBIDDEN)
+
+❌ Business logic in Controllers or Services
+❌ Hard deletes (use soft delete)
+❌ Hardcoded secrets (use KeyVault/UserSecrets)
+❌ Returning SQL Entities from API (use DTOs)
+❌ Throwing exceptions for business failures (use Result)
+❌ String interpolation in logs
+❌ Cross-tenant data access without admin check
+
+### Future Patterns (Roadmap)
+
+- [ ] API Versioning
+- [ ] Circuit Breaker
+- [ ] Response Caching
+- [ ] Background Jobs
+- [ ] Feature Flags
 
 ---
 
@@ -88,7 +153,7 @@ You are required to load and apply the following detailed standards based on the
 ## 6. The Architecture DNA (Micro-App Standard)
 **Status**: MANDATORY for all new features.
 
-1.  **The Ontology Rule**: See Section 10.1 Pattern 3 (Ontology-Driven Development) for full definition.
+1.  **The Ontology Rule**: See [ontology-modeling-standard.md](standards/ontology-modeling-standard.md) for full definition.
 2.  **The Core Framework**: Apps MUST depend on `VendorMdm.Core.Framework` for base interfaces (`IOntologyConcept`, `IUserContext`).
 3.  **App-Scoped Security**: Authorization MUST be Context-Aware. `IUserContext.HasRoleForApp` is the only valid check.
 4.  **No Entity Leaks**: APIs MUST return DTOs (`Shared.Contracts`). Returning SQL Entities is FORBIDDEN.
@@ -371,259 +436,7 @@ Minor warnings documented in commit message.
 
 ---
 
-## 10. Foundational Patterns (The Implementation DNA)
-
-**Status**: MANDATORY for all new features and refactoring.
-
-These 18 patterns define HOW the system is built. Every new feature MUST conform to these patterns.
-
-### 10.1 Architecture Patterns (3)
-
-**1. Hexagonal Architecture (Ports & Adapters)**
-- Core Domain MUST be in `VendorMdm.Shared/` with ZERO external dependencies
-- Inbound Ports: REST API Controllers (`VendorMdm.Api/Controllers/`)
-- Outbound Ports: Event Bus, SAP, Email (`VendorMdm.Api/Services/`)
-- **Rule**: Business logic NEVER in Controllers or Services
-
-**2. Hybrid Relational-Document Model**
-- **SQL Columns**: Foreign keys, indexes, ACID, universal fields
-- **JSONB**: Volatile data, context-specific, read-only payloads
-- **Reference**: [data-model-standards.md](file:///Users/jplopez/projects/vendor-mdm-portal/.agent/rules/standards/data-model-standards.md)
-
-**3. Ontology-Driven Development**
-- Business logic MUST exist in `VendorMdm.Shared/Ontology/Concepts/`
-- Services are coordinators, NOT decision-makers
-- Every Concept MUST implement `IOntologyConcept`
-
----
-
-### 10.2 Core Patterns (4)
-
-**4. Result Pattern**
-- ALL service methods return `Result<T>` or `Result`
-- NEVER throw exceptions for business logic failures
-- Pattern: `return Result<T>.Success(value)` or `Result.Failure("error")`
-
-**5. Structured Logging**
-- Use `IStructuredLogger` from Core.Framework
-- Log format: `logger.LogInformation("Action completed", new { vendorId, status })`
-- NEVER use string interpolation in logs
-- **Security Events** (always log these):
-  ```csharp
-  // Authentication
-  _logger.LogInformation("User login", new { userId, authMethod, ipAddress });
-  _logger.LogWarning("Login failed", new { email, reason, ipAddress, attemptCount });
-
-  // Authorization
-  _logger.LogWarning("Access denied", new { userId, resource, action, requiredRole });
-
-  // Data access
-  _logger.LogInformation("Sensitive data accessed", new { userId, entityType, entityId });
-
-  // Soft delete
-  _logger.LogInformation("Entity soft deleted", new { entityType, entityId, deletedBy, reason });
-  ```
-
-**6. Event Sourcing (Partial)**
-- Domain Events for state changes
-- Async side-effects: Email, SAP, Logging
-- Pattern: Publish events, don't await side-effects
-
-**7. State Machines**
-- Workflow transitions defined explicitly
-- Example: `Draft → Submitted → UnderReview → Approved → Integrated`
-- Validation before state changes
-
----
-
-### 10.3 Security & Compliance Patterns (6)
-
-**8. Multi-Channel Authentication**
-- Azure AD (Production)
-- JWT (API clients)
-- Magic Links (Passwordless)
-- Cookie (Local dev with MockAuth)
-
-**9. Role-Based Authorization**
-- App-scoped RBAC: `IUserContext.HasRoleForApp(app, role)`
-- Roles: Requestor, Approver, MDMAdmin, ITAdmin
-- NEVER use global admin checks
-
-**10. Audit Trail**
-- ALL entities implement `IAuditableEntity`
-- Automatic tracking: CreatedAt, CreatedBy, UpdatedAt, UpdatedBy
-- Interceptor pattern for auto-population
-
-**11. Soft Delete**
-- NEVER hard delete data
-- Use `IsDeleted` flag
-- Filter queries: `.Where(x => !x.IsDeleted)`
-
-**12. PII Masking**
-- Mask sensitive data in logs
-- Pattern: `email.Substring(0, 3) + "***"`
-- NEVER log full credit cards, passwords, SSN
-
-**13. GDPR Compliance**
-- Right to be forgotten (anonymization)
-- Data export capability
-- Consent tracking
-
----
-
-### 10.4 Integration & Infrastructure Patterns (5)
-
-**14. File Storage Abstraction**
-- Interface: `IFileStorageService`
-- Implementations: Simulation (local), AzureBlob (prod)
-- **UseMock pattern**: Configuration-driven selection
-
-**15. SAP RFC Integration**
-- Adapter pattern for SAP calls
-- Operations: ZBAPI_VENDOR_CREATE, ZBAPI_VENDOR_UPDATE
-- Simulation mode for local dev
-
-**16. Email Templating**
-- Interface: `IEmailService`
-- Channels: Azure Function, SMTP, Console (local)
-- Template-based rendering
-
-**17. Data Residency**
-- Region-aware storage
-- Configurable per deployment
-- Metadata: `DataRegion` field
-
-**18. Multi-Tenancy**
-- Tenant isolation via SQL filters
-- Pattern: `.Where(x => x.TenantId == currentTenant)`
-- NEVER expose cross-tenant data
-
----
-
-### 10.5 Compliance Enforcement
-
-**Before Implementation**:
-1. Read relevant pattern definition above
-2. Check if pattern already exists in codebase
-3. Follow existing implementation style
-4. If pattern missing, implement per standard
-
-**During Code Review**:
-- Verify pattern compliance
-- Check for anti-patterns (e.g., business logic in controllers)
-- Ensure consistency with existing code
-
-**Pattern Violations**:
-- ❌ **FORBIDDEN**: Business logic in Controllers
-- ❌ **FORBIDDEN**: Hard deletes
-- ❌ **FORBIDDEN**: Hardcoded secrets
-- ❌ **FORBIDDEN**: Returning SQL Entities from API
-- ❌ **FORBIDDEN**: Throwing exceptions for business failures
-
-**Future Patterns (Roadmap)** - Not yet implemented:
-- [ ] API Versioning (Week 5)
-- [ ] Circuit Breaker (Week 3)
-- [ ] Response Caching (Week 6)
-- [ ] Background Jobs (Week 9)
-- [ ] Feature Flags (Week 10)
-- [ ] Code Splitting (Week 7)
-- [ ] Distributed Tracing (Week 6)
-
----
-
-### 10.6 Entity Evolution Checklist
-
-**Status**: MANDATORY when adding or modifying entities.
-
-When adding a **new entity**:
-
-```
-□ 1. SEARCH for existing types
-     grep -r "class EntityName" backend/
-
-□ 2. INHERIT from CanonicalEntityBase
-     public class NewEntity : CanonicalEntityBase { }
-     // Automatically gets: Id, Status, SourceSystem, Data, timestamps, soft delete
-
-□ 3. ADD to SqlDbContext
-     public DbSet<NewEntity> NewEntities { get; set; }
-
-□ 4. CONFIGURE in ConfigureCanonicalEntities()
-     modelBuilder.Entity<NewEntity>(entity => {
-         entity.HasKey(e => e.Id);
-         entity.HasIndex(e => e.IsDeleted);
-         entity.HasQueryFilter(e => !e.IsDeleted);  // Pattern 11
-         entity.Property(e => e.Data).IsRequired().HasDefaultValue("{}");
-     });
-
-□ 5. CREATE DTO (Pattern 6: No Entity Leaks)
-     // Shared/Contracts/Dtos/NewEntityDto.cs
-     public class NewEntityDto { /* only public API fields */ }
-
-□ 6. ADD ToDto() mapping extension
-     // Shared/Contracts/Mappings/EntityMappingExtensions.cs
-     public static NewEntityDto ToDto(this NewEntity entity) => new() { ... };
-
-□ 7. CREATE Status Constants (if applicable)
-     // Shared/Constants/NewEntityStatus.cs with state machine
-
-□ 8. IMPLEMENT Concept (if business logic needed)
-     // Shared/Ontology/Concepts/NewEntityConcept.cs : IOntologyConcept, IAuditableEntity
-
-□ 9. CREATE Migration
-     dotnet ef migrations add AddNewEntity
-     // Verify migration < 50KB
-```
-
-When **modifying an existing entity**:
-
-```
-□ 1. UPDATE entity fields (CanonicalEntityBase or entity-specific)
-
-□ 2. UPDATE DTO if API contract changes
-     // Add new fields to DTO, map in ToDto()
-
-□ 3. UPDATE Concept if business rules change
-
-□ 4. CREATE Migration for schema changes
-     dotnet ef migrations add UpdateEntityName
-     // Verify migration < 50KB
-
-□ 5. UPDATE Status Constants if workflow changes
-
-□ 6. RUN verification script
-     ./scripts/verification/verify_foundational_patterns.sh
-```
-
-When **adding integrations**:
-
-```
-□ 1. USE ExternalSystemMapping for ID correlation
-     // Maps CanonicalEntityId ↔ ExternalSystemId
-
-□ 2. RESPECT Query Filters (soft delete automatic)
-
-□ 3. USE SourceSystem tracking
-     entity.SourceSystem = SourceSystems.Sap;  // or HR, Finance, etc.
-
-□ 4. RETURN DTOs, never entities
-     return entity.ToDto();
-
-□ 5. LOG with IStructuredLogger
-     _logger.LogInformation("Integration sync", new { entityId, source });
-```
-
----
-
-**Agent Behavior**:
-- When implementing a new feature, FIRST identify which patterns apply
-- THEN read the pattern definition above
-- THEN implement following the pattern
-- If uncertain, ask the user which pattern to follow
-
----
-
-## 11. Retrospective Governance (Continuous Improvement)
+## 10. Retrospective Governance (Continuous Improvement)
 
 **Status**: MANDATORY for agents after each significant implementation.
 
@@ -765,11 +578,11 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 
 ---
 
-## 12. Event-Driven Architecture (EDA) Governance
+## 11. Event-Driven Architecture (EDA) Governance
 
 **Status**: MANDATORY for all features involving state changes or integrations.
 
-### 12.1 Proactive Evaluation Requirement
+### 11.1 Proactive Evaluation Requirement
 
 **CRITICAL**: Agents MUST proactively evaluate EDA requirements when:
 - Implementing features with state changes (status transitions, workflows)
@@ -779,7 +592,7 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 
 **DO NOT** wait for the user to ask about events. Evaluate EDA applicability immediately.
 
-### 12.2 EDA Checklist (Mandatory During Spec Phase)
+### 11.2 EDA Checklist (Mandatory During Spec Phase)
 
 When creating a specification (`specs/spec_*.md`), evaluate and document:
 
@@ -804,7 +617,7 @@ When creating a specification (`specs/spec_*.md`), evaluate and document:
 - [ ] SignalR for frontend push
 ```
 
-### 12.3 Implementation Requirements
+### 11.3 Implementation Requirements
 
 **Pattern 6 Extended: Event Sourcing**
 
@@ -823,7 +636,7 @@ await _context.SaveChangesAsync();
 await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
 ```
 
-### 12.4 SignalR Events (Frontend Push)
+### 11.4 SignalR Events (Frontend Push)
 
 **Mandatory Events** (push to connected clients):
 - `StatusChanged`: Any entity status transition
@@ -834,7 +647,7 @@ await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
 
 **Hub Endpoint**: `/hubs/events`
 
-### 12.5 Agent Behavior
+### 11.5 Agent Behavior
 
 **Before Implementation**:
 1. ✅ Evaluate if feature involves state changes or integrations
@@ -850,7 +663,7 @@ await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
 
 **Violation**: Implementing state-changing features without EDA evaluation is a governance violation.
 
-### 12.6 Reference Files
+### 11.6 Reference Files
 
 | Component | Location |
 |-----------|----------|
