@@ -479,6 +479,36 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 
 **Efficiency Principle**: Once applied to brain, retrospective is historical only
 
+### End of Conversation Protocol (MANDATORY)
+
+Before closing any significant conversation:
+
+```
+1. IDENTIFY learnings from this conversation
+   └── What bugs were found?
+   └── What patterns worked/failed?
+   └── What should future agents know?
+
+2. DOCUMENT in retrospective (INDEX.md)
+   └── Add to "Top Critical Learnings" section
+   └── Mark source and date
+
+3. APPLY to brain rules immediately ← CRITICAL
+   └── Update relevant section in moderngoldenrules.md
+   └── Update relevant standard in standards/*.md
+   └── Mark as [x] Applied in INDEX.md
+
+4. COMMIT all changes
+   └── Brain rules + retrospective + code
+   └── Push to develop
+
+5. VERIFY Pending = 0
+   └── No orphan learnings
+   └── Next conversation starts clean
+```
+
+**FORBIDDEN**: Closing conversation with Pending > 0
+
 ### INDEX.md Format
 
 ```markdown

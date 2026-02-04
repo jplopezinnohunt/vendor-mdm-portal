@@ -20,6 +20,23 @@ Lessons learned MUST be captured after significant implementations to prevent re
 4. **RETENTION**: INDEX.md kept forever, active retrospectives for 3 months
 5. **SIZE LIMITS**: INDEX.md max 200 lines, individual retrospectives 300-500 lines
 6. **EFFICIENCY**: Once applied to brain, retrospective is historical only - don't re-read
+7. **END OF CONVERSATION**: MUST run end-of-conversation protocol before closing
+
+---
+
+## End of Conversation Protocol
+
+**MANDATORY** before closing any significant conversation:
+
+| Step | Action | Target |
+|------|--------|--------|
+| 1 | IDENTIFY | What learnings from this conversation? |
+| 2 | DOCUMENT | Add to INDEX.md (Top Critical Learnings) |
+| 3 | APPLY | Update moderngoldenrules.md + relevant standard |
+| 4 | COMMIT | Push brain rules + retrospective |
+| 5 | VERIFY | Pending = 0 (no orphan learnings) |
+
+**FORBIDDEN**: Closing with Pending > 0
 
 ---
 
