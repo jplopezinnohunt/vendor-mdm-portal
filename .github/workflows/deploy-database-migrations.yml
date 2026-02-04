@@ -152,11 +152,18 @@ jobs:
         echo "agent_ip=$AGENT_IP" >> $GITHUB_OUTPUT
         echo "sql_server=$SQL_SERVER" >> $GITHUB_OUTPUT
 
-    - name: Apply Migrations (dotnet ef)
-      env:
-        DataSourceMode: Connected
+    - name: Install sqlcmd
       run: |
-        # Set environment variables based on input
+        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+        curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list | sudo tee /etc/apt/sources.list.d/mssql-release.list
+        sudo apt-get update
+        sudo ACCEPT_EULA=Y apt-get install -y mssql-tools18 unixodbc-dev
+        echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' >> ~/.bashrc
+
+    - name: Apply Migrations (SQL Script)
+      run: |
+        export PATH="$PATH:/opt/mssql-tools18/bin"
+
         # Set environment variables based on input (Default to 'dev' if empty/push trigger)
         TARGET_ENV="${{ inputs.environment }}"
         if [ -z "$TARGET_ENV" ]; then
@@ -174,19 +181,24 @@ jobs:
           echo "Allowed values: 'dev', 'prod'"
           exit 1
         fi
-        
-        echo "Applying migrations to $SQL_SERVER (Database: $DATABASE)..."
-        
-        cd backend/VendorMdm.Api
-        
-        # Construct connection string with Service Principal
-        CONN_STRING="Server=tcp:${SQL_SERVER}.database.windows.net,1433;Initial Catalog=${DATABASE};User ID=${{ steps.creds.outputs.clientId }};Password=${{ steps.creds.outputs.clientSecret }};Authentication=Active Directory Service Principal;Encrypt=True;TrustServerCertificate=False;"
-        
-        # Run update
-        # We set the connection string env var to override appsettings
-        export ConnectionStrings__Sql="$CONN_STRING"
-        
-        dotnet ef database update --context SqlDbContext
+
+        echo "Applying PATCHED migration script to $SQL_SERVER (Database: $DATABASE)..."
+        echo "Using patched script with SQL Server types (nvarchar instead of TEXT)"
+
+        # Get access token for Azure SQL using service principal
+        ACCESS_TOKEN=$(az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv)
+
+        # Use sqlcmd with AAD access token
+        /opt/mssql-tools18/bin/sqlcmd \
+          -S "${SQL_SERVER}.database.windows.net" \
+          -d "$DATABASE" \
+          -P "$ACCESS_TOKEN" \
+          -G \
+          -i migration-script.sql \
+          -b \
+          -C
+
+        echo "✅ Migration script applied successfully"
 
     - name: Remove Firewall Rule
       if: always()
