@@ -74,6 +74,11 @@ You are required to load and apply the following detailed standards based on the
 ## 5. Build & Process Hygiene
 - **Clean Sweep Protocol**: Before builds or migrations, execute `pkill -f dotnet` and clean `bin/obj` artifacts to prevent Exit Code 143/134.
 - **Interface Integrity**: When changing an interface, update ALL implementations (Mock, Real, Simulation, Test) in one atomic turn.
+- **Duplicate Type Check**: Before creating new classes/constants, ALWAYS search for existing definitions:
+  ```bash
+  grep -r "class TypeName\|static class TypeName" backend/
+  ```
+  **Rationale**: Prevents CS0101 duplicate type errors (learned from DocumentStatus incident).
 - **Hygiene**: Pinned dependencies, `no-any` TypeScript, mandatory verification scripts with auth headers.
 - **Observability**: `traceparent` propagation + `TraceId` UI overlays.
 - **Simulation**: [SIMULATION MODE] logs for all external mocks.

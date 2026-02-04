@@ -97,6 +97,10 @@ exit $FAIL_COUNT
 
 ## 📋 Pending Brain Rule Updates
 
+**Applied** (2026-02-04):
+- [x] **Section 5**: Added "Duplicate Type Check" rule with grep pattern
+- [x] **Section 10.6**: Added Entity Evolution Checklist
+
 **High Priority**:
 - [ ] **Section 7.B**: Add environment detection pattern (`env.EnvironmentName`)
 - [ ] **Section 7.B**: Add header indexer syntax pattern
