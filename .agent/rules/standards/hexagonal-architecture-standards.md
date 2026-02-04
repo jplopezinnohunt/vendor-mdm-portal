@@ -1,8 +1,11 @@
-# Architectural Rule 001: Hexagonal Serverless Pattern
+# Hexagonal Architecture Standard
 
+**Category**: Architecture & Design
+**Pattern #**: 1
 **Status**: MANDATORY
+**Priority**: 🔴 CRITICAL
+
 **Context**: Vendor Master Data Management Platform
-**Date**: 2025-12-18
 
 ## 1. Core Principle
 The platform follows a strict **Hexagonal Architecture (Ports & Adapters)** pattern, hosted on a **Serverless** infrastructure. This ensures the core domain logic remains isolated from external systems and infrastructure concerns.

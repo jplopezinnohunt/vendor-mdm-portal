@@ -92,4 +92,5 @@ public static string MaskEmail(this string email)
 ## Reference
 
 - **Implementation**: `Core.Framework/Logging/IStructuredLogger.cs`
-- **Golden Rules**: Section 10.2 Pattern 5
+- **GDPR/PII**: [gdpr-pii-standard.md](gdpr-pii-standard.md)
+- **Golden Rules**: Section 4, Category 2 (Core Development)

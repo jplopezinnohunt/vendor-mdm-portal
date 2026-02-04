@@ -40,7 +40,7 @@ if (env.EnvironmentName == "Staging") { ... }
 **Solution**: ✅ Use indexer syntax `Headers["X-Frame"] = "DENY"`
 **Impact**: Saved 5 minutes debugging per implementation
 **Source**: 2026-02-04 Security Hardening
-**Applied**: ⏳ Pending in moderngoldenrules.md Section 7.B
+**Applied**: ✅ In moderngoldenrules.md Section 7.B (lines 185-192)
 
 ```csharp
 // ❌ FORBIDDEN (throws on duplicate keys)
@@ -65,12 +65,12 @@ public class NewClass { }
 EOF
 ```
 
-### 4. ⚠️ Verification Scripts Need Error Handling
+### 4. ✅ Verification Scripts Need Error Handling
 **Issue**: Using `set -e` globally causes script to exit on first curl failure
 **Solution**: Handle errors per-test, accumulate FAIL_COUNT, exit at end
 **Impact**: Scripts now run all tests instead of stopping early
 **Source**: 2026-02-04 Security Hardening
-**Applied**: ⏳ Pending in moderngoldenrules.md Section 8
+**Applied**: ✅ In moderngoldenrules.md Section 8.6 (lines 329-345)
 
 ```bash
 # ❌ DON'T: Exit on first error

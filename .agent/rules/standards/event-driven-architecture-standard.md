@@ -1,6 +1,9 @@
-# Event-Driven Architecture Implementation Standard
+# Event-Driven Architecture Standard
 
-## Status: FULLY IMPLEMENTED (2026-02-04)
+**Category**: Core Development
+**Pattern #**: 8
+**Status**: MANDATORY (FULLY IMPLEMENTED 2026-02-04)
+**Priority**: 🟠 IMPORTANT
 
 ### Pattern Overview
 Domain Events enable async workflows, decouple side effects from core business logic, and provide real-time frontend updates via SignalR.
