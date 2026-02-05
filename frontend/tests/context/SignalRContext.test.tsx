@@ -1,6 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { SignalRProvider, useSignalRContext, ConnectionState } from '../../src/context/SignalRContext';
+import React from 'react';
+
+// Create stable mock functions OUTSIDE the factory to prevent infinite re-renders
+// (Each call to vi.fn() creates a new reference which would trigger useEffect)
+const mockGetToken = vi.fn().mockResolvedValue('mock-token');
+const mockLogin = vi.fn();
+const mockLogout = vi.fn();
+const mockMockLogin = vi.fn();
+const mockLoginLocal = vi.fn();
+
+// Mock AuthContext - must be before any imports that use it
+vi.mock('../../src/context/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: true,
+    isLoading: false,
+    user: { id: 'test-user', role: 'Admin' },
+    getToken: mockGetToken,
+    login: mockLogin,
+    logout: mockLogout,
+    mockLogin: mockMockLogin,
+    loginLocal: mockLoginLocal,
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 describe('SignalRContext', () => {
   beforeEach(() => {

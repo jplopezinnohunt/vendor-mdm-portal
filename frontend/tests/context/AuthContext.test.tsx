@@ -259,7 +259,9 @@ describe('AuthContext', () => {
         },
       });
 
+      // Need sessionTimestamp to prevent session expiry clearing the token
       localStorage.setItem('localToken', 'stored-token');
+      localStorage.setItem('sessionTimestamp', Date.now().toString());
       const wrapper = ({ children }: { children: React.ReactNode }) => (
         <AuthProvider>{children}</AuthProvider>
       );
@@ -303,7 +305,9 @@ describe('AuthContext', () => {
         role: 'Vendor',
         isImpersonated: false,
       };
+      // Need sessionTimestamp to pass expiry check in AuthContext
       localStorage.setItem('mockUser', JSON.stringify(mockUser));
+      localStorage.setItem('sessionTimestamp', Date.now().toString());
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
         <AuthProvider>{children}</AuthProvider>
@@ -318,7 +322,10 @@ describe('AuthContext', () => {
     });
 
     it('handles corrupted localStorage data gracefully', async () => {
+      // Need sessionTimestamp so the code reaches the JSON.parse block
+      // (otherwise checkSessionExpiry returns early before parsing)
       localStorage.setItem('mockUser', 'not-valid-json');
+      localStorage.setItem('sessionTimestamp', Date.now().toString());
 
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -341,6 +348,11 @@ describe('AuthContext', () => {
 
   describe('Impersonation', () => {
     it('calls impersonate endpoint with correct params', async () => {
+      // IMPORTANT: Set localStorage BEFORE mounting component
+      // because localToken state is initialized from localStorage at mount time
+      localStorage.setItem('localToken', 'admin-token');
+      localStorage.setItem('sessionTimestamp', Date.now().toString());
+
       // Mock axios for both fetchProfile and impersonate
       mockedAxios.get.mockResolvedValue({
         data: {
@@ -352,7 +364,13 @@ describe('AuthContext', () => {
       });
       mockedAxios.post.mockResolvedValue({ data: {} });
 
-      localStorage.setItem('localToken', 'admin-token');
+      // Mock window.location.reload before mounting
+      const reloadMock = vi.fn();
+      Object.defineProperty(window, 'location', {
+        value: { reload: reloadMock, href: '/' },
+        writable: true,
+        configurable: true,
+      });
 
       const wrapper = ({ children }: { children: React.ReactNode }) => (
         <AuthProvider>{children}</AuthProvider>
@@ -361,13 +379,6 @@ describe('AuthContext', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-      // Mock window.location.reload
-      const reloadMock = vi.fn();
-      Object.defineProperty(window, 'location', {
-        value: { reload: reloadMock },
-        writable: true,
-      });
 
       await act(async () => {
         await result.current.impersonate('Vendor', 'Test Vendor', 'vendor@test.com');
@@ -383,6 +394,14 @@ describe('AuthContext', () => {
     it('calls stop impersonation endpoint', async () => {
       mockedAxios.post.mockResolvedValue({ data: {} });
 
+      // Mock window.location.reload before mounting
+      const reloadMock = vi.fn();
+      Object.defineProperty(window, 'location', {
+        value: { reload: reloadMock, href: '/' },
+        writable: true,
+        configurable: true,
+      });
+
       const wrapper = ({ children }: { children: React.ReactNode }) => (
         <AuthProvider>{children}</AuthProvider>
       );
@@ -390,12 +409,6 @@ describe('AuthContext', () => {
       const { result } = renderHook(() => useAuth(), { wrapper });
 
       await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-      const reloadMock = vi.fn();
-      Object.defineProperty(window, 'location', {
-        value: { reload: reloadMock },
-        writable: true,
-      });
 
       await act(async () => {
         await result.current.stopImpersonation();

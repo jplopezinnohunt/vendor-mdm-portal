@@ -392,6 +392,14 @@ public class VendorAuthAdapter
 ## 7. Security High Standards (The Iron Dome)
 **Status**: ZERO TOLERANCE for violations.
 
+### Implementation Status (Verified 2026-02-05)
+| Feature | Status | Location |
+|---------|--------|----------|
+| Security Headers (HSTS, CSP, X-Frame) | ✅ Implemented | `Middleware/SecurityHeadersMiddleware.cs` |
+| Rate Limiting (5 req/min) | ✅ Implemented | `Program.cs:128-133`, 5+ endpoints |
+| Input Sanitization (Global Filter) | ✅ Implemented | `Program.cs:103`, `Filters/InputSanitizationActionFilter.cs` |
+| OpenAPI/Swagger | ✅ Implemented | `Program.cs:381-382` |
+
 ### A. Authentication & Session
 -   **No Hardcoded Secrets**: All keys MUST come from KeyVault (Prod) or UserSecrets (Dev).
 -   **Signed Impersonation**: Impersonation cookies/tokens MUST be cryptographically signed.
@@ -446,6 +454,18 @@ public class VendorAuthAdapter
 
 ## 8. Pre-Commit Verification Protocol
 **MANDATORY CHECKS** before every commit:
+
+### Enforcement Mechanism (Updated 2026-02-05)
+| Mechanism | Status | Location |
+|-----------|--------|----------|
+| Pre-commit Git Hook | ✅ Available | `scripts/hooks/pre-commit` |
+| CI PR Validation | ✅ Implemented | `.github/workflows/verify-pr.yml` |
+| Migration Size Check | ✅ In CI | `verify-pr.yml:migration-validation` |
+| Security Scanning (SAST) | ✅ Implemented | `.github/workflows/security-scan.yml` |
+| Dependency Review | ✅ Implemented | Blocks high-severity + GPL licenses |
+| Secrets Scanning | ✅ Implemented | TruffleHog on all pushes |
+
+**Install hooks**: `./scripts/install-hooks.sh`
 
 ### 1. Build Verification
 ```bash
