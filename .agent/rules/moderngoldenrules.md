@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.4.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
+**Version**: 1.6.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -25,6 +25,7 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 | [8](#8-pre-commit-verification-protocol) | Pre-Commit Protocol | 🟠 IMPORTANT |
 | [9](#9-warning-hygiene-policy) | Warning Hygiene | 🟡 STANDARD |
 | [10](#10-retrospective-governance-continuous-improvement) | Retrospective Governance | 🟡 STANDARD |
+| [11](#11-critical-thinking--continuous-improvement) | Critical Thinking | 🔴 CRITICAL |
 | [12](#12-dependency-health-awareness) | Dependency Health Awareness | 🟠 IMPORTANT |
 | [13](#13-canonical-entity-decoupling-sap-independence) | Canonical Entity Decoupling | 🟠 IMPORTANT |
 | [14](#14-event-driven-architecture-eda-governance) | EDA Governance | 🟠 IMPORTANT |
@@ -59,6 +60,70 @@ You are an expert agent co-developing this system. You MUST follow these rules u
   1. `BRAIN-ARCHITECTURE.md` (hierarchy diagram)
   2. `standards/README.md` (standards index)
   3. Section 4 of this file (Standards Brain)
+
+### 1.1 Solution Context Protocol (MANDATORY)
+
+**Status**: 🔴 CRITICAL | Agents MUST understand the system before modifying it.
+
+#### Before Starting Work (READ)
+
+**MANDATORY**: Read solution specs to understand WHAT exists before any implementation task.
+
+```
+Agent Workflow - START OF CONVERSATION:
+1. Read specs/solution/INDEX.md     ← System overview
+2. Read specs/solution/CORE.md      ← Entities, architecture, tech stack
+3. Read specs/solution/FLOWS.md     ← State machines, workflows
+4. Read specs/solution/INTEGRATIONS.md ← External systems
+```
+
+**Why**: Prevents duplicate code, conflicting patterns, and architectural drift.
+
+**Verification**: Agent MUST be able to answer:
+- What are the core entities?
+- What state machines exist?
+- What integrations are active vs. mocked?
+- What patterns does this codebase use?
+
+#### After Completing Work (WRITE)
+
+**MANDATORY**: Update solution specs when features are completed or system changes.
+
+```
+Agent Workflow - END OF IMPLEMENTATION:
+1. IF new entity added      → Update CORE.md (entities section)
+2. IF new workflow/state    → Update FLOWS.md (add state machine)
+3. IF new integration       → Update INTEGRATIONS.md (add system)
+4. IF new process           → Create/update processes/*.md
+5. IF role capability added → Update functional/*.md (role file)
+```
+
+**Update Checklist**:
+| Change Type | Update Required |
+|-------------|-----------------|
+| New Entity | CORE.md → Entities section |
+| New State Machine | FLOWS.md → Add diagram |
+| New Integration | INTEGRATIONS.md → Add system |
+| New Business Process | processes/*.md → Create/update |
+| New Role Capability | functional/*.md → Update role |
+| Tech Stack Change | CORE.md → Tech Stack section |
+| Pattern Change | CORE.md → Key Patterns section |
+
+**FORBIDDEN**:
+- ❌ Completing implementation without updating solution specs
+- ❌ Adding features that contradict existing flows
+- ❌ Creating duplicate entities/patterns without checking CORE.md first
+
+**Agent Behavior**:
+```
+BEFORE implementation:
+  └── "I've read the solution specs. The system has [X entities],
+       [Y state machines], and uses [Z patterns]."
+
+AFTER implementation:
+  └── "I've updated [CORE.md/FLOWS.md/etc] to reflect the new
+       [entity/workflow/integration]."
+```
 
 ---
 
@@ -747,6 +812,152 @@ Before closing any significant conversation:
 - Implementation speed increases (fewer trial-and-error)
 - Brain rule updates cite retrospective evidence
 - New agents ramp up faster (read INDEX.md)
+
+---
+
+## 11. Critical Thinking & Continuous Improvement
+
+**Status**: 🔴 CRITICAL | Agents MUST challenge and suggest improvements.
+
+### 11.1 The Mandate
+
+**MANDATORY**: Agents must not passively execute tasks. They must:
+1. **Challenge** assumptions, approaches, and existing patterns
+2. **Suggest** improvements to code, architecture, and processes
+3. **Question** specifications that seem outdated or incorrect
+4. **Propose** better alternatives when they exist
+
+### 11.2 When to Apply Critical Thinking
+
+| Scenario | Required Action |
+|----------|-----------------|
+| Reading existing code | Identify potential improvements |
+| Following a specification | Verify spec matches reality (code is truth) |
+| Implementing a feature | Challenge if approach is optimal |
+| Finding inconsistencies | Report and suggest resolution |
+| Discovering patterns | Propose for standardization |
+| Seeing technical debt | Document and propose cleanup |
+
+### 11.3 Critical Thinking Protocol
+
+**Before Implementation**:
+```
+1. READ the specification
+2. VERIFY against actual code (code is truth)
+3. IDENTIFY gaps or inconsistencies
+4. CHALLENGE if the approach is optimal
+5. SUGGEST improvements if found
+6. PROCEED only after validation
+```
+
+**During Implementation**:
+```
+1. QUESTION each decision point
+   └── "Is this the best way?"
+   └── "Does this follow our patterns?"
+   └── "Could this be simpler?"
+
+2. IDENTIFY improvement opportunities
+   └── Code quality
+   └── Performance
+   └── Maintainability
+   └── Security
+
+3. DOCUMENT findings for future
+```
+
+**After Implementation**:
+```
+1. REVIEW what was built
+2. COMPARE with specification
+3. SUGGEST spec updates if needed
+4. PROPOSE learnings for brain rules
+```
+
+### 11.4 Constructive Criticism Standards
+
+**GOOD**: Specific, actionable, with alternative
+```
+"The current approach uses N+1 queries. I suggest using
+Include() to eager-load related entities, which would
+reduce database calls from 100 to 1."
+```
+
+**BAD**: Vague, negative, no alternative
+```
+"This code is inefficient."
+```
+
+### 11.5 Improvement Categories
+
+| Category | Examples |
+|----------|----------|
+| **Architecture** | Pattern violations, coupling issues, missing abstractions |
+| **Performance** | N+1 queries, missing indexes, inefficient algorithms |
+| **Security** | Input validation gaps, missing auth checks, exposed secrets |
+| **Maintainability** | Code duplication, missing documentation, unclear naming |
+| **Consistency** | Deviations from standards, inconsistent patterns |
+| **Specifications** | Outdated docs, missing features, incorrect flows |
+
+### 11.6 Agent Behavior
+
+**MANDATORY Actions**:
+- ✅ Point out when specs don't match code
+- ✅ Suggest better approaches when known
+- ✅ Challenge user assumptions respectfully
+- ✅ Propose updates to brain rules when patterns emerge
+- ✅ Report technical debt discovered during work
+
+**FORBIDDEN Actions**:
+- ❌ Silently ignore known issues
+- ❌ Implement knowing there's a better way
+- ❌ Follow outdated specs without verification
+- ❌ Skip suggesting improvements to avoid conflict
+
+### 11.7 The "Code is Truth" Principle
+
+When specifications and code conflict:
+```
+1. CODE wins (it's what actually runs)
+2. Identify the discrepancy
+3. Update specs to match reality
+4. OR fix code if spec is correct
+5. Never assume specs are current
+```
+
+### 11.8 Improvement Workflow
+
+```
+Agent finds issue
+       │
+       ▼
+Document the finding
+       │
+       ▼
+Propose solution
+       │
+       ▼
+┌──────┴──────┐
+▼             ▼
+Minor       Major
+(fix now)   (backlog item)
+   │             │
+   ▼             ▼
+Implement   Add to BACKLOG.md
+   │             │
+   ▼             ▼
+Update      Create issue
+brain       if needed
+```
+
+### 11.9 Success Metrics
+
+**Effectiveness Indicators**:
+- Specifications stay current (code = spec alignment)
+- Brain rules evolve from learnings
+- Technical debt is identified and tracked
+- Patterns are standardized proactively
+- User gets better outcomes through agent suggestions
 
 ---
 

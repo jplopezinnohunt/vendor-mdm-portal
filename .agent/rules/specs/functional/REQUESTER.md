@@ -2,6 +2,15 @@
 
 **Role**: Internal Staff (Change Requester)
 **Access Level**: Submit and track change requests
+**Last Updated**: 2026-02-05
+
+---
+
+## Important: Route Sharing
+
+**The Requester role uses the same routes as Approver** (`/approver/*`).
+
+The UI shows/hides features based on role permissions, but the URL structure is shared.
 
 ---
 
@@ -10,38 +19,54 @@
 - Submit vendor data change requests
 - Track request status
 - Respond to reviewer feedback
+- Search and select vendors to update
 
 ---
 
 ## Primary Flows
 
-### 1. Create Change Request
+### 1. Access Worklist
 
 ```
-Login → Dashboard → "New Change Request"
-                         │
-                         ▼
-              Search Vendor (SAP ID or Name)
-                         │
-                         ▼
-              Select fields to change:
-              - General info
-              - Banking details
-              - Contact info
-              - Tax information
-                         │
-                         ▼
-              Enter new values
-              Upload supporting docs
-                         │
-                         ▼
-              Submit for approval
+Login → /approver/worklist
+              │
+              └── Change Requests Tab
+                  (filtered to own submissions)
 ```
 
-### 2. Track Requests
+### 2. Create Change Request
 
 ```
-Dashboard → "My Requests"
+Worklist → Select Vendor → /approver/select-vendor
+              │
+              ▼
+        Search Vendor (SAP ID or Name)
+              │
+              ▼
+        Select Vendor
+              │
+              ▼
+        /approver/update-vendor/{vendorId}
+              │
+              ▼
+        Select fields to change:
+        - General info
+        - Banking details
+        - Contact info
+        - Tax information
+              │
+              ▼
+        Enter new values
+        Upload supporting docs
+              │
+              ▼
+        Submit for approval
+```
+
+### 3. Track Requests
+
+```
+Worklist → My Submissions
               │
               ├── Filter by status
               │   (Draft, Submitted, Approved, Rejected)
@@ -51,30 +76,31 @@ Dashboard → "My Requests"
               └── Continue draft
 ```
 
-### 3. Respond to Feedback
+---
 
-```
-Notification: "Changes Requested"
-              │
-              ▼
-        View reviewer comments
-              │
-              ▼
-        Update request
-              │
-              ▼
-        Resubmit
-```
+## Actual Routes (from code)
+
+| Action | Path | Component | Description |
+|--------|------|-----------|-------------|
+| Worklist | `/approver/worklist` | ApproverDashboard.tsx | Shared with Approver |
+| History | `/approver/history` | ApproverDashboard.tsx | Past submissions |
+| Select Vendor | `/approver/select-vendor` | VendorSelectionList.tsx | Search vendors |
+| Update Vendor | `/approver/update-vendor/:vendorId` | ChangeRequestForm.tsx | Submit change |
+| View Request | `/approver/requests/:id` | RequestReview.tsx | View only (no approve) |
+
+**Root Redirect**: `/` → `/approver/worklist`
 
 ---
 
-## Available Actions
+## API Endpoints Used
 
-| Action | Path | Description |
-|--------|------|-------------|
-| New Request | `/requester/new` | Create change request |
-| My Requests | `/requester/requests` | View all my requests |
-| Drafts | `/requester/drafts` | Continue saved drafts |
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/sap/vendor/search` | POST | Search vendors |
+| `/api/sap/vendor/{vendorNumber}` | GET | Get vendor details |
+| `/api/ChangeRequest` | POST | Create change request |
+| `/api/attachment/request-upload` | POST | Get upload SAS token |
+| `/api/attachment/confirm-upload` | POST | Confirm upload |
 
 ---
 
@@ -84,9 +110,20 @@ Notification: "Changes Requested"
 - ✅ View own requests
 - ✅ Upload attachments
 - ✅ Edit drafts
-- ❌ Cannot approve requests
+- ✅ Search vendors
+- ❌ Cannot approve requests (view only)
 - ❌ Cannot create invitations
 - ❌ Cannot view other users' requests
+
+---
+
+## UI Differences from Approver
+
+When logged in as Requester:
+- Worklist shows only "My Submissions" tab
+- Request detail page has no Approve/Reject buttons
+- No "Invite Vendor" or "Create Vendor" options
+- Cannot access Onboarding Applications
 
 ---
 

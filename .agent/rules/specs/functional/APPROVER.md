@@ -2,13 +2,15 @@
 
 **Role**: Vendor Unit / Approver
 **Access Level**: Invitation & approval workflows
+**Last Updated**: 2026-02-05
 
 ---
 
 ## Responsibilities
 
-- Create vendor invitations
-- Review vendor applications
+- Create vendor invitations (direct or event-based)
+- Create vendors directly (bypassing invitation)
+- Review vendor onboarding applications
 - Approve/reject change requests
 - Manage own invitations
 
@@ -16,54 +18,79 @@
 
 ## Primary Flows
 
-### 1. Create Invitation
+### 1. Worklist (Main Dashboard)
 
 ```
-Login → Dashboard → "Invite Vendor"
-                         │
-                         ▼
-              Fill Form:
-              - Vendor Legal Name
-              - Contact Email
-              - Expiration (7/14/30 days)
-              - Notes (optional)
-                         │
-                         ▼
-                    Submit
-                         │
-                         ▼
-              Success Page
-              - Copy invitation link
-              - Send to vendor
-```
-
-### 2. Manage Invitations
-
-```
-Dashboard → "My Invitations"
+Login → /approver/worklist
               │
-              ├── Filter by status
-              │   (Pending, Accepted, Completed, Expired)
+              ├── KPI Cards
+              │   (Total Pending, New Onboarding, Open Invitations, High-Risk)
               │
-              ├── View details
-              │
-              ├── Resend invitation
-              │   (generates new token)
-              │
-              └── Cancel invitation
+              └── Tabs
+                  ├── Invitations
+                  ├── Onboarding Applications
+                  └── Change Requests
 ```
 
-### 3. Review Applications
+### 2. Invite Vendor (Multi-Step Wizard)
 
 ```
-Dashboard → "Pending Applications"
+Worklist → "Invite Vendor"
               │
               ▼
-        Select Application
+       Step 1: Selection
+       (Search existing or new)
               │
-              ├── View vendor data
+              ▼
+       Step 2: Main Data
+       (Company, Contact, Expiry)
+              │
+              ▼
+       Step 3: Review & Submit
+              │
+              ▼
+       Duplicate Detection
+              │
+              ▼
+       Sanctions Screening
+              │
+              ▼
+       Invitation Created → Email Sent
+```
+
+### 3. Create Vendor Directly (5-Step Wizard)
+
+```
+Worklist → "Create Vendor"
+              │
+              ▼
+       Step 1: Definition
+       (Vendor Type, Account Group)
+              │
+              ▼
+       Step 2: Main Data
+       (Company, Contact, Tax)
+              │
+              ▼
+       Step 3: Profile
+       (Address, Industry)
+              │
+              ▼
+       Step 4: Financial
+       (Bank Info, Payment Terms)
+              │
+              ▼
+       Step 5: Review & Submit
+```
+
+### 4. Review Onboarding Application
+
+```
+Worklist → Select Application → /approver/onboarding/{id}
+              │
+              ├── View submitted data
               ├── View attachments
-              ├── Check sanctions status
+              ├── Sanctions status
               │
               ▼
         ┌─────┴─────┐
@@ -71,19 +98,19 @@ Dashboard → "Pending Applications"
     Approve      Reject
         │           │
         ▼           ▼
+   Enrich data   Add reason
+        │           │
+        ▼           ▼
    SAP Queue    Notify Vendor
 ```
 
-### 4. Review Change Requests
+### 5. Review Change Request
 
 ```
-Dashboard → "Change Requests"
-              │
-              ▼
-        Select Request
+Worklist → Select Request → /approver/requests/{id}
               │
               ├── View changes (diff)
-              ├── Review impact
+              ├── Workflow tracker
               │
               ▼
         ┌─────┴─────┐
@@ -96,25 +123,63 @@ Dashboard → "Change Requests"
 
 ---
 
-## Available Actions
+## Actual Routes (from code)
 
-| Action | Path | Description |
-|--------|------|-------------|
-| Invite Vendor | `/approver/invite` | Create new invitation |
-| My Invitations | `/approver/invitations` | Manage invitations |
-| Pending Apps | `/approver/applications` | Review applications |
-| Change Requests | `/approver/requests` | Review change requests |
+| Action | Path | Component | Description |
+|--------|------|-----------|-------------|
+| Worklist | `/approver/worklist` | ApproverDashboard.tsx | Main dashboard with tabs |
+| History | `/approver/history` | ApproverDashboard.tsx | Past decisions |
+| Review Request | `/approver/requests/:id` | RequestReview.tsx | Change request review |
+| Review Onboarding | `/approver/onboarding/:id` | OnboardingReview.tsx | Application review |
+| Invite Vendor | `/approver/invite-vendor` | InviteVendorForm.tsx | 3-step invitation wizard |
+| Create Vendor | `/approver/create-vendor` | CreateVendorForm.tsx | 5-step creation wizard |
+| Select Vendor | `/approver/select-vendor` | VendorSelectionList.tsx | Search/select vendor |
+| Update Vendor | `/approver/update-vendor/:vendorId` | ChangeRequestForm.tsx | Submit change request |
+| View Vendor | `/view-vendor` | ViewVendor.tsx | View from duplicate flow |
+
+**Root Redirect**: `/` → `/approver/worklist`
+
+---
+
+## API Endpoints Used
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/invitation/create` | POST | Create invitation |
+| `/api/invitation/list` | GET | List invitations |
+| `/api/invitation/resend/{id}` | POST | Resend invitation |
+| `/api/invitation/cancel/{id}` | POST | Cancel invitation |
+| `/api/review/pending` | GET | Pending applications |
+| `/api/review/{id}` | GET | Application details |
+| `/api/review/{id}/approve` | POST | Approve application |
+| `/api/review/{id}/reject` | POST | Reject application |
+| `/api/ChangeRequest` | POST | Create change request |
+| `/api/ChangeRequest/{id}/approve` | POST | Approve change |
+| `/api/vendor` | POST | Create vendor directly |
+| `/api/sap/vendor/search` | POST | Duplicate detection |
+| `/api/sanctions/screen` | POST | Sanctions screening |
 
 ---
 
 ## Permissions
 
-- ✅ Create invitations
+- ✅ Create vendor invitations
+- ✅ Create vendors directly
 - ✅ Manage own invitations
 - ✅ Approve/reject applications
 - ✅ Approve/reject change requests
+- ✅ View sanctions screening results
 - ❌ Cannot manage users
 - ❌ Cannot access system config
+
+---
+
+## Shared With Other Roles
+
+The `/approver/*` routes are also accessible by:
+- **Requestor** - Can submit change requests
+- **VendorUnit** - Full approver access
+- **BFM** - Budget/Finance approval
 
 ---
 

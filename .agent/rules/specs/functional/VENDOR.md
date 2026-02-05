@@ -2,6 +2,7 @@
 
 **Role**: External Vendor
 **Access Level**: Self-service registration and status
+**Last Updated**: 2026-02-05
 
 ---
 
@@ -10,12 +11,13 @@
 - Complete registration via invitation
 - Upload required documents
 - Track application status
+- Submit change requests for own data
 
 ---
 
 ## Primary Flows
 
-### 1. Accept Invitation & Register
+### 1. Accept Invitation & Register (Multi-Stage)
 
 ```
 Receive Email → Click Invitation Link
@@ -27,15 +29,25 @@ Receive Email → Click Invitation Link
            Valid          Invalid/Expired
               │               │
               ▼               ▼
-        Pre-filled Form   Error Page
-        (Company, Email)  "Contact Admin"
+        MFA Trigger       Error Page
+              │           "Contact Admin"
+              ▼
+        Enter 6-digit code
               │
               ▼
-        Complete Form:
-        - Tax ID
+        MFA Verified
+              │
+              ▼
+        Initial Info Form:
         - Contact Person
+        - Tax ID
         - Address
+              │
+              ▼
+        Enrichment Form:
         - Banking Info
+        - Certifications
+        - Additional Documents
               │
               ▼
         Upload Documents:
@@ -51,61 +63,124 @@ Receive Email → Click Invitation Link
         "Application Submitted"
 ```
 
-### 2. Track Status (After Registration)
+### 2. Vendor Dashboard
 
 ```
-Login (via magic link or email)
+Login → /dashboard
               │
-              ▼
-        Vendor Portal
+              ├── Request statistics
+              │   (Pending, Approved counts)
               │
-              ├── Application status
-              │   (Submitted, Under Review, Approved)
+              ├── Recent requests table
               │
-              ├── View submitted data
-              │
-              └── Upload additional docs
-                  (if requested)
+              └── Quick links
+                  ├── View Profile
+                  └── New Request
 ```
 
-### 3. Respond to Document Request
+### 3. View Profile
 
 ```
-Receive Email: "Additional Documents Required"
+Dashboard → /profile
+              │
+              ├── Current SAP master data (read-only)
+              │
+              └── "Request Change" button
+                  → /requests/new
+```
+
+### 4. Submit Change Request
+
+```
+Profile → "Request Change" → /requests/new
               │
               ▼
-        Click link → Vendor Portal
+        Select fields to change
               │
               ▼
-        View request details
+        Enter new values
               │
               ▼
-        Upload requested documents
+        Upload supporting docs
               │
               ▼
-        Submit for review
+           Submit
+              │
+              ▼
+        Track in /requests
+```
+
+### 5. View Request History
+
+```
+Dashboard → /requests
+              │
+              ├── Filter by status
+              │   (Approved, Rejected, Applied, Error)
+              │
+              └── View request details
 ```
 
 ---
 
-## Available Paths
+## Actual Routes (from code)
 
-| Path | Access | Description |
-|------|--------|-------------|
-| `/invitation/register/:token` | Public | Registration form |
-| `/vendor/status` | Authenticated | Track application |
-| `/vendor/documents` | Authenticated | Manage documents |
+| Action | Path | Component | Description |
+|--------|------|-----------|-------------|
+| Dashboard | `/dashboard` | Dashboard.tsx | Home with stats and recent requests |
+| Profile | `/profile` | VendorProfile.tsx | View SAP master data (read-only) |
+| Request History | `/requests` | RequestHistory.tsx | Historical requests |
+| New Request | `/requests/new` | ChangeRequestForm.tsx | Submit change request |
+
+**Public Routes (No Auth)**:
+| Action | Path | Component | Description |
+|--------|------|-----------|-------------|
+| Registration | `/invitation/register/:token` | InvitationRegistration.tsx | Token-based registration |
+| Self Register | `/register` | VendorRegistration.tsx | Self-service registration |
+| Accept Invite | `/accept-invite` | InvitationPage.tsx | Legacy invitation page |
+
+**Root Redirect**: `/` → `/profile`
+
+---
+
+## API Endpoints Used
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/invitation/validate/{token}` | GET | Validate token |
+| `/api/invitation/trigger-mfa/{token}` | POST | Send MFA code |
+| `/api/invitation/verify-mfa/{token}` | POST | Verify MFA code |
+| `/api/invitation/submit-initial/{token}` | POST | Submit initial info |
+| `/api/invitation/submit-enrichment/{token}` | POST | Submit enrichment |
+| `/api/invitation/complete/{token}` | POST | Complete registration |
+| `/api/invitation/save-draft/{token}` | POST | Save as draft |
+| `/api/ChangeRequest` | POST | Create change request |
+| `/api/attachment/request-upload` | POST | Get upload SAS token |
+| `/api/attachment/confirm-upload` | POST | Confirm upload |
 
 ---
 
 ## Permissions
 
-- ✅ Complete registration
+- ✅ Complete registration via invitation
 - ✅ Upload documents
 - ✅ View own application status
+- ✅ Submit change requests for own data
+- ✅ View own request history
 - ❌ Cannot view other vendors
 - ❌ Cannot access internal system
-- ❌ No system administration
+- ❌ No approval capabilities
+
+---
+
+## Registration Stages
+
+| Stage | Field | Description |
+|-------|-------|-------------|
+| InvitationSent | CurrentStage | Initial email sent |
+| MfaVerified | CurrentStage | MFA code verified |
+| InitialInfoCompleted | CurrentStage | Basic info submitted |
+| Enriched | CurrentStage | All data complete |
 
 ---
 

@@ -2,15 +2,17 @@
 
 **Role**: System Administrator
 **Access Level**: Full system access
+**Last Updated**: 2026-02-05
 
 ---
 
 ## Responsibilities
 
-- User management
-- System configuration
-- Monitoring & troubleshooting
-- Security oversight
+- User management (invite, roles, block)
+- System configuration and monitoring
+- Audit log access
+- Developer tools (role impersonation)
+- Event management oversight
 
 ---
 
@@ -19,47 +21,70 @@
 ### 1. User Management
 
 ```
-Login → Admin Dashboard → Users
+Login → Admin Dashboard → User Management Tab
                            │
         ┌──────────────────┼──────────────────┐
         ▼                  ▼                  ▼
-   Create User       Edit User          Deactivate
+   Invite User        Edit Roles         Block/Unblock
         │                  │                  │
         ▼                  ▼                  ▼
-   Assign Role      Change Role         Audit Log
+   Email sent        Update user         Toggle status
 ```
 
-### 2. Invitation Oversight
+### 2. System Monitoring
 
 ```
-Dashboard → All Invitations
+Dashboard → System Tab
               │
-              ├── View statistics
-              ├── Cancel invitations
-              └── Resend on behalf of approver
-```
-
-### 3. System Monitoring
-
-```
-Dashboard → System Status
+              ├── Data Sources Status
+              │   (SAP, Logic Apps, Rules)
               │
-              ├── Service health
-              ├── Error logs
-              └── Performance metrics
+              ├── Audit Log Stream
+              │
+              └── Service Health
+```
+
+### 3. Developer Tools
+
+```
+Dashboard → Developer Tools
+              │
+              ├── Role Impersonation
+              │   (Test as different role)
+              │
+              └── System Configuration
 ```
 
 ---
 
-## Available Actions
+## Actual Routes (from code)
 
-| Action | Path | Description |
-|--------|------|-------------|
-| View Users | `/admin/users` | List all users |
-| Create User | `/admin/users/new` | Add new user |
-| System Health | `/admin/system` | View service status |
-| All Invitations | `/admin/invitations` | Manage all invitations |
-| Audit Trail | `/admin/audit` | View system events |
+| Action | Path | Component | Description |
+|--------|------|-----------|-------------|
+| Dashboard | `/admin/dashboard` | AdminDashboard.tsx | System overview + User management tabs |
+| Rules Config | `/admin/rules` | AdminDashboard.tsx | Workflow rules JSON editor |
+| System Status | `/admin/system-status` | SystemStatus.tsx | Data source configurations |
+| Branch Strategy | `/admin/strategy` | BranchingStrategy.tsx | Branching configuration |
+| User Management | `/admin/users` | UserManagement.tsx | Invite, roles, block users |
+
+**Root Redirect**: `/` → `/admin/dashboard`
+
+---
+
+## API Endpoints Used
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/user` | GET | List all users |
+| `/api/user` | POST | Create user |
+| `/api/user/{id}/roles` | PUT | Update roles |
+| `/api/user/{id}/block` | PUT | Block/unblock |
+| `/api/auth/invite` | POST | Invite new user |
+| `/api/auth/resend-invite` | POST | Resend invitation |
+| `/api/auditlog/user/{userId}` | GET | User audit logs |
+| `/api/system/data-sources` | GET | System status |
+| `/api/system/services` | GET | Mock vs Real status |
+| `/api/health` | GET | Health check |
 
 ---
 
@@ -67,9 +92,12 @@ Dashboard → System Status
 
 - ✅ All Approver permissions
 - ✅ User CRUD operations
-- ✅ System configuration
-- ✅ View audit logs
-- ✅ Cancel any invitation
+- ✅ Role assignment (Admin, Approver, Requestor, Vendor, VendorUnit, BFM)
+- ✅ Block/unblock users
+- ✅ System configuration access
+- ✅ View all audit logs
+- ✅ Developer tools (impersonation)
+- ✅ Event management
 
 ---
 
@@ -77,7 +105,7 @@ Dashboard → System Status
 
 | Process | Role in Process |
 |---------|-----------------|
+| [User Onboarding](../processes/user-onboarding.md) | Initiator |
 | [Direct Invitation](../processes/direct-invitation.md) | Oversight |
 | [Event Invitation](../processes/event-invitation.md) | Oversight |
-| [MD Team Creation](../processes/md-team-creation.md) | Oversight |
 | [All Modification Processes](../processes/INDEX.md) | Oversight |
