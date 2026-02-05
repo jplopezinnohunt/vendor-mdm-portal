@@ -57,8 +57,39 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 - **Phase 1 (Spec)**: Create `specs/spec_[name].md`. **Compliance Sidebar** citing specific standards is mandatory.
 - **Phase 2 (Plan)**: Create `implementation_plan.md` + automated `scripts/verification/verify_*.sh` **BEFORE** implementation.
 - **Rule**: Never execute code without an Approved Spec and Verification Script.
-- **Branching**: Always `feature/[topic]` from `develop`. Never `main`.
 - **Refusal Protocol**: Decline any "shortcuts" that bypass this governance.
+
+### Branching Rules (Agent Behavior)
+
+**MANDATORY**: Create `feature/[topic]` branch for implementation work.
+
+| Work Type | Branch | Example |
+|-----------|--------|---------|
+| New feature | `feature/topic-name` | `feature/session-expiration` |
+| Bug fix | `bugfix/issue-desc` | `bugfix/signalr-auth` |
+| Hotfix (urgent prod) | `hotfix/critical-issue` | `hotfix/login-broken` |
+| Docs/config only | Direct to `develop` | Small README updates |
+
+**Agent Workflow**:
+```bash
+# 1. Start of implementation conversation
+git checkout develop && git pull origin develop
+git checkout -b feature/topic-name
+
+# 2. Work and commit
+git add . && git commit -m "feat: description"
+
+# 3. Push and merge
+git push origin feature/topic-name
+# Create PR → develop → main
+```
+
+**FORBIDDEN**:
+- ❌ Direct commits to `main` (NEVER)
+- ❌ Direct commits to `develop` for implementation work
+- ❌ Force push to shared branches
+
+**Detailed Standards**: See [git-branching-sap-standards.md](standards/git-branching-sap-standards.md) and [docs/git-workflow-best-practices.md](../../docs/git-workflow-best-practices.md)
 
 ---
 
