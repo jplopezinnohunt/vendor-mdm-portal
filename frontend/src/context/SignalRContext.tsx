@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import * as signalR from '@microsoft/signalr';
+import { useAuth } from './AuthContext';
 
 // Event types that can be received from the backend
 export interface StatusChangedEvent {
@@ -67,19 +68,49 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
   const [connectionState, setConnectionState] = useState<ConnectionState>('Disconnected');
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const subscribersRef = useRef<Map<string, Set<(data: unknown) => void>>>(new Map());
+  const { isAuthenticated, isLoading, getToken } = useAuth();
 
-  // Get the base URL from environment or default
+  // Get the base URL from environment or default, with mock user support
   const getFullUrl = useCallback(() => {
     const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
-    return `${apiBaseUrl}${hubUrl}`;
+    let url = `${apiBaseUrl}${hubUrl}`;
+
+    // For mock users (no real token), append mockUser query param for backend auth
+    const mockUserData = localStorage.getItem('mockUser');
+    if (mockUserData) {
+      try {
+        const mockUser = JSON.parse(mockUserData);
+        if (mockUser.role) {
+          url += `?mockUser=${encodeURIComponent(mockUser.role)}`;
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
+    return url;
   }, [hubUrl]);
 
-  // Initialize connection
+  // Initialize connection only when authenticated
   useEffect(() => {
+    // Don't connect if still loading auth or not authenticated
+    if (isLoading || !isAuthenticated) {
+      console.log('[SignalR] Waiting for authentication...');
+      return;
+    }
+
+    // Check if this is a mock user (no real token available)
+    const isMockUser = !!localStorage.getItem('mockUser');
+
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(getFullUrl(), {
         withCredentials: true,
-        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling
+        transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
+        // Only use accessTokenFactory for real tokens (not mock users)
+        accessTokenFactory: isMockUser ? undefined : async () => {
+          const token = await getToken();
+          return token || '';
+        }
       })
       .withAutomaticReconnect({
         nextRetryDelayInMilliseconds: (retryContext) => {
@@ -132,9 +163,10 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
     return () => {
       if (connectionRef.current) {
         connectionRef.current.stop();
+        connectionRef.current = null;
       }
     };
-  }, [getFullUrl]);
+  }, [getFullUrl, isAuthenticated, isLoading, getToken]);
 
   // Subscribe to events
   const subscribe = useCallback(<T,>(eventName: string, callback: (data: T) => void) => {

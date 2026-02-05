@@ -59,9 +59,35 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   useEffect(() => {
+    // Session expiration time in milliseconds (2 hours)
+    const SESSION_EXPIRY_MS = 2 * 60 * 60 * 1000;
+
+    // Check for session expiration
+    const checkSessionExpiry = (): boolean => {
+      const sessionTimestamp = localStorage.getItem('sessionTimestamp');
+      if (!sessionTimestamp) return true; // No timestamp = expired
+
+      const elapsed = Date.now() - parseInt(sessionTimestamp, 10);
+      if (elapsed > SESSION_EXPIRY_MS) {
+        console.warn('[AuthContext] Session expired - clearing auth data');
+        localStorage.removeItem('mockUser');
+        localStorage.removeItem('localToken');
+        localStorage.removeItem('sessionTimestamp');
+        return true;
+      }
+      return false;
+    };
+
     // Check for persisted mock user first
     const storedMockUser = localStorage.getItem('mockUser');
     if (storedMockUser) {
+      // Check if session has expired
+      if (checkSessionExpiry()) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const mockUser = JSON.parse(storedMockUser);
         setUser(mockUser);
@@ -70,7 +96,17 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       } catch (e) {
         console.error('Failed to parse stored mock user', e);
         localStorage.removeItem('mockUser');
+        localStorage.removeItem('sessionTimestamp');
       }
+    }
+
+    // Check localToken expiry too
+    const storedToken = localStorage.getItem('localToken');
+    if (storedToken && checkSessionExpiry()) {
+      setLocalToken(null);
+      setUser(null);
+      setIsLoading(false);
+      return;
     }
 
     // Check for Local Auth Token
@@ -79,13 +115,14 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       // For now, let fetchProfile handle validity
     }
 
-    // Timeout
+    // Timeout - extended to 15 seconds to allow MSAL to complete initialization
     const timeout = setTimeout(() => {
       if (isLoading) {
-        console.warn('[AuthContext] Loading timeout - setting isLoading to false');
+        console.warn('[AuthContext] Loading timeout - no auth found, redirecting to login');
         setIsLoading(false);
+        setUser(null);
       }
-    }, 3000);
+    }, 15000);
 
     const fetchProfile = async () => {
       // Logic: If account OR localToken exists
@@ -164,6 +201,7 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
   const loginLocal = async (token: string, userData: User) => {
     setLocalToken(token);
     localStorage.setItem('localToken', token);
+    localStorage.setItem('sessionTimestamp', Date.now().toString());
     setUser(userData);
     setIsLoading(false);
   };
@@ -178,6 +216,7 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
     };
     setUser(mockUser);
     localStorage.setItem('mockUser', JSON.stringify(mockUser));
+    localStorage.setItem('sessionTimestamp', Date.now().toString());
     setIsLoading(false);
   };
 
@@ -191,11 +230,13 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
 
   const logout = () => {
     localStorage.removeItem('mockUser');
+    localStorage.removeItem('sessionTimestamp');
     if (localToken) {
       localStorage.removeItem('localToken');
       setLocalToken(null);
       setUser(null);
-      // Maybe redirect to login
+      // Redirect to login
+      window.location.href = '/login';
     } else {
       instance.logoutRedirect();
     }
