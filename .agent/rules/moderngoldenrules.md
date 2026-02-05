@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.2.1 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
+**Version**: 1.3.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -25,7 +25,9 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 | [8](#8-pre-commit-verification-protocol) | Pre-Commit Protocol | 🟠 IMPORTANT |
 | [9](#9-warning-hygiene-policy) | Warning Hygiene | 🟡 STANDARD |
 | [10](#10-retrospective-governance-continuous-improvement) | Retrospective Governance | 🟡 STANDARD |
-| [11](#11-event-driven-architecture-eda-governance) | EDA Governance | 🟠 IMPORTANT |
+| [12](#12-dependency-health-awareness) | Dependency Health Awareness | 🟠 IMPORTANT |
+| [13](#13-canonical-entity-decoupling-sap-independence) | Canonical Entity Decoupling | 🟠 IMPORTANT |
+| [14](#14-event-driven-architecture-eda-governance) | EDA Governance | 🟠 IMPORTANT |
 
 **Priority Legend**: 🔴 CRITICAL = Must follow always | 🟠 IMPORTANT = Must follow for new code | 🟡 STANDARD = Recommended
 
@@ -279,6 +281,38 @@ What are you implementing?
 3.  **App-Scoped Security**: Authorization MUST be Context-Aware. `IUserContext.HasRoleForApp` is the only valid check.
 4.  **No Entity Leaks**: APIs MUST return DTOs (`Shared.Contracts`). Returning SQL Entities is FORBIDDEN.
 5.  **Observability**: Every Concept MUST implement `GetFunctionalLogs()`. Traceability from API -> Concept -> DB is required.
+
+### 6.1 Core.Framework Extension Pattern
+
+**Full Governance**: See [GOVERNANCE.md](../../backend/VendorMdm.Core.Framework/GOVERNANCE.md)
+
+**FORBIDDEN** (Build will fail):
+```csharp
+// ❌ Apps CANNOT implement Core interfaces
+public class MyAuthService : IAuthenticationService { }
+
+// ❌ Apps CANNOT inherit from Core classes
+public class MyLogger : StructuredLogger { }
+```
+
+**ALLOWED** (Extension pattern):
+```csharp
+// ✅ Apps CAN create extension methods
+public static class AuthExtensions
+{
+    public static async Task<Result<VendorData>> GetVendorDataAsync(
+        this IAuthenticationService auth, Guid vendorId) { ... }
+}
+
+// ✅ Apps CAN create adapters/wrappers (composition)
+public class VendorAuthAdapter
+{
+    private readonly IAuthenticationService _auth;
+    public VendorAuthAdapter(IAuthenticationService auth) => _auth = auth;
+}
+```
+
+**Rationale**: Core.Framework is the shared foundation for ALL MDM applications. Modifications require ADR + Architecture Team approval.
 
 ---
 
@@ -709,11 +743,146 @@ Before closing any significant conversation:
 
 ---
 
-## 11. Event-Driven Architecture (EDA) Governance
+## 12. Dependency Health Awareness
+
+**Status**: MANDATORY for all external integrations.
+
+### 12.1 The Problem
+
+Systems fail silently when external dependencies (SAP, Email, Storage) are down, leading to fragmented state and poor UX.
+
+### 12.2 Connectivity Probes (REQUIRED)
+
+Every external service client MUST implement a health check method:
+
+```csharp
+public interface IExternalService
+{
+    Task<Result<ConnectionStatus>> TestConnectionAsync();  // REQUIRED
+}
+```
+
+**Expose via API**: `/api/system/data-sources` or `/api/health`
+
+### 12.3 Truth in Success (NO Silent Masking)
+
+**CRITICAL**: If an external call fails, NEVER return `Success: true`.
+
+```csharp
+// ❌ WRONG - Masking failure
+try {
+    await _emailService.SendAsync(email);
+} catch {
+    _logger.LogError("Email failed");
+    return Result.Success();  // WRONG: User thinks email was sent
+}
+
+// ✅ CORRECT - Truthful response
+try {
+    await _emailService.SendAsync(email);
+    return Result.Success();
+} catch (Exception ex) {
+    _logger.LogError(ex, "Email failed");
+    return Result.Failure("Email delivery failed. Please try again.");
+}
+```
+
+### 12.4 Contextual Error Logs
+
+Critical failures MUST log the current configuration state:
+
+```csharp
+_logger.LogError(
+    "SMTP send failed. Config: {SmtpEnabled}, Host: {Host}, Port: {Port}",
+    _config.SmtpEnabled,
+    _config.SmtpHost,
+    _config.SmtpPort
+);
+```
+
+**Rationale**: Instant diagnosis without rechecking config files.
+
+### 12.5 UI Fail-Fast
+
+Frontend MUST query health status and warn users BEFORE they initiate workflows that depend on failing services.
+
+```typescript
+// ✅ Check before workflow
+const { data: health } = await api.get('/api/system/data-sources');
+if (!health.sap.connected) {
+    showWarning("SAP is currently unavailable. Submission will be queued.");
+}
+```
+
+---
+
+## 13. Canonical Entity Decoupling (SAP Independence)
+
+**Status**: MANDATORY for all domain entities.
+
+### 13.1 NO External System Fields in Domain
+
+**FORBIDDEN**: Adding external system IDs directly to entities.
+
+```csharp
+// ❌ WRONG - SAP coupling in domain
+public class Vendor
+{
+    public string SapVendorId { get; set; }      // FORBIDDEN
+    public string SalesforceId { get; set; }    // FORBIDDEN
+}
+
+// ✅ CORRECT - Use mapping service
+var sapId = await _sapIdService.GetSapIdAsync(vendor.Id, "Vendor");
+```
+
+**Pattern**: Use `SapIdMapping` table to store external system mappings.
+
+### 13.2 Source System Tracking
+
+All canonical entities MUST track their origin:
+
+```csharp
+public enum SourceSystem
+{
+    Portal,     // Created via web UI
+    SAP,        // Synced from SAP
+    API,        // Created via API
+    Migration,  // Data migration
+    Batch       // Batch processing
+}
+
+entity.SourceSystem = SourceSystem.Portal;  // REQUIRED
+```
+
+### 13.3 Event Sourcing Required Fields
+
+Every domain event MUST include these fields:
+
+```csharp
+await EmitDomainEventAsync("VendorCreated", new
+{
+    entityId = vendor.Id,
+    correlationId = GetCorrelationId(),  // REQUIRED - trace across systems
+    actor = GetCurrentUserId(),          // REQUIRED - who did this
+    channel = EventChannels.Portal,      // REQUIRED - where it came from
+    timestamp = DateTimeOffset.UtcNow
+});
+```
+
+**Why**: Enables complete audit trail across distributed systems.
+
+### 13.4 Reference
+
+Full canonical entity rules: [docs/canonical-model-rules.md](../../docs/canonical-model-rules.md)
+
+---
+
+## 14. Event-Driven Architecture (EDA) Governance
 
 **Status**: MANDATORY for all features involving state changes or integrations.
 
-### 11.1 Proactive Evaluation Requirement
+### 14.1 Proactive Evaluation Requirement
 
 **CRITICAL**: Agents MUST proactively evaluate EDA requirements when:
 - Implementing features with state changes (status transitions, workflows)
@@ -723,7 +892,7 @@ Before closing any significant conversation:
 
 **DO NOT** wait for the user to ask about events. Evaluate EDA applicability immediately.
 
-### 11.2 EDA Checklist (Mandatory During Spec Phase)
+### 14.2 EDA Checklist (Mandatory During Spec Phase)
 
 When creating a specification (`specs/spec_*.md`), evaluate and document:
 
@@ -748,9 +917,9 @@ When creating a specification (`specs/spec_*.md`), evaluate and document:
 - [ ] SignalR for frontend push
 ```
 
-(See Section 11.2 checklist above)
+(See Section 14.2 checklist above)
 
-### 11.3 Implementation Requirements
+### 14.3 Implementation Requirements
 
 **Pattern 6 Extended: Event Sourcing**
 
@@ -769,7 +938,7 @@ await _context.SaveChangesAsync();
 await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
 ```
 
-### 11.4 SignalR Events (Frontend Push)
+### 14.4 SignalR Events (Frontend Push)
 
 **Mandatory Events** (push to connected clients):
 - `StatusChanged`: Any entity status transition
@@ -780,11 +949,11 @@ await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
 
 **Hub Endpoint**: `/hubs/events`
 
-### 11.5 Agent Behavior
+### 14.5 Agent Behavior
 
 **Before Implementation**:
 1. ✅ Evaluate if feature involves state changes or integrations
-2. ✅ Document events in spec (Section 12.2 checklist)
+2. ✅ Document events in spec (Section 14.2 checklist)
 3. ✅ Identify real-time requirements
 4. ✅ Plan event handlers needed
 
@@ -796,7 +965,7 @@ await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
 
 **Violation**: Implementing state-changing features without EDA evaluation is a governance violation.
 
-### 11.6 Reference Files
+### 14.6 Reference Files
 
 | Component | Location |
 |-----------|----------|
