@@ -20,7 +20,14 @@ public class MockAuthMiddleware
         // Only allow in Development and if user is not already authenticated
         if (_env.IsDevelopment() && !context.User.Identity.IsAuthenticated)
         {
+            // Check header first, then query string (for SignalR WebSocket connections)
             var mockUserHeader = context.Request.Headers["X-Mock-User"].FirstOrDefault();
+
+            // For SignalR negotiate/connect, check query string since WebSockets can't send custom headers
+            if (string.IsNullOrEmpty(mockUserHeader) && context.Request.Path.StartsWithSegments("/hubs"))
+            {
+                mockUserHeader = context.Request.Query["mockUser"].FirstOrDefault();
+            }
             
             if (!string.IsNullOrEmpty(mockUserHeader))
             {

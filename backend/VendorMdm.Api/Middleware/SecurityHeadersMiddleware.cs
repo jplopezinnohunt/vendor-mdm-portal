@@ -45,8 +45,13 @@ public class SecurityHeadersMiddleware
         var cspNonce = GenerateNonce();
         context.Items["csp-nonce"] = cspNonce;
 
+        // Allow WebSocket connections from frontend origins for SignalR
+        var connectSrc = isProduction
+            ? "'self' wss: https:"
+            : "'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*";
+
         var cspPolicy = _configuration["Security:CSP:Policy"]
-            ?? "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; frame-ancestors 'none';";
+            ?? $"default-src 'self'; script-src 'self' 'nonce-{{nonce}}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src {connectSrc}; frame-ancestors 'none';";
 
         cspPolicy = cspPolicy.Replace("{nonce}", cspNonce);
         context.Response.Headers["Content-Security-Policy"] = cspPolicy;

@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.2.0 | **Last Updated**: 2026-02-04 | **Standards**: 34 (6 categories)
+**Version**: 1.2.1 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -257,11 +257,17 @@ What are you implementing?
 ### A. Authentication & Session
 -   **No Hardcoded Secrets**: All keys MUST come from KeyVault (Prod) or UserSecrets (Dev).
 -   **Signed Impersonation**: Impersonation cookies/tokens MUST be cryptographically signed.
--   **Session Lifetime**: MUST be Configurable (Admin Parameter). Default: **15 Minutes** (Sliding).
+-   **Session Lifetime**: MUST be Configurable (Admin Parameter). Default: **2 Hours** (Corporate standard for internal apps).
+-   **Session Storage**: Store `sessionTimestamp` in localStorage on login; check expiration on app load.
+-   **Session Cleanup**: On expiration, clear all auth data: `localToken`, `mockUser`, `sessionTimestamp`.
+-   **Token Storage**: Standardize on single key `localToken` (not `token`, `authToken`, etc.).
 -   **Ghost User Block**: Users present in Azure AD but missing from DB MUST be blocked in Production.
 
 ### B. Network & Transport
 -   **Strict Headers**: `HSTS` (Strict-Transport-Security), `CSP` (Content-Security-Policy), and `X-Frame-Options: DENY` are MANDATORY.
+-   **CSP for WebSockets (Dev)**: `connect-src` MUST include `ws://localhost:* wss://localhost:*` for SignalR in development.
+-   **WebSocket Auth Pattern**: WebSockets CANNOT send custom HTTP headers. Use query string for mock auth (`?mockUser=Role`), use `accessTokenFactory` for real JWT tokens.
+-   **Backend WebSocket Auth**: Middleware MUST check BOTH `X-Mock-User` header AND `?mockUser` query param for hub paths.
 -   **CORS Strictness**: Production CORS MUST be restricted to the specific `App:BaseUrl`. NO Localhost allowed in Prod.
 -   **Rate Limiting**: All Public (`AllowAnonymous`) endpoints MUST have IP-based Rate Limiting (5 req/min).
 -   **Environment Detection**: NEVER use `env.IsStaging()` - it doesn't exist. Use `env.EnvironmentName == "Staging"`:
@@ -493,6 +499,34 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
   └── learnings-database.md     ← Aggregated patterns (optional)
 ```
 
+### Learning Storage Rule (CRITICAL)
+
+**VALID storage locations for learnings:**
+- ✅ `moderngoldenrules.md` (this file) - patterns, rules, examples
+- ✅ `standards/*.md` - detailed guidance per topic
+- ✅ `retrospectives/INDEX.md` - tracking and history
+
+**FORBIDDEN storage locations:**
+- ❌ `CLAUDE.md` - pointer only, NO learnings
+- ❌ `MEMORY.md` - pointer only, NO learnings
+- ❌ Any other markdown file
+
+**Verification Check** (agent MUST run before saving learnings):
+```
+IF learning_to_save THEN
+  IF target_file IN ["CLAUDE.md", "MEMORY.md"] THEN
+    STOP → "FORBIDDEN: Use moderngoldenrules.md or standards/*.md"
+  ELSE IF target_file IN ["moderngoldenrules.md", "standards/*.md", "INDEX.md"] THEN
+    PROCEED → Save learning
+  END
+END
+```
+
+**Why**: CLAUDE.md and MEMORY.md are loaded on EVERY conversation. Learnings there cause:
+- Bloated context (slower responses)
+- Duplicate information (conflicts with golden rules)
+- Maintenance burden (two places to update)
+
 ### Agent Workflow
 
 **Before Starting Work**:
@@ -505,9 +539,11 @@ Capture lessons learned to prevent repeating mistakes and improve agent effectiv
 2. Update `INDEX.md` with top 3-5 learnings
 3. **MANDATORY: Apply learnings to brain rules immediately**
    - Update relevant sections in this file (moderngoldenrules.md)
+   - Update relevant standard in standards/*.md (if detailed)
    - Mark as `[x] Applied` in INDEX.md
    - Commit rule updates with retrospective reference
 4. Do NOT leave "Pending" items - apply them before closing the task
+5. **VERIFY**: No learnings written to CLAUDE.md or MEMORY.md
 
 **Efficiency Principle**: Once applied to brain, retrospective is historical only
 

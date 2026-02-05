@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Reflection;
 using NetArchTest.Rules;
 using VendorMdm.Core.Framework.Ontology;
@@ -31,23 +32,29 @@ namespace VendorMdm.Api.Tests.Architecture
         [Fact]
         public void OntologyConcepts_ShouldImplement_IOntologyConcept()
         {
-            // All business concepts in Shared should implement IOntologyConcept
-            // Note: We need to load Shared assembly. Using a known type 'VendorInvtation' or similar if available, 
-            // or we might need to rely on assembly loading.
-            // For now, let's assume we pass the assembly of 'VendorMdm.Shared'.
-            
+            // All business concepts (classes ending with "Concept") in Shared should implement IOntologyConcept
+            // Note: Event classes in the same namespace are excluded from this requirement.
+
             // We use a type from Shared to get the assembly.
-            // If SqlEntities is in Shared, use that.
             var sharedAssembly = typeof(VendorMdm.Shared.Models.VendorInvitation).Assembly;
 
             var result = Types.InAssembly(sharedAssembly)
                 .That()
                 .ResideInNamespace("VendorMdm.Shared.Ontology.Concepts")
+                .And()
+                .HaveNameEndingWith("Concept") // Only check *Concept classes, not Events
                 .Should()
                 .ImplementInterface(typeof(IOntologyConcept))
                 .GetResult();
 
-            Assert.True(result.IsSuccessful, "All classes in Ontology.Concepts must implement IOntologyConcept.");
+            // Build diagnostic message with failing types if any
+            var failMessage = "All *Concept classes in Ontology.Concepts must implement IOntologyConcept.";
+            if (!result.IsSuccessful && result.FailingTypes != null && result.FailingTypes.Any())
+            {
+                failMessage += $" Failing types: {string.Join(", ", result.FailingTypes.Select(t => t.FullName))}";
+            }
+
+            Assert.True(result.IsSuccessful, failMessage);
         }
 
         [Fact]

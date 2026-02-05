@@ -9,7 +9,12 @@ namespace VendorMdm.Api.Tests.Services;
 
 public class OfacSanctionsServiceTests
 {
+    /// <summary>
+    /// Integration test that downloads real OFAC sanctions list (~2MB).
+    /// Skip in CI with: dotnet test --filter "Category!=Integration"
+    /// </summary>
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ScreenEntityAsync_RealDownload_FindsPutin()
     {
         // Arrange

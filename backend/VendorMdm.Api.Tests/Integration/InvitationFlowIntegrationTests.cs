@@ -63,10 +63,8 @@ public class InvitationFlowIntegrationTests : IClassFixture<IntegrationTestFixtu
         
         // Assert D: Service Bus (Integration)
         _fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync(
-            "invitation-created", 
-            It.Is<object>(o => o.ToString().Contains("Integration Test Vendor") || true), // Simplified check
-            It.IsAny<string>()), Times.Once); // "true" in predicate to pass check safely if object ToString isn't json
-            // Ideally we check properties, but object->json conversion happens inside PublishEventAsync.
-            // Wait, PublishEventAsync takes `object data`. We can check `data` properties if we cast/inspect.
+            "InvitationCreated",
+            It.IsAny<object>(),
+            It.IsAny<string?>()), Times.Once);
     }
 }

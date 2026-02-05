@@ -1,5 +1,5 @@
 # Retrospectives Index
-**Last Updated**: 2026-02-04
+**Last Updated**: 2026-02-05
 **Purpose**: Organizational memory to prevent repeating mistakes and accelerate future implementations
 
 ---
@@ -137,6 +137,164 @@ Pointer (3 lines) → Golden Rules → Load only relevant standard
 **Source**: 2026-02-04 Brain Architecture Consolidation
 **Applied**: ✅ 7 new governance standards created
 
+### 10. ✅ Vitest MSAL Mock Pattern
+**Issue**: `vi.fn().mockReturnValue({...})` makes useMsal return undefined
+**Solution**: ✅ Use direct function returns: `useMsal: () => ({ instance, accounts, inProgress })`
+**Impact**: Frontend auth context tests work correctly
+**Source**: 2026-02-04 Brain v1.2.0 Compliance
+**Applied**: ✅ frontend/tests/setup.ts
+
+```typescript
+// ❌ BROKEN (useMsal returns undefined)
+useMsal: vi.fn().mockReturnValue({ instance, accounts })
+
+// ✅ CORRECT (direct function)
+useMsal: () => ({ instance: mockMsalInstance, accounts: [], inProgress: 'none' })
+```
+
+### 11. ✅ SignalR Mock Must Be Class
+**Issue**: `HubConnectionBuilder: vi.fn()` doesn't support method chaining
+**Solution**: ✅ Create actual class `MockHubConnectionBuilder` with method chaining
+**Impact**: SignalR context tests work with build().start() pattern
+**Source**: 2026-02-04 Brain v1.2.0 Compliance
+**Applied**: ✅ frontend/tests/setup.ts
+
+```typescript
+// ✅ CORRECT: Actual class with method chaining
+class MockHubConnectionBuilder {
+  withUrl() { return this; }
+  withAutomaticReconnect() { return this; }
+  build() { return mockConnection; }
+}
+```
+
+### 12. ✅ AccessibleModal aria-hidden Pitfall
+**Issue**: `aria-hidden="true"` on backdrop hides entire dialog from accessibility tree
+**Solution**: ✅ Remove aria-hidden from backdrop div, use `role="dialog"` and `aria-modal="true"` on content
+**Impact**: getByRole('dialog') works in tests, screen readers see modal
+**Source**: 2026-02-04 Brain v1.2.0 Compliance
+**Applied**: ✅ AccessibleModal.tsx
+
+### 13. ✅ Azure Static Web Apps Deployment Race Condition
+**Issue**: Simultaneous pushes to develop and main cause "Deployment Canceled" error
+**Root Cause**: Azure SWA cancels older deployments when newer one starts
+**Solution**: ✅ This is expected behavior - main branch deployment takes priority
+**Impact**: Develop branch deployments may show as failed but main succeeds
+**Source**: 2026-02-04 Brain v1.2.0 Compliance CI
+**Applied**: N/A (expected Azure behavior, not a bug)
+
+### 14. ✅ Git Safe Directory in CI Docker Containers
+**Issue**: Azure SWA Oryx builds in Docker, doesn't inherit workflow git config
+**Error**: `fatal: detected dubious ownership in repository at '/github/workspace'`
+**Solution**: ✅ Run `git config --global --add safe.directory /github/workspace` in build script
+**Impact**: Cleaner CI logs, proper version info in builds
+**Source**: 2026-02-04 Brain v1.2.0 Compliance CI
+**Applied**: ✅ frontend/generate-version.js
+
+```javascript
+// ✅ CORRECT: Configure safe.directory before git commands
+try {
+  execSync('git config --global --add safe.directory /github/workspace', { stdio: 'pipe' });
+} catch { /* Ignore - not in CI */ }
+```
+
+### 15. ✅ Integration Test Fixtures Need ALL Dependencies
+**Issue**: `Unable to resolve service for type 'IStructuredLogger'` in integration tests
+**Root Cause**: IntegrationTestFixture registered InvitationService but not its dependencies
+**Solution**: ✅ Register ALL mock dependencies: IStructuredLogger, IAuditLogService, etc.
+**Impact**: Integration tests pass without DI failures
+**Source**: 2026-02-04 Result Pattern Compliance
+**Applied**: ✅ IntegrationTestFixture.cs
+
+```csharp
+// ✅ CORRECT: Register all dependencies before the service
+var mockStructuredLogger = new Mock<IStructuredLogger>();
+services.AddSingleton(mockStructuredLogger.Object);
+var mockAuditLog = new Mock<IAuditLogService>();
+services.AddSingleton(mockAuditLog.Object);
+// THEN register the service
+services.AddScoped<IInvitationService, InvitationService>();
+```
+
+### 16. ✅ NetArchTest Checks ALL Classes in Namespace
+**Issue**: Architecture test failed on `ChangeRequestStatusChangedEvent` - an event, not a concept
+**Root Cause**: `ResideInNamespace()` includes ALL classes, not just intended ones
+**Solution**: ✅ Use `HaveNameEndingWith("Concept")` to filter to actual concept classes
+**Impact**: Architecture tests correctly validate only intended types
+**Source**: 2026-02-04 Result Pattern Compliance
+**Applied**: ✅ ArchitectureTests.cs
+
+```csharp
+// ❌ BROKEN: Catches Event classes too
+Types.InAssembly(assembly)
+    .That().ResideInNamespace("VendorMdm.Shared.Ontology.Concepts")
+    .Should().ImplementInterface(typeof(IOntologyConcept))
+
+// ✅ CORRECT: Filter to only *Concept classes
+Types.InAssembly(assembly)
+    .That().ResideInNamespace("VendorMdm.Shared.Ontology.Concepts")
+    .And().HaveNameEndingWith("Concept")  // Filter!
+    .Should().ImplementInterface(typeof(IOntologyConcept))
+```
+
+### 17. ✅ Mock Verify Needs Exact Event Names
+**Issue**: Mock verification failed - test expected "invitation-created", service publishes "InvitationCreated"
+**Root Cause**: Event names are case-sensitive and must match exactly
+**Solution**: ✅ Check actual service code for exact event name string
+**Impact**: Integration test mock verifications pass
+**Source**: 2026-02-04 Result Pattern Compliance
+**Applied**: ✅ InvitationFlowIntegrationTests.cs
+
+```csharp
+// ❌ BROKEN: Wrong event name
+_fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync("invitation-created", ...))
+
+// ✅ CORRECT: Match actual service event name
+_fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync("InvitationCreated", ...))
+```
+
+### 18. ✅ Session Timeout: 2 Hours Corporate Standard
+**Issue**: Session expiration defaults vary; corporate apps typically use 2-hour timeout
+**Solution**: ✅ Store `sessionTimestamp` in localStorage, check on app load, clear after 2 hours
+**Impact**: Consistent session management across auth methods (MSAL, local token, mock)
+**Source**: 2026-02-05 Auth & SignalR Fixes
+**Applied**: ✅ moderngoldenrules.md Section 7.A
+
+```typescript
+// ✅ CORRECT: 2-hour session timeout
+const SESSION_EXPIRY_MS = 2 * 60 * 60 * 1000;
+const elapsed = Date.now() - parseInt(sessionTimestamp, 10);
+if (elapsed > SESSION_EXPIRY_MS) { /* clear auth data */ }
+```
+
+### 19. ✅ SignalR WebSockets Cannot Send Custom Headers
+**Issue**: WebSocket connections ignore custom HTTP headers like `X-Mock-User`
+**Solution**: ✅ Use query string for mock auth (`?mockUser=Role`), `accessTokenFactory` for real tokens
+**Backend**: Check BOTH header AND query param in middleware for `/hubs` paths
+**Source**: 2026-02-05 Auth & SignalR Fixes
+**Applied**: ✅ moderngoldenrules.md Section 7.B
+
+```typescript
+// Frontend: Add mockUser to query string
+url += `?mockUser=${encodeURIComponent(mockUser.role)}`;
+
+// Backend: Check both header and query
+var mockUserHeader = context.Request.Headers["X-Mock-User"].FirstOrDefault();
+if (string.IsNullOrEmpty(mockUserHeader) && context.Request.Path.StartsWithSegments("/hubs"))
+    mockUserHeader = context.Request.Query["mockUser"].FirstOrDefault();
+```
+
+### 20. ✅ CSP connect-src Must Include WebSocket Origins (Dev)
+**Issue**: SignalR connection blocked by CSP in development
+**Solution**: ✅ Add `ws://localhost:* wss://localhost:*` to CSP connect-src directive
+**Impact**: SignalR works in development without CSP violations
+**Source**: 2026-02-05 Auth & SignalR Fixes
+**Applied**: ✅ moderngoldenrules.md Section 7.B
+
+```json
+"connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*"
+```
+
 ---
 
 ## 📋 Pending Brain Rule Updates
@@ -273,13 +431,13 @@ Pointer (3 lines) → Golden Rules → Load only relevant standard
 
 | Metric | Value |
 |--------|-------|
-| Total Retrospectives | 4 |
-| Critical Learnings | 9 |
-| Bugs Prevented | 4 (IsStaging, duplicate type, SQLite types, doc duplication) |
-| Time Saved (estimated) | 90 min per future implementation |
-| Brain Rules Applied | 17 updates |
+| Total Retrospectives | 5 |
+| Critical Learnings | 20 |
+| Bugs Prevented | 7 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket) |
+| Time Saved (estimated) | 105 min per future implementation |
+| Brain Rules Applied | 21 updates |
 | Brain Rules Pending | 0 |
-| Standards | 30 (6 categories) |
+| Standards | 34 (6 categories) |
 
 ---
 

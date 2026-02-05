@@ -11,6 +11,13 @@ const __dirname = dirname(__filename);
  */
 function generateVersion() {
   try {
+    // Fix git safe.directory for CI environments (Azure Static Web Apps uses Docker)
+    try {
+      execSync('git config --global --add safe.directory /github/workspace', { encoding: 'utf-8', stdio: 'pipe' });
+    } catch {
+      // Ignore - not in CI or already configured
+    }
+
     // Get version from package.json
     const packageJsonPath = join(__dirname, 'package.json');
     const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
@@ -19,32 +26,32 @@ function generateVersion() {
     // Get the last commit date
     let lastCommitDate = '';
     try {
-      lastCommitDate = execSync('git log -1 --format=%ci', { encoding: 'utf-8' }).trim();
-    } catch (e) {
+      lastCommitDate = execSync('git log -1 --format=%ci', { encoding: 'utf-8', stdio: 'pipe' }).trim();
+    } catch {
       lastCommitDate = new Date().toISOString();
     }
 
     // Get the last commit hash (short)
     let commitHash = '';
     try {
-      commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trim();
-    } catch (e) {
+      commitHash = execSync('git rev-parse --short HEAD', { encoding: 'utf-8', stdio: 'pipe' }).trim();
+    } catch {
       commitHash = (process.env.GITHUB_SHA || 'unknown').substring(0, 7);
     }
 
     // Get the total number of commits (still useful for internal stats, but not for display version)
     let commitCount = 0;
     try {
-      commitCount = parseInt(execSync('git rev-list --count HEAD', { encoding: 'utf-8' }).trim(), 10);
-    } catch (e) {
+      commitCount = parseInt(execSync('git rev-list --count HEAD', { encoding: 'utf-8', stdio: 'pipe' }).trim(), 10);
+    } catch {
       commitCount = 0;
     }
 
     // Get the current branch name
     let branch = '';
     try {
-      branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
-    } catch (e) {
+      branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8', stdio: 'pipe' }).trim();
+    } catch {
       branch = process.env.GITHUB_REF_NAME || 'unknown';
     }
 

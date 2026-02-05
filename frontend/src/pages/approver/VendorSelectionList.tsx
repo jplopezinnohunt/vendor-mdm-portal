@@ -24,7 +24,7 @@ export const VendorSelectionList: React.FC = () => {
             setLoading(true);
             try {
                 // Try to load vendors from API
-                const response = await api.get('/vendor/list');
+                const response = await api.get('/vendor');
                 setVendors(response.data || []);
                 setFilteredVendors(response.data || []);
             } catch (error) {

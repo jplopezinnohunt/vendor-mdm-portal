@@ -34,9 +34,12 @@ public class ChangeRequestController : ControllerBase
             Status = ChangeRequestStatus.Draft
         };
 
-        var createdRequest = await _repository.CreateRequestAsync(request, dto.Payload);
+        var result = await _repository.CreateRequestAsync(request, dto.Payload);
+        if (result.IsFailure)
+            return BadRequest(new { message = result.Error });
+
         // Note: Redirects to the Effective State view
-        return CreatedAtAction(nameof(GetEffectiveVendorState), new { id = dto.SapVendorId ?? createdRequest.Id.ToString() }, createdRequest);
+        return CreatedAtAction(nameof(GetEffectiveVendorState), new { id = dto.SapVendorId ?? result.Value.Id.ToString() }, result.Value);
     }
 
     /// <summary>
@@ -46,28 +49,27 @@ public class ChangeRequestController : ControllerBase
     [HttpGet("changerequest/{id}")]
     public async Task<IActionResult> GetChangeRequest(Guid id)
     {
-        var request = await _repository.GetRequestAsync(id);
-        if (request == null) return NotFound();
-        return Ok(request);
+        var result = await _repository.GetRequestAsync(id);
+        if (result.IsFailure)
+            return NotFound(new { message = result.Error });
+
+        return Ok(result.Value);
     }
 
     [HttpPost("changerequest/{id}/approve")]
     public async Task<IActionResult> ApproveChangeRequest(Guid id)
     {
-        try
+        var result = await _repository.ApproveRequestAsync(id);
+        if (result.IsFailure)
         {
-            await _repository.ApproveRequestAsync(id);
-            return NoContent();
+            // Determine if it's a not-found error or a validation error
+            if (result.Error.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                return NotFound(new { message = result.Error });
+
+            return BadRequest(new { message = result.Error });
         }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (InvalidOperationException ex)
-        {
-            // State machine validation failure
-            return BadRequest(new { message = ex.Message });
-        }
+
+        return NoContent();
     }
 
     /// <summary>
@@ -80,7 +82,10 @@ public class ChangeRequestController : ControllerBase
         // Using 'id' which could be a UUID for new vendors or SAP ID for existing.
         // The Repository logic handles the lookup.
         var result = await _repository.GetEffectiveVendorStateAsync(id);
-        return Ok(result);
+        if (result.IsFailure)
+            return NotFound(new { message = result.Error });
+
+        return Ok(result.Value);
     }
 }
 
