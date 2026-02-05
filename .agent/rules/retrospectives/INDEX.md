@@ -10,7 +10,7 @@
 
 ---
 
-## Top 5 Critical Learnings
+## Top 6 Critical Learnings
 
 | # | Issue | Solution | Source | Applied |
 |---|-------|----------|--------|---------|
@@ -19,6 +19,7 @@
 | 3 | Agents didn't update specs after implementation | Added WRITE phase to Solution Context Protocol | 2026-02-05 Spec Alignment | [x] Section 1.1 |
 | 4 | Agents passively executed without challenging | Added Critical Thinking mandate | 2026-02-05 Spec Alignment | [x] Section 11 |
 | 5 | Functional specs had wrong routes (e.g., `/md-team/*` doesn't exist) | Updated all functional specs to match actual React router | 2026-02-05 Spec Alignment | [x] APPROVER.md, VENDOR.md, etc. |
+| 6 | Rules violated when no enforcement mechanism exists | Added Self-Audit & Enforcement Gates with START/END checkpoints | 2026-02-05 Enforcement | [x] Section 16, Section 10→CRITICAL |
 
 ---
 
@@ -27,6 +28,7 @@
 | Date | Topic | Key Learning | Status |
 |------|-------|--------------|--------|
 | 2026-02-05 | [Spec Alignment](active/2026-Q1-spec-alignment.md) | Specs must match code - "Code is Truth" | Applied |
+| 2026-02-05 | [Enforcement Gates](active/2026-Q1-enforcement.md) | Rules without enforcement are suggestions | Applied |
 
 ---
 
@@ -45,6 +47,7 @@ None yet (first retrospective).
 ## Verification
 
 - [x] All learnings documented
-- [x] All learnings applied to brain rules (Sections 1.1, 11)
+- [x] All learnings applied to brain rules (Sections 1.1, 11, 16)
+- [x] Section 10 elevated to CRITICAL priority
 - [x] Pending count = 0
 - [x] INDEX.md updated

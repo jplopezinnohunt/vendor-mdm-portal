@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.6.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
+**Version**: 1.7.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -24,12 +24,13 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 | [7](#7-security-high-standards-the-iron-dome) | Security Standards | 🔴 CRITICAL |
 | [8](#8-pre-commit-verification-protocol) | Pre-Commit Protocol | 🟠 IMPORTANT |
 | [9](#9-warning-hygiene-policy) | Warning Hygiene | 🟡 STANDARD |
-| [10](#10-retrospective-governance-continuous-improvement) | Retrospective Governance | 🟡 STANDARD |
+| [10](#10-retrospective-governance-continuous-improvement) | Retrospective Governance | 🔴 CRITICAL |
 | [11](#11-critical-thinking--continuous-improvement) | Critical Thinking | 🔴 CRITICAL |
 | [12](#12-dependency-health-awareness) | Dependency Health Awareness | 🟠 IMPORTANT |
 | [13](#13-canonical-entity-decoupling-sap-independence) | Canonical Entity Decoupling | 🟠 IMPORTANT |
 | [14](#14-event-driven-architecture-eda-governance) | EDA Governance | 🟠 IMPORTANT |
 | [15](#15-pre-merge-build-protocol) | Pre-Merge Build Protocol | 🔴 CRITICAL |
+| [16](#16-self-audit--enforcement-gates) | Self-Audit & Enforcement | 🔴 CRITICAL |
 
 **Priority Legend**: 🔴 CRITICAL = Must follow always | 🟠 IMPORTANT = Must follow for new code | 🟡 STANDARD = Recommended
 
@@ -1270,6 +1271,164 @@ git push origin main
 ### 15.6 Reference
 
 Full checklist: [docs/deployment/strict-deployment-checklist.md](../../docs/deployment/strict-deployment-checklist.md)
+
+---
+
+## 16. Self-Audit & Enforcement Gates
+
+**Status**: 🔴 CRITICAL | **Source**: Learned violation 2026-02-05
+
+**Purpose**: Rules without enforcement are suggestions. This section ensures ALL brain rules are followed through mandatory checkpoints.
+
+### 16.1 The Self-Audit Principle
+
+Agents MUST audit themselves against the brain rules. No external enforcement exists - the agent IS the enforcement mechanism.
+
+**Core Truth**: If the agent doesn't self-enforce, the brain is worthless.
+
+### 16.2 START Checkpoint (Beginning of Conversation)
+
+**MANDATORY**: Before any implementation work, agent MUST output:
+
+```
+═══════════════════════════════════════════════════════════
+✅ START CHECKPOINT - Brain Rules Acknowledged
+═══════════════════════════════════════════════════════════
+📖 Solution Context (Section 1.1):
+   - CORE.md: [X] entities, [Y] patterns acknowledged
+   - FLOWS.md: [X] state machines acknowledged
+   - INTEGRATIONS.md: [X] active, [Y] mocked acknowledged
+
+🔒 Critical Rules Confirmed:
+   - [ ] Section 0: Zero Data Loss - No DB deletions without consent
+   - [ ] Section 2: SDD - Spec exists or will be created
+   - [ ] Section 7: Security - No hardcoded secrets
+   - [ ] Section 8: Pre-commit checks will be run
+
+📋 Task Understanding:
+   - Task type: [Implementation/Research/Fix/Documentation]
+   - Relevant standards to load: [List from Section 4]
+═══════════════════════════════════════════════════════════
+```
+
+**FORBIDDEN**: Starting implementation without this checkpoint.
+
+### 16.3 END Checkpoint (Before Closing Conversation)
+
+**MANDATORY**: Before closing any significant conversation, agent MUST output:
+
+```
+═══════════════════════════════════════════════════════════
+✅ END CHECKPOINT - Brain Rules Compliance Audit
+═══════════════════════════════════════════════════════════
+📝 Work Completed:
+   - [Summary of what was done]
+
+📊 Rule Compliance:
+   - [ ] Section 0: No unauthorized data deletion
+   - [ ] Section 1.1: Solution specs updated (if applicable)
+   - [ ] Section 2: SDD workflow followed (if implementation)
+   - [ ] Section 7: Security standards met
+   - [ ] Section 8: Pre-commit checks passed
+   - [ ] Section 9: Warnings addressed
+   - [ ] Section 10: Retrospective completed
+   - [ ] Section 11: Critical thinking applied
+   - [ ] Section 15: Build verified (if merge)
+
+📚 Retrospective (Section 10):
+   - Learnings identified: [Yes/No/None]
+   - INDEX.md updated: [Yes/No/N/A]
+   - Brain rules updated: [Yes/No/N/A]
+   - Pending count: [0]
+
+💾 Commits:
+   - [Commit hash]: [Message]
+═══════════════════════════════════════════════════════════
+```
+
+**FORBIDDEN**: Closing conversation without this checkpoint (for significant work).
+
+### 16.4 Continuous Self-Audit (During Work)
+
+At key decision points, agent should pause and verify:
+
+| Decision Point | Self-Audit Question |
+|---------------|---------------------|
+| Before creating entity | "Did I check CORE.md for existing entities?" (Section 1.1) |
+| Before deleting data | "Did user explicitly consent?" (Section 0) |
+| Before external integration | "Did I evaluate EDA requirements?" (Section 14) |
+| Before commit | "Did I run build checks?" (Section 8) |
+| Before merge | "Did I run post-merge builds?" (Section 15) |
+| Before closing | "Did I complete retrospective?" (Section 10) |
+
+### 16.5 Violation Response Protocol
+
+If a violation is identified (by user or self-discovered):
+
+```
+1. STOP current work immediately
+2. ACKNOWLEDGE the violation explicitly
+3. COMPLETE the missed requirement
+4. DOCUMENT in retrospective (why it happened, how to prevent)
+5. UPDATE brain rules if pattern emerges
+6. RESUME original work
+```
+
+**Example Response**:
+```
+⚠️ VIOLATION DETECTED: Section 10 (Retrospective) not completed
+
+I acknowledge this violation. Stopping current work to:
+1. Create retrospective entry
+2. Document learnings
+3. Update brain rules
+4. Then resume/close properly
+```
+
+### 16.6 Checkpoint Exemptions
+
+Checkpoints may be abbreviated for:
+- Pure research/exploration (no implementation)
+- Single-line fixes (trivial changes)
+- Documentation-only changes
+
+Even with exemptions, agent must acknowledge: "Abbreviated checkpoint - [reason]"
+
+### 16.7 The Accountability Chain
+
+```
+Brain Rules (this file)
+       │
+       ▼
+Agent reads and acknowledges (START checkpoint)
+       │
+       ▼
+Agent works following rules
+       │
+       ▼
+Agent self-audits continuously
+       │
+       ▼
+Agent completes compliance audit (END checkpoint)
+       │
+       ▼
+Retrospective captures learnings
+       │
+       ▼
+Brain rules improve
+       │
+       ▼
+Next conversation benefits
+```
+
+### 16.8 Success Metrics
+
+**Effectiveness Indicators**:
+- Zero unacknowledged rule violations
+- Checkpoints visible in every significant conversation
+- Retrospectives completed consistently
+- Brain rules evolve from learnings
+- User trust in agent compliance increases
 
 ---
 
