@@ -1,6 +1,6 @@
 # Brain Architecture: Documentation Hierarchy
 
-**Version**: 1.2.0 | **Last Updated**: 2026-02-04
+**Version**: 1.3.0 | **Last Updated**: 2026-02-05
 
 **Purpose**: Defines the single-source-of-truth documentation structure for all agents (Claude & Antigravity)
 
@@ -14,10 +14,10 @@
 │                    (Pointers Only - No Content)                     │
 ├─────────────────────────────────────────────────────────────────────┤
 │  CLAUDE.md ──────────────────────┐                                  │
-│  (3 lines)                       │                                  │
+│  (~7 lines, pointer only)        │                                  │
 │                                  ↓                                  │
 │  MEMORY.md ──────────────────────→  .agent/rules/moderngoldenrules.md
-│  (30 lines)                                                         │
+│  (~7 lines, pointer only)                                           │
 └─────────────────────────────────────────────────────────────────────┘
                                    │
                                    ↓
@@ -39,23 +39,25 @@
 │  Section 11: EDA Governance                                         │
 └─────────────────────────────────────────────────────────────────────┘
                                    │
-                    ┌──────────────┴──────────────┐
-                    ↓                             ↓
-┌───────────────────────────────┐  ┌─────────────────────────────────┐
-│   DETAILED STANDARDS          │  │   ORGANIZATIONAL MEMORY         │
-│   .agent/rules/standards/     │  │   .agent/retrospectives/        │
-│   (34 files in 6 categories)  │  │                                 │
-├───────────────────────────────┤  ├─────────────────────────────────┤
-│                               │  │ INDEX.md (Top Learnings)        │
-│ Category 1: Architecture (5)  │  │ active/*.md (Current Quarter)   │
-│ Category 2: Core Dev (6)      │  │ archived/*.md (Past Quarters)   │
-│ Category 3: Security (4)      │  │                                 │
-│ Category 4: Integration (5)   │  │ ↑ Feeds learnings BACK to       │
-│ Category 5: Operations (7)    │  │   Golden Rules (Section 10)     │
-│ Category 6: Governance (7)    │  │                                 │
-│                               │  │                                 │
-│ See standards/README.md       │  └─────────────────────────────────┘
-└───────────────────────────────┘
+              ┌────────────────────┼────────────────────┐
+              ↓                    ↓                    ↓
+┌─────────────────────────┐ ┌─────────────────────┐ ┌─────────────────────┐
+│   DETAILED STANDARDS    │ │   SPECIFICATIONS    │ │ ORGANIZATIONAL      │
+│   .agent/rules/standards│ │   .agent/rules/specs│ │ MEMORY              │
+│   (34 files)            │ │                     │ │ .agent/retrospectives
+├─────────────────────────┤ ├─────────────────────┤ ├─────────────────────┤
+│ Category 1: Arch (5)    │ │ solution/           │ │ INDEX.md            │
+│ Category 2: Core (6)    │ │  • CORE.md          │ │ active/*.md         │
+│ Category 3: Security(4) │ │  • FLOWS.md         │ │ archived/*.md       │
+│ Category 4: Integr (5)  │ │  • INTEGRATIONS.md  │ │                     │
+│ Category 5: Ops (7)     │ │  • ENTITY-MAP.md    │ │ ↑ Feeds back to     │
+│ Category 6: Gov (7)     │ │ functional/         │ │   Golden Rules      │
+│                         │ │  • Per-role flows   │ │                     │
+│ See standards/README.md │ │ processes/          │ │                     │
+│                         │ │  • Business flows   │ │                     │
+│                         │ │ features/           │ │                     │
+│                         │ │  • In-progress work │ │                     │
+└─────────────────────────┘ └─────────────────────┘ └─────────────────────┘
 ```
 
 ---
@@ -114,9 +116,10 @@
 
 | Layer | File(s) | Purpose | Content |
 |-------|---------|---------|---------|
-| **Pointer** | CLAUDE.md, MEMORY.md | Entry points | Reference to Golden Rules ONLY |
-| **Master** | moderngoldenrules.md | Executive Directive | 12 sections of rules |
+| **Pointer** | CLAUDE.md, MEMORY.md | Entry points | Reference to Golden Rules ONLY (no content) |
+| **Master** | moderngoldenrules.md | Executive Directive | 15 sections of rules |
 | **Standards** | standards/*.md (34 files) | Task-specific details | Detailed implementation rules |
+| **Specs** | specs/*/ (4 folders) | System specification | Solution, Functional, Processes, Features |
 | **Memory** | retrospectives/*.md | Organizational learning | Learnings feed back to Master |
 
 ---
@@ -145,16 +148,23 @@
 - **34 files** in **6 categories**
 - Each section has exactly ONE standard
 
-### 5. Retrospectives (retrospectives/*.md)
+### 5. Specifications (specs/*/)
+- **solution/** = WHAT exists (current system state)
+- **functional/** = WHO does what (per-role flows)
+- **processes/** = HOW things happen (cross-role business flows)
+- **features/** = Temporal work (in-progress, merges to solution)
+
+### 6. Retrospectives (retrospectives/*.md)
 - Organizational memory
 - Learnings feed BACK into Golden Rules
 - Quarterly cleanup cycle
 
-### 6. Architecture Maintenance (MANDATORY)
+### 7. Architecture Maintenance (MANDATORY)
 When adding new patterns/standards:
 1. Update `BRAIN-ARCHITECTURE.md` (this file)
 2. Update `standards/README.md` (standards index)
 3. Update `moderngoldenrules.md` Section 4 (Standards Brain)
+4. Update `specs/solution/*` if system changes
 **Rule**: NO orphan patterns or standards allowed
 
 ---
@@ -162,11 +172,34 @@ When adding new patterns/standards:
 ## File Locations
 
 ```
-/CLAUDE.md                              ← Pointer (3 lines)
-/.claude/memory/MEMORY.md               ← Pointer (30 lines)
+/CLAUDE.md                              ← Simple pointer (~7 lines)
+/.claude/memory/MEMORY.md               ← Simple pointer (~7 lines)
 /.agent/rules/
     ├── BRAIN-ARCHITECTURE.md           ← This file
     ├── moderngoldenrules.md            ← Master Authority
+    ├── specs/                          ← Specifications
+    │   ├── INDEX.md                    ← Specs master index
+    │   ├── solution/                   ← Current system state
+    │   │   ├── INDEX.md
+    │   │   ├── CORE.md
+    │   │   ├── FLOWS.md
+    │   │   ├── INTEGRATIONS.md
+    │   │   └── ENTITY-PROCESS-MAP.md
+    │   ├── functional/                 ← Role-based flows (WHO)
+    │   │   ├── ADMIN.md
+    │   │   ├── APPROVER.md
+    │   │   ├── REQUESTER.md
+    │   │   ├── VENDOR.md
+    │   │   └── MD-TEAM.md
+    │   ├── processes/                  ← Business flows (HOW)
+    │   │   ├── INDEX.md
+    │   │   ├── direct-invitation.md
+    │   │   ├── event-invitation.md
+    │   │   ├── md-team-creation.md
+    │   │   ├── vendor-self-modification.md
+    │   │   └── md-team-modification.md
+    │   └── features/                   ← In-progress work (temporal)
+    │       └── README.md
     └── standards/
         ├── README.md                   ← Standards index
         │
@@ -230,7 +263,11 @@ When adding new patterns/standards:
 1. Read `CLAUDE.md` → Follow pointer to Golden Rules
 2. Read `moderngoldenrules.md` (Executive Directive)
 3. Read relevant standard from Section 4 (based on task type)
-4. Check `retrospectives/INDEX.md` for learnings
+4. Read relevant specs from `specs/` for system understanding:
+   - `specs/solution/` for current system state
+   - `specs/functional/` for role capabilities
+   - `specs/processes/` for business flows
+5. Check `retrospectives/INDEX.md` for learnings
 
 ### After Significant Work
 1. Document learnings in retrospective

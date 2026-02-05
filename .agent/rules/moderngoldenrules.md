@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.3.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
+**Version**: 1.4.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -28,6 +28,7 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 | [12](#12-dependency-health-awareness) | Dependency Health Awareness | 🟠 IMPORTANT |
 | [13](#13-canonical-entity-decoupling-sap-independence) | Canonical Entity Decoupling | 🟠 IMPORTANT |
 | [14](#14-event-driven-architecture-eda-governance) | EDA Governance | 🟠 IMPORTANT |
+| [15](#15-pre-merge-build-protocol) | Pre-Merge Build Protocol | 🔴 CRITICAL |
 
 **Priority Legend**: 🔴 CRITICAL = Must follow always | 🟠 IMPORTANT = Must follow for new code | 🟡 STANDARD = Recommended
 
@@ -46,6 +47,12 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 ## 1. Compliance Logic
 - **Primary Source**: This file is your "System Logic".
 - **Brain Architecture**: See [BRAIN-ARCHITECTURE.md](BRAIN-ARCHITECTURE.md) for documentation hierarchy.
+- **Specifications**: See [specs/INDEX.md](specs/INDEX.md) for complete specs hierarchy:
+  - `specs/solution/` - Current system state (WHAT exists)
+  - `specs/functional/` - Role-based flows (WHO does what)
+  - `specs/processes/` - Business processes (HOW things happen)
+  - `specs/features/` - In-progress work (temporal)
+- **Backlog**: See [docs/BACKLOG.md](../../docs/BACKLOG.md) for prioritized work items.
 - **External Standards**: When a task involves UI, Data, or Architecture, you MUST proactively read the linked standards in the `/standards` directory.
 - **Citation**: Every Specification (`specs/spec_*.md`) must cite WHICH standard was followed.
 - **Architecture Maintenance**: When adding new patterns/standards, you MUST update:
@@ -976,6 +983,82 @@ await _dispatcher.DispatchAsync(statusChangedEvent);  // In-process (SignalR)
 | Frontend Context | `frontend/src/context/SignalRContext.tsx` |
 | Frontend Hooks | `frontend/src/hooks/useSignalR.ts` |
 | Standard | `.agent/rules/standards/event-driven-architecture-standard.md` |
+
+---
+
+## 15. Pre-Merge Build Protocol
+
+**Status**: 🔴 CRITICAL | **Source**: Incident 2026-01-10 (Lesson Learned)
+
+### 15.1 The Rule: "Build Before Push"
+
+**NEVER** push a merge commit to `main` or `develop` without running a local build of **BOTH** frontend and backend immediately after the merge operation.
+
+**Rationale**: Merges can result in syntax errors, orphaned code, or duplicate logic that git auto-merge doesn't catch.
+
+### 15.2 Mandatory Post-Merge Validation
+
+After completing any merge operation (before pushing):
+
+```bash
+# 1. Backend Compilation Check
+dotnet build backend/VendorMdm.Api/VendorMdm.Api.csproj
+# MUST return "0 Error(s)"
+
+# 2. Frontend Build Check
+cd frontend && npm run build && cd ..
+# MUST complete without error
+```
+
+### 15.3 Merge-to-Main Workflow
+
+```bash
+# 1. Pre-merge preparation
+git checkout develop && git pull origin develop
+dotnet build backend/VendorMdm.Api/VendorMdm.Api.csproj
+cd frontend && npm run build && cd ..
+
+# 2. Execute merge (DO NOT PUSH YET)
+git checkout main
+git pull origin main
+git merge develop --no-ff -m "Merge develop into main: [Description]"
+
+# 3. Post-merge validation (MANDATORY)
+dotnet build backend/VendorMdm.Api/VendorMdm.Api.csproj
+cd frontend && npm run build && cd ..
+
+# 4. Only push AFTER step 3 passes
+git push origin main
+```
+
+### 15.4 Verification Checklist
+
+| Check | Command | Expected |
+|-------|---------|----------|
+| Backend Build | `dotnet build` | 0 Error(s) |
+| Frontend Build | `npm run build` | ✓ built without error |
+| Conflict Markers | `grep -r "<<<<<<" .` | No results |
+| Git Status | `git status` | Clean working tree |
+
+### 15.5 Agent Behavior
+
+**Before Proposing Merge**:
+1. ✅ Run backend build on source branch
+2. ✅ Run frontend build on source branch
+3. ✅ Execute merge locally (not push)
+4. ✅ Run BOTH builds after merge
+5. ✅ Only then push if all pass
+
+**If Build Fails After Merge**:
+- ❌ DO NOT force push
+- ❌ DO NOT skip validation
+- ✅ Fix the issue locally
+- ✅ Re-run validation
+- ✅ Push only when clean
+
+### 15.6 Reference
+
+Full checklist: [docs/deployment/strict-deployment-checklist.md](../../docs/deployment/strict-deployment-checklist.md)
 
 ---
 

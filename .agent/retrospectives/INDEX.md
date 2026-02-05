@@ -20,6 +20,24 @@
 
 ## 🎯 Top 5 Critical Learnings
 
+### 0. ⚠️ NEVER MODIFY CLAUDE.md or MEMORY.md (4x REPEAT MISTAKE)
+**Issue**: Agent repeatedly adds content to pointer files instead of Golden Rules
+**Occurrences**: 4 times in same conversation (2026-02-05)
+**Root Cause**: Agent sees "learning" and defaults to updating CLAUDE.md/MEMORY.md
+**Solution**: ✅ Guard rule added directly in both files:
+```
+**MANDATORY RULE - DO NOT MODIFY THIS FILE**
+- This file is a POINTER ONLY (max 10 lines)
+- ALL learnings go to `moderngoldenrules.md` or `standards/*.md`
+- If you think you need to add content here → STOP → Add to Golden Rules instead
+```
+**Prevention**: Before ANY edit to CLAUDE.md or MEMORY.md:
+1. STOP - Is this a pointer update or content?
+2. If content → Go to `moderngoldenrules.md` or `standards/*.md`
+3. Only pointer changes allowed in these files
+**Applied**: ✅ Guard rules in CLAUDE.md and MEMORY.md
+**Brain Rule**: Section 10 (Learning Storage Rule, lines 574-600)
+
 ### 1. ❌ NEVER use `env.IsStaging()` in ASP.NET Core
 **Issue**: `IsStaging()` extension method doesn't exist - compiles but fails at runtime
 **Solution**: ✅ Use `env.EnvironmentName == "Staging"` instead
@@ -432,8 +450,8 @@ if (string.IsNullOrEmpty(mockUserHeader) && context.Request.Path.StartsWithSegme
 | Metric | Value |
 |--------|-------|
 | Total Retrospectives | 5 |
-| Critical Learnings | 20 |
-| Bugs Prevented | 7 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket) |
+| Critical Learnings | 21 |
+| Bugs Prevented | 8 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket, **pointer file modification**) |
 | Time Saved (estimated) | 105 min per future implementation |
 | Brain Rules Applied | 21 updates |
 | Brain Rules Pending | 0 |
