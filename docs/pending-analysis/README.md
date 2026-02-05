@@ -1,59 +1,32 @@
 # Pending Analysis - Documentation Queue
 
-Files organized by topic, awaiting review to determine if content should be:
-- **Integrated** into Golden Rules or Standards
-- **Kept** as reference documentation
-- **Archived** as obsolete
+**Status**: Partially analyzed (2026-02-05)
+**Remaining**: 18 files
 
-## Folders
+## Completed Analysis (2026-02-05)
 
-| Folder | Content | Priority |
-|--------|---------|----------|
-| `rules/` | Potential rule documents | High |
-| `architecture/` | Architecture designs | Medium |
-| `diagrams/` | Diagram generation guides | Low |
-| `implementation/` | Implementation plans/summaries | Medium |
-| `integration/` | SAP, Sanctions, external integrations | Medium |
-| `legacy-root/` | Files from project root | High |
+### Archived
+- **8 redundant diagram files** → `archive/rules-analyzed-2026-02-05/diagrams-redundant/`
+- **7 obsolete legacy files** → `archive/rules-analyzed-2026-02-05/legacy-obsolete/`
 
-## Analysis Process
+### Kept (moved to proper locations)
+- **3 visual architecture guides** → `docs/guides/visual-architecture/`
+- **PENDING-AUTH-REENABLE.md** → `docs/` (⚠️ CRITICAL - auth disabled!)
 
-1. Read each file
-2. Evaluate against Golden Rules
-3. Decision:
-   - **Integrate**: Add value to golden rules → Update moderngoldenrules.md
-   - **Keep**: Reference documentation → Move to appropriate docs/ folder
-   - **Archive**: Obsolete content → Move to docs/archive/
-
-## Files Awaiting Analysis
+## Files Still Awaiting Analysis
 
 ### rules/ (2 files)
-- `git-workflow-best-practices.md` - May have rules not in golden rules
-- `DATABASE_SCHEMA.md` - Schema documentation
+- `git-workflow-best-practices.md` - Check against Section 2
+- `DATABASE_SCHEMA.md` - Schema reference
 
 ### architecture/ (5 files)
-- `architecture_design.md`
-- `ARCHITECTURE_DETAILED.md`
-- `progressive-integration-architecture.md`
-- `file-storage-service-architecture.md`
-- `complete-service-integration-map.md`
-
-### diagrams/ (11 files)
-- Various diagram generation and viewing guides
-- Likely can be consolidated or archived
+- Architecture designs and service maps
+- May be useful reference documentation
 
 ### implementation/ (7 files)
-- Migration guides
-- Implementation summaries
-- Deployment plans
+- Migration guides, deployment plans
+- Some may be obsolete
 
 ### integration/ (4 files)
-- SAP simulation docs
-- Sanctions screening plans
-
-### legacy-root/ (8 files)
-- `cdm_rules.md` - May have rules to extract
-- `AGENTS.md` - Agent instructions
-- `HANDOVER.md` - Handover documentation
-- Implementation plans
-- Walkthroughs
+- SAP simulation and Sanctions screening plans
+- Reference for future implementation
