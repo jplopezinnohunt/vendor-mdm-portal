@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.2.0 | **Last Updated**: 2026-02-04 | **Standards**: 34 (6 categories)
+**Version**: 1.2.1 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -257,11 +257,17 @@ What are you implementing?
 ### A. Authentication & Session
 -   **No Hardcoded Secrets**: All keys MUST come from KeyVault (Prod) or UserSecrets (Dev).
 -   **Signed Impersonation**: Impersonation cookies/tokens MUST be cryptographically signed.
--   **Session Lifetime**: MUST be Configurable (Admin Parameter). Default: **15 Minutes** (Sliding).
+-   **Session Lifetime**: MUST be Configurable (Admin Parameter). Default: **2 Hours** (Corporate standard for internal apps).
+-   **Session Storage**: Store `sessionTimestamp` in localStorage on login; check expiration on app load.
+-   **Session Cleanup**: On expiration, clear all auth data: `localToken`, `mockUser`, `sessionTimestamp`.
+-   **Token Storage**: Standardize on single key `localToken` (not `token`, `authToken`, etc.).
 -   **Ghost User Block**: Users present in Azure AD but missing from DB MUST be blocked in Production.
 
 ### B. Network & Transport
 -   **Strict Headers**: `HSTS` (Strict-Transport-Security), `CSP` (Content-Security-Policy), and `X-Frame-Options: DENY` are MANDATORY.
+-   **CSP for WebSockets (Dev)**: `connect-src` MUST include `ws://localhost:* wss://localhost:*` for SignalR in development.
+-   **WebSocket Auth Pattern**: WebSockets CANNOT send custom HTTP headers. Use query string for mock auth (`?mockUser=Role`), use `accessTokenFactory` for real JWT tokens.
+-   **Backend WebSocket Auth**: Middleware MUST check BOTH `X-Mock-User` header AND `?mockUser` query param for hub paths.
 -   **CORS Strictness**: Production CORS MUST be restricted to the specific `App:BaseUrl`. NO Localhost allowed in Prod.
 -   **Rate Limiting**: All Public (`AllowAnonymous`) endpoints MUST have IP-based Rate Limiting (5 req/min).
 -   **Environment Detection**: NEVER use `env.IsStaging()` - it doesn't exist. Use `env.EnvironmentName == "Staging"`:

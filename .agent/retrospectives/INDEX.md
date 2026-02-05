@@ -1,5 +1,5 @@
 # Retrospectives Index
-**Last Updated**: 2026-02-04
+**Last Updated**: 2026-02-05
 **Purpose**: Organizational memory to prevent repeating mistakes and accelerate future implementations
 
 ---
@@ -253,6 +253,48 @@ _fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync("invitation-created", 
 _fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync("InvitationCreated", ...))
 ```
 
+### 18. ✅ Session Timeout: 2 Hours Corporate Standard
+**Issue**: Session expiration defaults vary; corporate apps typically use 2-hour timeout
+**Solution**: ✅ Store `sessionTimestamp` in localStorage, check on app load, clear after 2 hours
+**Impact**: Consistent session management across auth methods (MSAL, local token, mock)
+**Source**: 2026-02-05 Auth & SignalR Fixes
+**Applied**: ✅ moderngoldenrules.md Section 7.A
+
+```typescript
+// ✅ CORRECT: 2-hour session timeout
+const SESSION_EXPIRY_MS = 2 * 60 * 60 * 1000;
+const elapsed = Date.now() - parseInt(sessionTimestamp, 10);
+if (elapsed > SESSION_EXPIRY_MS) { /* clear auth data */ }
+```
+
+### 19. ✅ SignalR WebSockets Cannot Send Custom Headers
+**Issue**: WebSocket connections ignore custom HTTP headers like `X-Mock-User`
+**Solution**: ✅ Use query string for mock auth (`?mockUser=Role`), `accessTokenFactory` for real tokens
+**Backend**: Check BOTH header AND query param in middleware for `/hubs` paths
+**Source**: 2026-02-05 Auth & SignalR Fixes
+**Applied**: ✅ moderngoldenrules.md Section 7.B
+
+```typescript
+// Frontend: Add mockUser to query string
+url += `?mockUser=${encodeURIComponent(mockUser.role)}`;
+
+// Backend: Check both header and query
+var mockUserHeader = context.Request.Headers["X-Mock-User"].FirstOrDefault();
+if (string.IsNullOrEmpty(mockUserHeader) && context.Request.Path.StartsWithSegments("/hubs"))
+    mockUserHeader = context.Request.Query["mockUser"].FirstOrDefault();
+```
+
+### 20. ✅ CSP connect-src Must Include WebSocket Origins (Dev)
+**Issue**: SignalR connection blocked by CSP in development
+**Solution**: ✅ Add `ws://localhost:* wss://localhost:*` to CSP connect-src directive
+**Impact**: SignalR works in development without CSP violations
+**Source**: 2026-02-05 Auth & SignalR Fixes
+**Applied**: ✅ moderngoldenrules.md Section 7.B
+
+```json
+"connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*"
+```
+
 ---
 
 ## 📋 Pending Brain Rule Updates
@@ -389,13 +431,13 @@ _fixture.MockServiceBus.Verify(sb => sb.PublishEventAsync("InvitationCreated", .
 
 | Metric | Value |
 |--------|-------|
-| Total Retrospectives | 4 |
-| Critical Learnings | 14 |
-| Bugs Prevented | 5 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory) |
-| Time Saved (estimated) | 90 min per future implementation |
-| Brain Rules Applied | 17 updates |
+| Total Retrospectives | 5 |
+| Critical Learnings | 20 |
+| Bugs Prevented | 7 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket) |
+| Time Saved (estimated) | 105 min per future implementation |
+| Brain Rules Applied | 21 updates |
 | Brain Rules Pending | 0 |
-| Standards | 30 (6 categories) |
+| Standards | 34 (6 categories) |
 
 ---
 
