@@ -238,7 +238,20 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       // Redirect to login
       window.location.href = '/login';
     } else {
-      instance.logoutRedirect();
+      // Check if MSAL interaction is already in progress
+      if (inProgress !== InteractionStatus.None) {
+        console.warn('[AuthContext] MSAL interaction in progress, skipping logout redirect');
+        // Clear local state and redirect manually
+        setUser(null);
+        window.location.href = '/login';
+        return;
+      }
+      instance.logoutRedirect().catch((e) => {
+        console.error('[AuthContext] Logout redirect failed:', e);
+        // Fallback: clear state and redirect manually
+        setUser(null);
+        window.location.href = '/login';
+      });
     }
     setUser(null);
   };
