@@ -31,39 +31,24 @@
 
 ## 1. Critical (P0) - Immediate Action Required
 
-### 1.1 🔴 Re-enable Azure AD Authentication
+### 1.1 ✅ Re-enable Azure AD Authentication (COMPLETED 2026-02-05)
 
 **Issue**: Authentication disabled in Azure DEV since 2024-12-11
-**Impact**: All API endpoints publicly accessible without authentication
-**Effort**: S (2-4 hours)
-**Status**: PENDING - Code ready, waiting for manual Azure CLI command
+**Status**: DONE - Azure AD settings applied. App temporarily down due to F1 quota (resets midnight UTC).
 
-**Reference**: [docs/PENDING-AUTH-REENABLE.md](PENDING-AUTH-REENABLE.md)
-
-**What's Ready**:
+**Completed**:
 - [x] Frontend MSAL fully configured (`authConfig.ts`)
 - [x] Backend JWT service implemented (`JwtAuthenticationService.cs`)
-- [x] Mock auth works in development
-- [x] Documentation updated with step-by-step guide
+- [x] Azure AD settings applied via CLI (2026-02-05)
+- [x] Resource group: `rg-vendor-mdm-dev` (not `-v3`)
 
-**Blocking Action** (run when ready):
-```bash
-az webapp config appsettings set \
-  --resource-group rg-vendor-mdm-dev-v3 \
-  --name app-vendor-mdm-api-dev \
-  --settings \
-    AzureAd__ClientId="2f2020ec-264d-4de5-bea4-f4dfc545c5d8" \
-    AzureAd__TenantId="a93513e2-d327-4301-80ed-d703eb03f6cb" \
-    AzureAd__Instance="https://login.microsoftonline.com/" \
-    AzureAd__Domain="unesco.onmicrosoft.com"
-```
-
-**Post-Enable Checklist**:
-- [ ] Run above Azure CLI command
+**Pending Verification** (after quota resets):
 - [ ] Test login via frontend (incognito browser)
 - [ ] Verify protected endpoints return 401 without token
 - [ ] Verify protected endpoints work with valid token
 - [ ] Delete `PENDING-AUTH-REENABLE.md`
+
+**Note**: App Service on Free tier (F1) hit daily quota. Will resume at midnight UTC.
 
 ---
 
@@ -243,6 +228,7 @@ az webapp config appsettings set \
 
 | Item | Status | Notes |
 |------|--------|-------|
+| ✅ Enable Azure AD authentication | Complete | Settings applied, pending quota reset verification |
 | ✅ Remove hardcoded credentials | Complete | `deploy-auto.sh` now uses env vars |
 | ✅ Fix backend .sln structure | Complete | Added SchemaTest + MigrationRunner |
 | ✅ Improve deploy workflow | Complete | Separate dev/prod jobs with health checks |
