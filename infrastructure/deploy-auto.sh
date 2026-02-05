@@ -1,21 +1,61 @@
 #!/bin/bash
 # Non-interactive Azure Deployment Script
-# Edit the variables below, then run: ./deploy-auto.sh
+#
+# USAGE:
+#   1. Set required environment variables (see below)
+#   2. Run: ./deploy-auto.sh
+#
+# REQUIRED ENVIRONMENT VARIABLES:
+#   DEPLOY_SQL_ADMIN_PASSWORD    - SQL Server admin password (strong password)
+#   DEPLOY_AZURE_AD_TENANT_ID    - Azure AD Tenant ID
+#   DEPLOY_AZURE_AD_CLIENT_ID    - Azure AD Application Client ID
+#   DEPLOY_AZURE_SUBSCRIPTION_ID - Azure Subscription ID
+#
+# OPTIONAL ENVIRONMENT VARIABLES (have defaults):
+#   DEPLOY_ENVIRONMENT           - Environment name (default: dev)
+#   DEPLOY_LOCATION              - Azure region (default: centralus)
+#   DEPLOY_RESOURCE_GROUP        - Resource group name (default: rg-vendor-mdm-dev-v3)
+#   DEPLOY_SQL_ADMIN_USER        - SQL admin username (default: sqladmin)
+#   DEPLOY_COMPANY_NAME          - Company name (default: VendorMDM)
 
 set -e
 
 # ============================================================================
-# CONFIGURATION - EDIT THESE VALUES
+# CONFIGURATION - FROM ENVIRONMENT VARIABLES
 # ============================================================================
 
-ENVIRONMENT="dev"
-LOCATION="centralus"
-RESOURCE_GROUP="rg-vendor-mdm-dev-v3"
-SQL_ADMIN_USER="sqladmin"
-SQL_ADMIN_PASSWORD="VendorMDM@2025!"  # CHANGE THIS to a secure password
-AZURE_AD_TENANT_ID="a93513e2-d327-4301-80ed-d703eb03f6cb"
-AZURE_AD_CLIENT_ID="2f2020ec-264d-4de5-bea4-f4dfc545c5d8"
-COMPANY_NAME="Innohunt"
+# Required variables - must be set
+if [ -z "$DEPLOY_SQL_ADMIN_PASSWORD" ]; then
+    echo "ERROR: DEPLOY_SQL_ADMIN_PASSWORD environment variable is required"
+    echo "Set it with: export DEPLOY_SQL_ADMIN_PASSWORD='your-secure-password'"
+    exit 1
+fi
+
+if [ -z "$DEPLOY_AZURE_AD_TENANT_ID" ]; then
+    echo "ERROR: DEPLOY_AZURE_AD_TENANT_ID environment variable is required"
+    exit 1
+fi
+
+if [ -z "$DEPLOY_AZURE_AD_CLIENT_ID" ]; then
+    echo "ERROR: DEPLOY_AZURE_AD_CLIENT_ID environment variable is required"
+    exit 1
+fi
+
+if [ -z "$DEPLOY_AZURE_SUBSCRIPTION_ID" ]; then
+    echo "ERROR: DEPLOY_AZURE_SUBSCRIPTION_ID environment variable is required"
+    exit 1
+fi
+
+# Optional variables with defaults
+ENVIRONMENT="${DEPLOY_ENVIRONMENT:-dev}"
+LOCATION="${DEPLOY_LOCATION:-centralus}"
+RESOURCE_GROUP="${DEPLOY_RESOURCE_GROUP:-rg-vendor-mdm-dev-v3}"
+SQL_ADMIN_USER="${DEPLOY_SQL_ADMIN_USER:-sqladmin}"
+SQL_ADMIN_PASSWORD="$DEPLOY_SQL_ADMIN_PASSWORD"
+AZURE_AD_TENANT_ID="$DEPLOY_AZURE_AD_TENANT_ID"
+AZURE_AD_CLIENT_ID="$DEPLOY_AZURE_AD_CLIENT_ID"
+AZURE_SUBSCRIPTION_ID="$DEPLOY_AZURE_SUBSCRIPTION_ID"
+COMPANY_NAME="${DEPLOY_COMPANY_NAME:-VendorMDM}"
 
 # ============================================================================
 # DO NOT EDIT BELOW THIS LINE
@@ -81,10 +121,10 @@ if [ -z "$SUBSCRIPTION_ID" ]; then
     print_warning "No active session found. Please login..."
     # Login allowing no subscriptions initially
     az login --allow-no-subscriptions --use-device-code
-    
-    # Try to find subscription after login
-    SUBSCRIPTION_ID="8c89e199-98bc-4cfd-9ad7-f8e97238f5c6" # Hardcoded from screenshot
-    
+
+    # Use subscription ID from environment variable
+    SUBSCRIPTION_ID="$AZURE_SUBSCRIPTION_ID"
+
     print_info "Setting subscription to $SUBSCRIPTION_ID..."
     az account set --subscription "$SUBSCRIPTION_ID"
 else
