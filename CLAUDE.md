@@ -14,4 +14,16 @@
 - MEMORY.md
 - Any other location
 
-This file and MEMORY.md exist ONLY to point to the Golden Rules.
+## Verification Check (MUST RUN)
+
+Before saving any learning, run this check:
+```
+IF saving_learning THEN
+  IF target IN ["CLAUDE.md", "MEMORY.md"] THEN
+    STOP → FORBIDDEN
+    USE → moderngoldenrules.md OR standards/*.md
+  END
+END
+```
+
+This file exists ONLY as a pointer to Golden Rules.
