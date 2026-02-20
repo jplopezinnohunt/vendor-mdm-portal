@@ -95,6 +95,12 @@ public class EmailService : IEmailService
 
             // Try SMTP if configured
             var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
+            var useMockStr = _configuration["Services:Email:UseMock"];
+            if (!string.IsNullOrEmpty(useMockStr) && !bool.Parse(useMockStr))
+            {
+                smtpEnabled = true; // Force SMTP if explicitly set to real mode
+            }
+
             if (smtpEnabled)
             {
             var (smtpSuccess, smtpError) = await TrySendViaSmtpAsync(data, subject, isMfa, mfaCode, isMagicLink, magicLink);
@@ -279,6 +285,21 @@ public class EmailService : IEmailService
                 ?? _configuration["EmailService__Smtp__Username"];
             var smtpPassword = _configuration["EmailService:Smtp:Password"] 
                 ?? _configuration["EmailService__Smtp__Password"];
+
+            // Support the unified "Services:Email" config API Key for SendGrid / SMTP
+            var serviceApiKey = _configuration["Services:Email:RealSettings:ApiKey"] 
+                ?? _configuration["Services__Email__RealSettings__ApiKey"];
+            
+            if (!string.IsNullOrEmpty(serviceApiKey) && serviceApiKey != "from-keyvault" && string.IsNullOrEmpty(smtpPassword))
+            {
+                smtpUsername = "apikey";
+                smtpPassword = serviceApiKey;
+                if (string.IsNullOrEmpty(smtpHost) || smtpHost == "YOUR_SMTP_HOST")
+                {
+                    smtpHost = "smtp.sendgrid.net"; // Default provider if ApiKey is provided without host
+                }
+            }
+
             var fromEmail = _configuration["EmailService:Smtp:FromEmail"] 
                 ?? _configuration["EmailService__Smtp__FromEmail"] 
                 ?? smtpUsername;

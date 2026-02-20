@@ -286,6 +286,7 @@ string[] GetAllowedOrigins(IConfiguration config, IWebHostEnvironment env)
         return new[]
         {
             "http://localhost:3000",
+            "http://localhost:3001",
             "http://localhost:5173",
             "https://victorious-water-095da360f.5.azurestaticapps.net",
             "https://purple-moss-066604e03.4.azurestaticapps.net",

@@ -23,10 +23,9 @@ public class AuthDiscoveryController : ControllerBase
         _configuration = configuration;
     }
 
-    [HttpGet("discover")] // Changed from Post("lookup") to Get("discover")
+    [HttpPost("lookup")]
     [AllowAnonymous]
-    [EnableRateLimiting("anonymous")] // Added EnableRateLimiting attribute
-
+    [EnableRateLimiting("anonymous")] 
     public async Task<IActionResult> LookupUser([FromBody] LookupRequest request)
     {
         var input = request.Email.Trim();
