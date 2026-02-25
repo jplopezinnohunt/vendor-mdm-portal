@@ -132,7 +132,7 @@ describe('VendorService', () => {
         payload: { items: deltaItems },
       }));
       expect(result.id).toBe('new-cr-123');
-      expect(result.status).toBe(ChangeRequestStatus.New);
+      expect(result.status).toBe(ChangeRequestStatus.Submitted);
     });
 
     it('falls back to mock submission when API fails', async () => {
@@ -142,7 +142,7 @@ describe('VendorService', () => {
       const result = await VendorService.submitChangeRequest(deltaItems, [], '100450');
 
       expect(result.id).toMatch(/^cr-/);
-      expect(result.status).toBe(ChangeRequestStatus.New);
+      expect(result.status).toBe(ChangeRequestStatus.Submitted);
       expect(result.items).toEqual(deltaItems);
     });
   });

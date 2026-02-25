@@ -33,6 +33,8 @@ const mockVendorData: VendorMasterData = {
   name: 'Acme Corporation',
   legalForm: 'LLC',
   taxNumber1: 'US123456789',
+  email: 'acme@example.com',
+  phone: '+1-555-0100',
   address: {
     street: '123 Main Street',
     city: 'New York',
@@ -41,9 +43,12 @@ const mockVendorData: VendorMasterData = {
   },
   banks: [
     {
+      id: 'bank-1',
       bankCountry: 'US',
       bankKey: 'BOFA',
       bankAccount: '****1234',
+      accountHolder: 'Acme Corporation',
+      iban: 'US12345678901234',
     },
   ],
 };
@@ -183,8 +188,8 @@ describe('VendorProfile Page', () => {
     const vendorWithMultipleBanks: VendorMasterData = {
       ...mockVendorData,
       banks: [
-        { bankCountry: 'US', bankKey: 'BOFA', bankAccount: '****1234' },
-        { bankCountry: 'DE', bankKey: 'DEUTDE', bankAccount: '****5678' },
+        { id: 'bank-1', bankCountry: 'US', bankKey: 'BOFA', bankAccount: '****1234', accountHolder: 'Acme Corporation', iban: 'US12345678901234' },
+        { id: 'bank-2', bankCountry: 'DE', bankKey: 'DEUTDE', bankAccount: '****5678', accountHolder: 'Acme GmbH', iban: 'DE89370400440532013000' },
       ],
     };
     mockGetCurrentVendor.mockResolvedValueOnce(vendorWithMultipleBanks);

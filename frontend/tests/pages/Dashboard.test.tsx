@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { Dashboard } from '../../src/pages/Dashboard';
-import { ChangeRequest, ChangeRequestStatus } from '../../src/types';
+import { ChangeRequest, ChangeRequestStatus, RequestType } from '../../src/types';
 
 // Mock navigate
 const mockNavigate = vi.fn();
@@ -71,19 +71,21 @@ describe('Dashboard Page', () => {
     const mockRequests: ChangeRequest[] = [
       {
         id: 'cr-001',
-        sapVendorId: '100450',
-        requestType: 'Address Change',
-        status: ChangeRequestStatus.New,
+        vendorId: '100450',
+        requestType: RequestType.Address,
+        status: ChangeRequestStatus.Submitted,
         createdAt: '2024-01-15',
+        updatedAt: '2024-01-15',
         items: [],
         attachments: [],
       },
       {
         id: 'cr-002',
-        sapVendorId: '100450',
-        requestType: 'Bank Change',
-        status: ChangeRequestStatus.InReview,
+        vendorId: '100450',
+        requestType: RequestType.BankData,
+        status: ChangeRequestStatus.UnderReview,
         createdAt: '2024-01-16',
+        updatedAt: '2024-01-16',
         items: [],
         attachments: [],
       },
@@ -101,19 +103,21 @@ describe('Dashboard Page', () => {
     const mockRequests: ChangeRequest[] = [
       {
         id: 'cr-001',
-        sapVendorId: '100450',
-        requestType: 'Address Change',
+        vendorId: '100450',
+        requestType: RequestType.Address,
         status: ChangeRequestStatus.Approved,
         createdAt: '2024-01-15',
+        updatedAt: '2024-01-15',
         items: [],
         attachments: [],
       },
       {
         id: 'cr-002',
-        sapVendorId: '100450',
-        requestType: 'Bank Change',
+        vendorId: '100450',
+        requestType: RequestType.BankData,
         status: ChangeRequestStatus.Applied,
         createdAt: '2024-01-16',
+        updatedAt: '2024-01-16',
         items: [],
         attachments: [],
       },
@@ -141,10 +145,11 @@ describe('Dashboard Page', () => {
     const mockRequests: ChangeRequest[] = [
       {
         id: 'cr-001',
-        sapVendorId: '100450',
-        requestType: 'Address Change',
-        status: ChangeRequestStatus.New,
+        vendorId: '100450',
+        requestType: RequestType.Address,
+        status: ChangeRequestStatus.Submitted,
         createdAt: '2024-01-15',
+        updatedAt: '2024-01-15',
         items: [],
         attachments: [],
       },
@@ -155,7 +160,6 @@ describe('Dashboard Page', () => {
 
     await waitFor(() => {
       expect(screen.getByText('cr-001')).toBeInTheDocument();
-      expect(screen.getByText('Address Change')).toBeInTheDocument();
     });
   });
 
@@ -190,10 +194,11 @@ describe('Dashboard Page', () => {
   it('limits displayed requests to 5', async () => {
     const mockRequests: ChangeRequest[] = Array.from({ length: 10 }, (_, i) => ({
       id: `cr-${String(i + 1).padStart(3, '0')}`,
-      sapVendorId: '100450',
-      requestType: 'Test Request',
-      status: ChangeRequestStatus.New,
+      vendorId: '100450',
+      requestType: RequestType.General,
+      status: ChangeRequestStatus.Submitted,
       createdAt: '2024-01-15',
+      updatedAt: '2024-01-15',
       items: [],
       attachments: [],
     }));

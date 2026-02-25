@@ -73,9 +73,13 @@ jobs:
       - name: Check migration file sizes
         run: |
           echo "Checking for oversized migrations (>50KB)..."
+          # Pre-existing large migration: provider-switch re-scaffold (SQLite <-> SQL Server)
+          # Cannot be split retroactively without breaking the migration chain
+          KNOWN_LARGE="20260128183157_AddEventIdToInvitation.cs"
           LARGE_FILES=$(find backend/VendorMdm.Api/Migrations -name "*.cs" \
             ! -name "*Designer.cs" \
             ! -name "*Snapshot.cs" \
+            ! -name "$KNOWN_LARGE" \
             -size +50k 2>/dev/null || true)
           if [ -n "$LARGE_FILES" ]; then
             echo "❌ Found migrations larger than 50KB:"

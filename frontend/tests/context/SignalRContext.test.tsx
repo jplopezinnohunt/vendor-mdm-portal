@@ -308,7 +308,7 @@ describe('SignalRContext', () => {
         timestamp: string;
       }
 
-      const callback = vi.fn<[StatusChangedEvent], void>();
+      const callback = vi.fn<(event: StatusChangedEvent) => void>();
 
       await act(async () => {
         result.current.subscribe<StatusChangedEvent>('StatusChanged', callback);
@@ -330,7 +330,7 @@ describe('SignalRContext', () => {
         accountGroup: string;
       }
 
-      const callback = vi.fn<[VendorCreatedEvent], void>();
+      const callback = vi.fn<(event: VendorCreatedEvent) => void>();
 
       await act(async () => {
         result.current.subscribe<VendorCreatedEvent>('VendorCreated', callback);
@@ -352,7 +352,7 @@ describe('SignalRContext', () => {
         link?: string;
       }
 
-      const callback = vi.fn<[NotificationEvent], void>();
+      const callback = vi.fn<(event: NotificationEvent) => void>();
 
       await act(async () => {
         result.current.subscribe<NotificationEvent>('Notification', callback);
