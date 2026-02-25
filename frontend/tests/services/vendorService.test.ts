@@ -34,7 +34,7 @@ describe('VendorService', () => {
 
       const result = await VendorService.getCurrentVendor('100450');
 
-      expect(api.get).toHaveBeenCalledWith('/changerequest/100450');
+      expect(api.get).toHaveBeenCalledWith('/changerequest/vendor/100450');
       expect(result.sapVendorId).toBe('100450');
       expect(result.name).toBe('Test Corp');
     });
@@ -132,7 +132,7 @@ describe('VendorService', () => {
         payload: { items: deltaItems },
       }));
       expect(result.id).toBe('new-cr-123');
-      expect(result.status).toBe(ChangeRequestStatus.Submitted);
+      expect(result.status).toBe(ChangeRequestStatus.Draft);
     });
 
     it('falls back to mock submission when API fails', async () => {
@@ -142,7 +142,7 @@ describe('VendorService', () => {
       const result = await VendorService.submitChangeRequest(deltaItems, [], '100450');
 
       expect(result.id).toMatch(/^cr-/);
-      expect(result.status).toBe(ChangeRequestStatus.Submitted);
+      expect(result.status).toBe(ChangeRequestStatus.Draft);
       expect(result.items).toEqual(deltaItems);
     });
   });

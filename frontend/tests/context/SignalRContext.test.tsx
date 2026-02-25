@@ -113,6 +113,12 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
+
       const callback = vi.fn();
       let unsubscribe: (() => void) | undefined;
 
@@ -129,6 +135,12 @@ describe('SignalRContext', () => {
       );
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
+
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
 
       const callback1 = vi.fn();
       const callback2 = vi.fn();
@@ -148,6 +160,12 @@ describe('SignalRContext', () => {
       );
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
+
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
 
       const callback = vi.fn();
       let unsubscribe: (() => void) | undefined;
@@ -218,9 +236,13 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
-      // Try to join immediately (before connection is established)
-      // Note: Due to mocking, connection may already be "Connected"
-      // This test verifies the function doesn't crash
+      // Wait for connection to be established (mock resolves immediately)
+      // Due to mocking, connection will be "Connected" - this test verifies
+      // the function doesn't crash regardless of state
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
 
       await act(async () => {
         await result.current.joinGroup('TestGroup');
@@ -300,6 +322,12 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
+
       interface StatusChangedEvent {
         entityType: string;
         entityId: string;
@@ -324,6 +352,12 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
+
       interface VendorCreatedEvent {
         vendorId: string;
         legalName: string;
@@ -345,6 +379,12 @@ describe('SignalRContext', () => {
       );
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
+
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
 
       interface NotificationEvent {
         title: string;

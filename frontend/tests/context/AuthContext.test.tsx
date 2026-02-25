@@ -14,10 +14,38 @@ vi.mock('../../src/authConfig', () => ({
   loginRequest: { scopes: ['user.read'] },
 }));
 
+// Re-mock @azure/msal-react with stable mock implementations that survive vi.clearAllMocks()
+const stableMsalInstance = {
+  loginPopup: vi.fn().mockResolvedValue({ account: null }),
+  logout: vi.fn().mockResolvedValue(undefined),
+  logoutRedirect: vi.fn().mockResolvedValue(undefined),
+  acquireTokenSilent: vi.fn().mockResolvedValue({ accessToken: 'mock-token' }),
+  getAllAccounts: vi.fn().mockReturnValue([]),
+  getActiveAccount: vi.fn().mockReturnValue(null),
+  setActiveAccount: vi.fn(),
+};
+
+vi.mock('@azure/msal-react', () => ({
+  MsalProvider: ({ children }: { children: React.ReactNode }) => children,
+  useMsal: () => ({
+    instance: stableMsalInstance,
+    accounts: [],
+    inProgress: 'none',
+  }),
+  useIsAuthenticated: () => false,
+  useAccount: () => null,
+}));
+
 describe('AuthContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    // Re-establish MSAL mock return values after clearAllMocks resets them
+    stableMsalInstance.logoutRedirect.mockResolvedValue(undefined);
+    stableMsalInstance.loginPopup.mockResolvedValue({ account: null });
+    stableMsalInstance.acquireTokenSilent.mockResolvedValue({ accessToken: 'mock-token' });
+    stableMsalInstance.getAllAccounts.mockReturnValue([]);
+    stableMsalInstance.getActiveAccount.mockReturnValue(null);
   });
 
   afterEach(() => {

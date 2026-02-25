@@ -68,12 +68,13 @@ describe('Dashboard Page', () => {
   });
 
   it('displays pending requests count', async () => {
+    // Dashboard filters pending as: r.status === 'IN_REVIEW' || r.status === 'NEW'
     const mockRequests: ChangeRequest[] = [
       {
         id: 'cr-001',
         vendorId: '100450',
         requestType: RequestType.Address,
-        status: ChangeRequestStatus.Submitted,
+        status: 'NEW' as ChangeRequestStatus,
         createdAt: '2024-01-15',
         updatedAt: '2024-01-15',
         items: [],
@@ -83,7 +84,7 @@ describe('Dashboard Page', () => {
         id: 'cr-002',
         vendorId: '100450',
         requestType: RequestType.BankData,
-        status: ChangeRequestStatus.UnderReview,
+        status: 'IN_REVIEW' as ChangeRequestStatus,
         createdAt: '2024-01-16',
         updatedAt: '2024-01-16',
         items: [],
@@ -100,12 +101,13 @@ describe('Dashboard Page', () => {
   });
 
   it('displays approved requests count', async () => {
+    // Dashboard filters approved as: r.status === 'APPROVED' || r.status === 'APPLIED'
     const mockRequests: ChangeRequest[] = [
       {
         id: 'cr-001',
         vendorId: '100450',
         requestType: RequestType.Address,
-        status: ChangeRequestStatus.Approved,
+        status: 'APPROVED' as ChangeRequestStatus,
         createdAt: '2024-01-15',
         updatedAt: '2024-01-15',
         items: [],
@@ -115,7 +117,7 @@ describe('Dashboard Page', () => {
         id: 'cr-002',
         vendorId: '100450',
         requestType: RequestType.BankData,
-        status: ChangeRequestStatus.Applied,
+        status: 'APPLIED' as ChangeRequestStatus,
         createdAt: '2024-01-16',
         updatedAt: '2024-01-16',
         items: [],
