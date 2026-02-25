@@ -1,5 +1,5 @@
 # Retrospectives Index
-**Last Updated**: 2026-02-05
+**Last Updated**: 2026-02-25
 **Purpose**: Organizational memory to prevent repeating mistakes and accelerate future implementations
 
 ---
@@ -313,6 +313,34 @@ if (string.IsNullOrEmpty(mockUserHeader) && context.Request.Path.StartsWithSegme
 "connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:* https://localhost:*"
 ```
 
+### 21. ✅ Bicep main.bicep Diverges from Bicep Modules (Naming + Config)
+**Issue**: `main.bicep` uses naming `vendor-mdm-*` and serverless Cosmos; modules use `mdmportal-*` and 400 RU/s provisioned. Deploying modules would create duplicate resources or fail.
+**Solution**: ✅ Always validate Bicep module compatibility before deploying. Documented in 3-way cross-validation report.
+**Impact**: Prevents accidental duplicate Azure resource creation
+**Source**: 2026-02-25 Architecture Cross-Validation
+**Applied**: ✅ docs/architecture/3-way-cross-validation-report.md (Section 1.4, 2.1, 6)
+
+### 22. ✅ Code References Non-Existent Azure Resources (MdmCore DB, 4 Queues)
+**Issue**: `CosmosRepository` targets `MdmCore` database (not deployed), and `ServiceBusService` sends to 5 queues (only 1 exists). These will throw in Connected mode.
+**Solution**: ✅ Always cross-validate code connection targets against live Azure before declaring "deployment ready".
+**Prevention**: Run `az resource list` + grep code for database/queue names before merging to main.
+**Source**: 2026-02-25 Architecture Cross-Validation
+**Applied**: ✅ docs/architecture/3-way-cross-validation-report.md (Sections 1.1, 3.1) — P0 items to fix
+
+### 23. ✅ Health Endpoint Path Mismatch Breaks CI/CD Verification
+**Issue**: CI/CD workflows test `/api/health` but code maps health checks to `/health/live`, `/health/ready`, `/health/startup`. Post-deployment checks always 404.
+**Solution**: ✅ Health endpoint paths must be consistent across code, CI/CD, and architecture standards.
+**Prevention**: After adding/changing health endpoints, grep ALL workflow YAML files for the old path.
+**Source**: 2026-02-25 Architecture Cross-Validation
+**Applied**: ✅ docs/architecture/3-way-cross-validation-report.md (Section 6) — P0 item to fix
+
+### 24. ✅ 3-Way Cross-Validation Method for Architecture Audits
+**Pattern**: Query Azure CLI (`az resource list`), grep codebase (connection strings, container names, queue names), read Bicep templates, and compare against architecture docs/golden rules.
+**Value**: Found 3 critical, 4 warning, 3 info discrepancies in a single pass.
+**Tool**: `az resource list --resource-group rg-vendor-mdm-dev -o table` + targeted service queries.
+**Source**: 2026-02-25 Architecture Cross-Validation
+**Applied**: ✅ Documented as reusable method in docs/architecture/3-way-cross-validation-report.md
+
 ---
 
 ## 📋 Pending Brain Rule Updates
@@ -445,15 +473,45 @@ if (string.IsNullOrEmpty(mockUserHeader) && context.Request.Path.StartsWithSegme
 
 ---
 
+### 2026-02-25: Architecture Cross-Validation & Overview Page
+**Branch**: `feature/fix-auth-email`
+**Commit**: `f4b5bfc`
+**Status**: ✅ Completed, pushed to remote
+**Key Learnings**:
+- Bicep modules and main.bicep can have incompatible naming/config
+- Code references resources that don't exist in Azure (MdmCore, 4 queues)
+- Health endpoint paths must be consistent across code + CI/CD + standards
+- 3-way cross-validation (Azure CLI + Code + Bicep + Rules) catches gaps fast
+- UNESCO SAP Brain DS patterns (StatsCard, color-coded cards) transfer well to MDM portal
+
+**Issues Found**:
+- ❌ P0: Cosmos `MdmCore` database not deployed (5 entity services will fail)
+- ❌ P0: 4 of 5 Service Bus queues missing
+- ❌ P0: CI/CD tests `/api/health` but code maps `/health/*`
+- ⚠️ P1: Azure Functions not deployed (3 in code, 0 in Azure)
+- ⚠️ P1: Cosmos partition key casing mismatch
+- ⚠️ P1: Frontend 7 roles vs backend 4 policies
+
+**Deliverables**:
+- Architecture brief (validated against 9 live Azure resources)
+- 3-way cross-validation report (10 discrepancies documented)
+- ArchitectureOverview admin page (4 tabs, UNESCO SAP Brain DS)
+- Route + sidebar navigation registered
+
+**Time**: ~1 session
+**Grade**: A (comprehensive audit, actionable findings)
+
+---
+
 ## 📈 Statistics
 
 | Metric | Value |
 |--------|-------|
-| Total Retrospectives | 5 |
-| Critical Learnings | 21 |
-| Bugs Prevented | 8 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket, **pointer file modification**) |
-| Time Saved (estimated) | 105 min per future implementation |
-| Brain Rules Applied | 21 updates |
+| Total Retrospectives | 6 |
+| Critical Learnings | 25 |
+| Bugs Prevented | 11 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket, pointer file modification, **MdmCore DB missing**, **queue name mismatch**, **health endpoint 404**) |
+| Time Saved (estimated) | 135 min per future implementation |
+| Brain Rules Applied | 25 updates |
 | Brain Rules Pending | 0 |
 | Standards | 34 (6 categories) |
 
