@@ -68,13 +68,15 @@ public class ServiceBusService : IServiceBusService
 
     private string GetQueueNameForEvent(string eventType)
     {
-        // Route different events to different queues/topics
+        // Route different events to appropriate queues
+        // NOTE: Only 'invitation-created' is currently deployed in Azure.
+        // All other queues must be deployed via Bicep before enabling.
         return eventType switch
         {
-            "invitation-created" => "invitation-emails",
-            "vendor-application-submitted" => "vendor-changes",
-            "vendor-change-request" => "vendor-changes",
-            _ => "vendor-changes" // Default queue
+            "invitation-created" or "InvitationCreated" => "invitation-created",
+            "vendor-application-submitted" => "invitation-created", // TODO: Deploy 'vendor-applications' queue
+            "vendor-change-request" => "invitation-created", // TODO: Deploy 'vendor-changes' queue
+            _ => "invitation-created" // Default to the only deployed queue
         };
     }
 

@@ -328,10 +328,6 @@ public class InvitationController : ControllerBase
             attributesDict["VendorType"] = invitation.VendorType;
             attributesDict["AccountGroup"] = invitation.AccountGroup;
             
-            attributesDict["SanctionsScore"] = screeningResult.OverallRisk;
-            attributesDict["VendorType"] = invitation.VendorType;
-            attributesDict["AccountGroup"] = invitation.AccountGroup;
-            
             // Merge internal attributes from Invitation (Currency, SapLanguage) if not already present
             if (!string.IsNullOrEmpty(invitation.Attributes))
             {

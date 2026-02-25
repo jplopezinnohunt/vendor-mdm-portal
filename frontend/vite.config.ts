@@ -14,9 +14,15 @@ export default defineConfig(({ mode }) => {
       },
       proxy: {
         '/api': {
-          target: 'http://127.0.0.1:5001', // Backend API port
+          target: 'http://127.0.0.1:5001',
           changeOrigin: true,
-          secure: false, // Allow self-signed certs for local dev
+          secure: false,
+        },
+        '/hubs': {
+          target: 'http://127.0.0.1:5001',
+          changeOrigin: true,
+          secure: false,
+          ws: true, // Enable WebSocket proxying for SignalR
         }
       }
     },

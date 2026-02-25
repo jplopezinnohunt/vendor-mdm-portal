@@ -13,7 +13,7 @@ public class CosmosRepository : ICosmosRepository
 
     public CosmosRepository(CosmosClient cosmosClient)
     {
-        var database = cosmosClient.GetDatabase("MdmCore");
+        var database = cosmosClient.GetDatabase("VendorMdm");
         _changeRequestContainer = database.GetContainer("ChangeRequestData");
         _domainEventsContainer = database.GetContainer("DomainEvents");
         _auditLogsContainer = database.GetContainer("AuditLogs");

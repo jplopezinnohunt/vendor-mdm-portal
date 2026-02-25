@@ -44,9 +44,9 @@ public class ChangeRequestController : ControllerBase
 
     /// <summary>
     /// Internal/Debug: Direct access to Change Request entity.
-    /// Route: GET /api/vendor/changerequest/{id}
+    /// Route: GET /api/changerequest/{id}
     /// </summary>
-    [HttpGet("changerequest/{id}")]
+    [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetChangeRequest(Guid id)
     {
         var result = await _repository.GetRequestAsync(id);
@@ -56,7 +56,7 @@ public class ChangeRequestController : ControllerBase
         return Ok(result.Value);
     }
 
-    [HttpPost("changerequest/{id}/approve")]
+    [HttpPost("{id:guid}/approve")]
     public async Task<IActionResult> ApproveChangeRequest(Guid id)
     {
         var result = await _repository.ApproveRequestAsync(id);
@@ -74,9 +74,9 @@ public class ChangeRequestController : ControllerBase
 
     /// <summary>
     /// Read API: Retrieves current vendor master data (SAP) + Overlay.
-    /// Route: GET /api/vendor/{id}
+    /// Route: GET /api/changerequest/vendor/{id}
     /// </summary>
-    [HttpGet("{id}")]
+    [HttpGet("vendor/{id}")]
     public async Task<IActionResult> GetEffectiveVendorState(string id)
     {
         // Using 'id' which could be a UUID for new vendors or SAP ID for existing.

@@ -335,11 +335,23 @@ What are you implementing?
 ## 5. Build & Process Hygiene
 - **Clean Sweep Protocol**: Before builds or migrations, execute `pkill -f dotnet` and clean `bin/obj` artifacts to prevent Exit Code 143/134.
 - **Interface Integrity**: When changing an interface, update ALL implementations (Mock, Real, Simulation, Test) in one atomic turn.
+- **DI Validation**: `dotnet build` does NOT validate DI. You MUST run `dotnet run` after any DI registration change. Build succeeds but app crashes at startup if services are unresolvable.
+  ```
+  ❌ dotnet build (passes) → dotnet run (CRASH: Unable to resolve service)
+  ✅ dotnet build (passes) → dotnet run (starts) → curl /api/health (200 OK)
+  ```
+  **Rationale**: DI validation only runs at `BuildServiceProvider()` during startup, not at compile time. Learned from CosmosRepository incident (2026-02-25).
+- **Concrete vs Interface DI**: When changing `AddTransient<ConcreteType>()` to `AddScoped<IInterface, ConcreteType>()`, ALWAYS grep for services that inject the concrete type directly. Both registrations may be needed:
+  ```csharp
+  builder.Services.AddScoped<ICosmosRepository, CosmosRepository>(); // Interface
+  builder.Services.AddScoped<CosmosRepository>(); // Concrete (if other services inject directly)
+  ```
 - **Duplicate Type Check**: Before creating new classes/constants, ALWAYS search for existing definitions:
   ```bash
   grep -r "class TypeName\|static class TypeName" backend/
   ```
   **Rationale**: Prevents CS0101 duplicate type errors (learned from DocumentStatus incident).
+- **Route Ambiguity Check**: `[Route("api/[controller]")]` on `HealthController` already resolves to `api/health`. Adding `[Route("api/health")]` causes `AmbiguousMatchException` at runtime. The `[controller]` token = lowercase class name minus "Controller" suffix.
 - **Hygiene**: Pinned dependencies, `no-any` TypeScript, mandatory verification scripts with auth headers.
 - **Observability**: `traceparent` propagation + `TraceId` UI overlays.
 - **Simulation**: [SIMULATION MODE] logs for all external mocks.
@@ -414,6 +426,13 @@ public class VendorAuthAdapter
 -   **CSP for WebSockets (Dev)**: `connect-src` MUST include `ws://localhost:* wss://localhost:*` for SignalR in development.
 -   **WebSocket Auth Pattern**: WebSockets CANNOT send custom HTTP headers. Use query string for mock auth (`?mockUser=Role`), use `accessTokenFactory` for real JWT tokens.
 -   **Backend WebSocket Auth**: Middleware MUST check BOTH `X-Mock-User` header AND `?mockUser` query param for hub paths.
+-   **SignalR Dev Proxy**: In development, route SignalR through Vite proxy (`/hubs` → backend) instead of direct cross-origin connections. This avoids CORS issues entirely. ASP.NET CORS middleware does NOT reliably add headers to SignalR negotiate endpoint even with `RequireCors()`.
+    ```typescript
+    // vite.config.ts - proxy SignalR hub
+    '/hubs': { target: 'http://127.0.0.1:5001', changeOrigin: true, ws: true }
+    // SignalRContext.tsx - use relative URL (empty base = same origin via proxy)
+    const apiBaseUrl = import.meta.env.VITE_API_URL || '';
+    ```
 -   **CORS Strictness**: Production CORS MUST be restricted to the specific `App:BaseUrl`. NO Localhost allowed in Prod.
 -   **Rate Limiting**: All Public (`AllowAnonymous`) endpoints MUST have IP-based Rate Limiting (5 req/min).
 -   **Environment Detection**: NEVER use `env.IsStaging()` - it doesn't exist. Use `env.EnvironmentName == "Staging"`:

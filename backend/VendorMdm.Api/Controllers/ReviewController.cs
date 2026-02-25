@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using VendorMdm.Api.Data;
+using VendorMdm.Shared.Constants;
 using VendorMdm.Shared.Models;
 using VendorMdm.Api.Services;
 using System.Text.Json;
@@ -44,9 +45,10 @@ public class ReviewController : ControllerBase
 
             _logger.LogInformation("GetPendingReviews called by {Email} with roles: {Roles}", userEmail, string.Join(", ", userRoles));
 
-            // Fetch applications with "PendingReview" status
+            // Fetch applications with Submitted or PendingReview status (both are reviewable)
+            var reviewableStatuses = new[] { ApplicationStatus.Submitted, ApplicationStatus.PendingReview };
             var query = _context.VendorApplications
-                .Where(a => a.Status == "PendingReview");
+                .Where(a => reviewableStatuses.Contains(a.Status));
 
             // If user is NOT an Approver, filter to show only their own submissions
             if (!isApprover && !string.IsNullOrEmpty(userEmail))

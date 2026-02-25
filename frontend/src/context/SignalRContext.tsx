@@ -74,9 +74,9 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
   // Mock users have id='mock-user-id' (see AuthContext.mockLogin)
   const isMockUser = user?.id === 'mock-user-id' || user?.id?.startsWith('mock-');
 
-  // Get the base URL from environment or default, with mock user support
+  // Get the hub URL - use relative path (Vite proxy handles routing) or explicit URL
   const getFullUrl = useCallback(() => {
-    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const apiBaseUrl = import.meta.env.VITE_API_URL || '';
     let url = `${apiBaseUrl}${hubUrl}`;
 
     // For mock users, append mockUser query param for backend auth

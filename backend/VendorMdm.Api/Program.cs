@@ -182,8 +182,10 @@ else
     Console.WriteLine("📦 FileStorage: Using Azure Blob Service");
 } 
 // builder.Services.AddScoped<VendorMdm.Api.Services.IAuthorizationService, VendorMdm.Api.Services.AuthorizationService>(); // Legacy - Removed as file not found auth migrated
-builder.Services.AddScoped<ICosmosRepository, CosmosRepository>(); // Helper
-builder.Services.AddTransient<CosmosRepository>(); 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<ICosmosRepository, CosmosRepository>();
+builder.Services.AddScoped<CosmosRepository>(); // Concrete registration: several services inject CosmosRepository directly
 
 // Canonical / Patterns
 builder.Services.AddScoped<IChangeRequestRepository, ChangeRequestRepository>();
@@ -252,8 +254,13 @@ else
 
 // Additional Cosmos Client
 builder.Services.AddSingleton<CosmosClient>(sp => {
-    if (useLocalEmulators) return new CosmosClient("AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==");
-    if (cosmosConnection.Contains("AccountKey")) return new CosmosClient(cosmosConnection);
+    if (useLocalEmulators)
+    {
+        var emulatorKey = builder.Configuration["CosmosEmulator:AccountKey"] ?? "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+        var emulatorEndpoint = builder.Configuration["CosmosEmulator:Endpoint"] ?? "https://localhost:8081/";
+        return new CosmosClient($"AccountEndpoint={emulatorEndpoint};AccountKey={emulatorKey}");
+    }
+    if (!string.IsNullOrEmpty(cosmosConnection) && cosmosConnection.Contains("AccountKey")) return new CosmosClient(cosmosConnection);
     return new CosmosClient(cosmosConnection, new DefaultAzureCredential());
 });
 
@@ -282,12 +289,15 @@ string[] GetAllowedOrigins(IConfiguration config, IWebHostEnvironment env)
     }
     else
     {
-        // Development: localhost + any configured frontend URLs
+        // Development: localhost (range of common dev ports) + configured frontend URLs
         return new[]
         {
             "http://localhost:3000",
             "http://localhost:3001",
+            "http://localhost:3002",
+            "http://localhost:3003",
             "http://localhost:5173",
+            "http://localhost:5174",
             "https://victorious-water-095da360f.5.azurestaticapps.net",
             "https://purple-moss-066604e03.4.azurestaticapps.net",
             "https://stvendormdmdev.blob.core.windows.net"
@@ -321,7 +331,7 @@ builder.Services.AddAuthentication(options =>
 .AddCookie("Cookies", options =>
 {
     options.Cookie.Name = "VendorMdmAuth";
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(120); // 2h per Golden Rule 7.A
     options.SlidingExpiration = true;
     options.Events.OnRedirectToLogin = context =>
     {
@@ -415,7 +425,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 // SignalR Hub endpoint (Event-Driven Architecture)
-app.MapHub<EventHub>("/hubs/events");
+app.MapHub<EventHub>("/hubs/events").RequireCors("AllowFrontend");
 
 app.MapHealthChecks("/health/live");
 app.MapHealthChecks("/health/ready");

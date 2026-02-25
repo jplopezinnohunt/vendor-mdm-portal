@@ -90,11 +90,14 @@ Input.displayName = 'Input';
 // Status Badge
 export const StatusBadge: React.FC<{ status: ChangeRequestStatus | string }> = ({ status }) => {
   const styles: Record<string, string> = {
-    [ChangeRequestStatus.New]: 'bg-blue-100 text-blue-800',
-    [ChangeRequestStatus.InReview]: 'bg-yellow-100 text-yellow-800',
+    [ChangeRequestStatus.Draft]: 'bg-blue-100 text-blue-800',
+    [ChangeRequestStatus.Submitted]: 'bg-blue-100 text-blue-800',
+    [ChangeRequestStatus.UnderReview]: 'bg-yellow-100 text-yellow-800',
+    [ChangeRequestStatus.InformationRequested]: 'bg-orange-100 text-orange-800',
     [ChangeRequestStatus.Approved]: 'bg-green-100 text-green-800',
     [ChangeRequestStatus.Applied]: 'bg-green-100 text-green-800',
     [ChangeRequestStatus.Rejected]: 'bg-red-100 text-red-800',
+    [ChangeRequestStatus.Cancelled]: 'bg-gray-100 text-gray-800',
     [ChangeRequestStatus.Error]: 'bg-red-100 text-red-800',
   };
 
