@@ -43,7 +43,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci || (sleep 15 && npm ci)
         working-directory: frontend
 
       - name: Generate Version
@@ -92,7 +92,7 @@ jobs:
       - name: Check for conflict markers
         run: |
           echo "Checking for git conflict markers..."
-          if grep -rn "<<<<<<\|>>>>>>\|======" --include="*.cs" --include="*.ts" --include="*.tsx" . 2>/dev/null; then
+          if grep -rn "^<<<<<<< \|^>>>>>>> \|^=======$\|^======= " --include="*.cs" --include="*.ts" --include="*.tsx" . 2>/dev/null; then
             echo "❌ Found git conflict markers in source files"
             exit 1
           fi
