@@ -10,6 +10,7 @@ import {
     Activity,
     GitBranch,
     Calendar,
+    Hexagon,
 } from 'lucide-react';
 import {
     Sidebar,
@@ -51,6 +52,7 @@ const ADMIN_NAV = [
     { name: 'User Management', href: '/admin/users', icon: UserPlus },
     { name: 'System Status', href: '/admin/system-status', icon: Activity },
     { name: 'Workflow Rules', href: '/admin/rules', icon: Settings },
+    { name: 'Architecture', href: '/admin/architecture', icon: Hexagon },
     { name: 'Audit Logs', href: '/admin/audit', icon: ShieldAlert },
     { name: 'Branching Strategy', href: '/admin/strategy', icon: GitBranch },
 ];

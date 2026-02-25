@@ -28,6 +28,7 @@ import { SystemStatus } from './pages/admin/SystemStatus';
 import { ViewVendor } from './pages/ViewVendor';
 import BranchingStrategy from './pages/BranchingStrategy';
 import { UserManagement } from './pages/admin/UserManagement';
+import { ArchitectureOverview } from './pages/admin/ArchitectureOverview';
 import { UserAccount } from './pages/UserAccount';
 import { EventDashboard } from './pages/EventDashboard';
 import { EventDetail } from './pages/EventDetail';
@@ -192,6 +193,11 @@ const App: React.FC = () => {
             <Route path="admin/users" element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <UserManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/architecture" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <ArchitectureOverview />
               </ProtectedRoute>
             } />
 
