@@ -68,18 +68,31 @@ jobs:
         name: backend-api
         path: ./publish
 
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
     - name: Deploy to Azure App Service (Dev)
       uses: azure/webapps-deploy@v3
       with:
-        app-name: ${{ vars.AZURE_APP_SERVICE_NAME || 'app-vendor-mdm-api-dev' }}
-        publish-profile: ${{ secrets.AZURE_APP_SERVICE_PUBLISH_PROFILE_DEV }}
+        app-name: ${{ vars.AZURE_APP_SERVICE_NAME_DEV || 'app-vendor-mdm-api-dev' }}
         package: ./publish
 
     - name: Health check
       run: |
+        APP_URL="https://${{ vars.AZURE_APP_SERVICE_NAME_DEV || 'app-vendor-mdm-api-dev' }}.azurewebsites.net"
         echo "Waiting for deployment to stabilize..."
-        sleep 30
-        curl -f https://app-vendor-mdm-api-dev.azurewebsites.net/api/health || echo "Health check pending..."
+        for i in 1 2 3 4 5; do
+          sleep 15
+          echo "Health check attempt $i..."
+          if curl -sf "$APP_URL/api/health" -o /dev/null; then
+            echo "Health check passed on attempt $i"
+            exit 0
+          fi
+        done
+        echo "Health check did not pass after 5 attempts (deployment may still be starting)"
+        exit 1
 
   deploy-prod:
     needs: build
@@ -96,15 +109,28 @@ jobs:
         name: backend-api
         path: ./publish
 
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
     - name: Deploy to Azure App Service (Prod)
       uses: azure/webapps-deploy@v3
       with:
-        app-name: ${{ vars.AZURE_APP_SERVICE_NAME || 'app-vendor-mdm-api-prod' }}
-        publish-profile: ${{ secrets.AZURE_APP_SERVICE_PUBLISH_PROFILE_PROD }}
+        app-name: ${{ vars.AZURE_APP_SERVICE_NAME_PROD || 'app-vendor-mdm-api-prod' }}
         package: ./publish
 
     - name: Health check
       run: |
+        APP_URL="https://${{ vars.AZURE_APP_SERVICE_NAME_PROD || 'app-vendor-mdm-api-prod' }}.azurewebsites.net"
         echo "Waiting for deployment to stabilize..."
-        sleep 30
-        curl -f https://app-vendor-mdm-api-prod.azurewebsites.net/api/health || echo "Health check pending..."
+        for i in 1 2 3 4 5; do
+          sleep 15
+          echo "Health check attempt $i..."
+          if curl -sf "$APP_URL/api/health" -o /dev/null; then
+            echo "Health check passed on attempt $i"
+            exit 0
+          fi
+        done
+        echo "Health check did not pass after 5 attempts (deployment may still be starting)"
+        exit 1
