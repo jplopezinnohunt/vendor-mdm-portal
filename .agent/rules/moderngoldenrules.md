@@ -438,6 +438,31 @@ public class VendorAuthAdapter
     // SignalRContext.tsx - use relative URL (empty base = same origin via proxy)
     const apiBaseUrl = import.meta.env.VITE_API_URL || '';
     ```
+-   **SignalR useEffect Stability**: The `useEffect` managing SignalR connections MUST use stable dependencies. Object references (`user`) and function references (`getToken`) change on every React render, causing the effect to tear down and recreate connections repeatedly ("stopped during negotiation" error). Use `useRef` for functions and primitive values for object properties:
+    ```typescript
+    // ❌ BROKEN: Object/function refs trigger reconnection on every render
+    useEffect(() => { ... }, [getToken, getFullUrl, user]);
+
+    // ✅ CORRECT: Stable refs + primitives
+    const getTokenRef = useRef(getToken);
+    getTokenRef.current = getToken;
+    const userRole = user?.role;
+    const userId = user?.id;
+    useEffect(() => { ... }, [isAuthenticated, isLoading, isMockUser, userRole, userId]);
+    ```
+    Additionally, use a `cancelled` flag in async effects to prevent stale operations from completing after cleanup:
+    ```typescript
+    useEffect(() => {
+      let cancelled = false;
+      const start = async () => {
+        if (cancelled) return;
+        await connection.start();
+        if (cancelled) { connection.stop(); return; }
+      };
+      start();
+      return () => { cancelled = true; connection.stop(); };
+    }, [/* stable deps */]);
+    ```
 -   **CORS Strictness**: Production CORS MUST be restricted to the specific `App:BaseUrl`. NO Localhost allowed in Prod.
 -   **Rate Limiting**: All Public (`AllowAnonymous`) endpoints MUST have IP-based Rate Limiting (5 req/min).
 -   **Environment Detection**: NEVER use `env.IsStaging()` - it doesn't exist. Use `env.EnvironmentName == "Staging"`:

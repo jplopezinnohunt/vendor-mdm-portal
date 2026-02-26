@@ -1,5 +1,5 @@
 # Retrospectives Index
-**Last Updated**: 2026-02-25
+**Last Updated**: 2026-02-26
 **Purpose**: Organizational memory to prevent repeating mistakes and accelerate future implementations
 
 ---
@@ -413,6 +413,26 @@ const timeout = setTimeout(() => {
 **Source**: 2026-02-25 Invitation Flow E2E Audit
 **Applied**: ✅ InvitationController.cs lines 325-329
 
+### 34. ✅ React useEffect with Object/Function Deps = Connection Thrashing
+**Issue**: SignalR `useEffect` had `user` object and `getToken`/`getFullUrl` functions in dependency array. These create new references every render, causing the effect to teardown/recreate the connection repeatedly.
+**Error**: "The connection was stopped during negotiation" (cleanup kills in-progress connection)
+**Root Cause**: React `useEffect` compares deps by reference. Objects/functions are new references on every render.
+**Solution**: ✅ Use `useRef` for callback functions, extract primitive values (`user?.role`, `user?.id`) from objects, add `cancelled` flag for async cleanup safety.
+**Prevention**: NEVER put objects or unstable functions directly in `useEffect` deps when you only care about specific properties.
+**Source**: 2026-02-26 SignalR Race Condition Fix
+**Applied**: ✅ moderngoldenrules.md Section 7.B (SignalR useEffect Stability)
+
+```typescript
+// ❌ BROKEN: Causes N reconnections per render cycle
+useEffect(() => { ... }, [getToken, getFullUrl, user]);
+
+// ✅ CORRECT: Stable deps, no unnecessary teardowns
+const getTokenRef = useRef(getToken);
+getTokenRef.current = getToken;
+const userRole = user?.role;
+useEffect(() => { ... }, [isAuthenticated, userRole, userId]);
+```
+
 ### 28. ✅ SignalR in Dev: Route Through Vite Proxy, NOT Direct Cross-Origin
 **Issue**: SignalR "Failed to fetch" on negotiate. CORS headers missing despite `UseCors()` + `RequireCors()`.
 **Root Cause**: ASP.NET CORS middleware does NOT reliably add headers to SignalR negotiate endpoint.
@@ -440,6 +460,9 @@ const timeout = setTimeout(() => {
 - [x] **Section 5**: Added Concrete vs Interface DI pattern
 - [x] **Section 5**: Added Route Ambiguity Check rule
 - [x] **Section 7.B**: Added SignalR Dev Proxy pattern
+
+**Applied** (2026-02-26):
+- [x] **Section 7.B**: Added SignalR useEffect Stability pattern (useRef + primitives + cancelled flag)
 
 **Pending**: None (all learnings applied per Section 11 rule)
 
@@ -647,10 +670,10 @@ const timeout = setTimeout(() => {
 | Metric | Value |
 |--------|-------|
 | Total Retrospectives | 8 |
-| Critical Learnings | 34 |
-| Bugs Prevented | 20 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket, pointer file modification, MdmCore DB missing, queue name mismatch, health endpoint 404, DI runtime crash, route ambiguity, SignalR CORS, session lifetime violation, **double URL concat**, **email timeout cold-start**, **fallback default drift**, **async+timeout race condition**, **duplicate dict assignments**) |
-| Time Saved (estimated) | 190 min per future implementation |
-| Brain Rules Applied | 34 updates |
+| Critical Learnings | 35 |
+| Bugs Prevented | 21 (IsStaging, duplicate type, SQLite types, doc duplication, CI git safe.directory, SignalR WebSocket auth, CSP WebSocket, pointer file modification, MdmCore DB missing, queue name mismatch, health endpoint 404, DI runtime crash, route ambiguity, SignalR CORS, session lifetime violation, **double URL concat**, **email timeout cold-start**, **fallback default drift**, **async+timeout race condition**, **duplicate dict assignments**, **SignalR useEffect race condition**) |
+| Time Saved (estimated) | 200 min per future implementation |
+| Brain Rules Applied | 35 updates |
 | Brain Rules Pending | 0 |
 | Standards | 34 (6 categories) |
 
