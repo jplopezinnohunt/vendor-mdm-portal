@@ -27,12 +27,12 @@ All deployed environments MUST have explicit, verified alignment between fronten
 
 ## Origin Registry (Source of Truth)
 
-| Environment | Frontend (SWA) | Backend (App Service) | ASPNETCORE_ENVIRONMENT |
-|-------------|----------------|-----------------------|------------------------|
-| **Development** | `https://thankful-field-0258f8110.3.azurestaticapps.net` | `https://app-vendor-mdm-api-dev.azurewebsites.net` | `Development` |
-| **Staging** | `https://purple-moss-066604e03.4.azurestaticapps.net` | TBD | `Staging` |
-| **Production** | `https://victorious-water-095da360f.5.azurestaticapps.net` | `https://app-vendor-mdm-api-prod.azurewebsites.net` | `Production` |
-| **Local** | `http://localhost:3000` | `http://localhost:5001` | `Development` |
+| Environment | Frontend (SWA) | Backend (App Service) | Resource Group | SKU | ASPNETCORE_ENVIRONMENT |
+|-------------|----------------|-----------------------|----------------|-----|------------------------|
+| **Development** | `https://thankful-field-0258f8110.3.azurestaticapps.net` | `https://app-vendor-mdm-api-dev.azurewebsites.net` | `rg-vendor-mdm-dev` | B1 | `Development` |
+| **Staging** | `https://purple-moss-066604e03.4.azurestaticapps.net` | TBD | TBD | B1+ | `Staging` |
+| **Production** | `https://victorious-water-095da360f.5.azurestaticapps.net` | `https://app-vendor-mdm-api-prod.azurewebsites.net` | `rg-vendor-mdm-prod` | S1+ | `Production` |
+| **Local** | `http://localhost:3000` | `http://localhost:5001` | N/A | N/A | `Development` |
 
 ---
 
@@ -135,6 +135,17 @@ VITE_API_URL=https://app-vendor-mdm-api-dev.azurewebsites.net              # Wit
 **Symptom**: `Deployment Failed, Error: Site Disabled (CODE: 403)`
 **Cause**: Azure App Service is stopped/disabled (cost management, manual stop, or Azure auto-stop on free/dev tiers)
 **Fix**: Workflow MUST check App Service state and start it before deploying. Use `az webapp show --query "state"` and `az webapp start` if not Running.
+
+### FM-5: QuotaExceeded on Free (F1) tier
+**Symptom**: App Service state is `QuotaExceeded`, `az webapp start` succeeds but deploy still fails with `Site Disabled (CODE: 403)`
+**Cause**: Azure Free (F1) tier has a daily CPU quota (60 min/day). Once exhausted, the app stops and cannot be restarted until quota resets at UTC midnight.
+**Fix**: Scale the App Service Plan to Basic (B1) or higher: `az appservice plan update --name <plan> --resource-group <rg> --sku B1`
+**Prevention**: Dev environments SHOULD use B1 tier minimum. F1 is insufficient for any real deployment.
+
+### FM-6: ResourceGroupNotFound when starting App Service
+**Symptom**: `Resource group 'rg-vendor-mdm-dev-v3' could not be found`
+**Cause**: Hardcoded resource group name in workflow doesn't match actual Azure resource group
+**Fix**: Auto-discover the resource group using `az webapp list --query "[?name=='$APP_NAME'].resourceGroup"` instead of hardcoding it
 
 ---
 
