@@ -73,6 +73,20 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Ensure App Service is running (Dev)
+      run: |
+        APP_NAME="${{ vars.AZURE_APP_SERVICE_NAME_DEV || 'app-vendor-mdm-api-dev' }}"
+        RG="${{ vars.AZURE_RESOURCE_GROUP_DEV || 'rg-vendor-mdm-dev-v3' }}"
+        echo "Checking App Service state..."
+        STATE=$(az webapp show --name "$APP_NAME" --resource-group "$RG" --query "state" -o tsv 2>/dev/null || echo "Unknown")
+        echo "App Service state: $STATE"
+        if [ "$STATE" != "Running" ]; then
+          echo "Starting App Service..."
+          az webapp start --name "$APP_NAME" --resource-group "$RG"
+          echo "Waiting for App Service to start..."
+          sleep 15
+        fi
+
     - name: Configure App Settings (Dev)
       uses: azure/appservice-settings@v1
       with:
@@ -152,6 +166,20 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Ensure App Service is running (Prod)
+      run: |
+        APP_NAME="${{ vars.AZURE_APP_SERVICE_NAME_PROD || 'app-vendor-mdm-api-prod' }}"
+        RG="${{ vars.AZURE_RESOURCE_GROUP_PROD || 'rg-vendor-mdm-prod' }}"
+        echo "Checking App Service state..."
+        STATE=$(az webapp show --name "$APP_NAME" --resource-group "$RG" --query "state" -o tsv 2>/dev/null || echo "Unknown")
+        echo "App Service state: $STATE"
+        if [ "$STATE" != "Running" ]; then
+          echo "Starting App Service..."
+          az webapp start --name "$APP_NAME" --resource-group "$RG"
+          echo "Waiting for App Service to start..."
+          sleep 15
+        fi
 
     - name: Deploy to Azure App Service (Prod)
       uses: azure/webapps-deploy@v3
