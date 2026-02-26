@@ -30,6 +30,7 @@ import BranchingStrategy from './pages/BranchingStrategy';
 import { UserManagement } from './pages/admin/UserManagement';
 import { ArchitectureOverview } from './pages/admin/ArchitectureOverview';
 import { InfrastructureCosts } from './pages/admin/InfrastructureCosts';
+import { IntegrationHandoff } from './pages/admin/IntegrationHandoff';
 import { UserAccount } from './pages/UserAccount';
 import { EventDashboard } from './pages/EventDashboard';
 import { EventDetail } from './pages/EventDetail';
@@ -204,6 +205,11 @@ const App: React.FC = () => {
             <Route path="admin/costs" element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <InfrastructureCosts />
+              </ProtectedRoute>
+            } />
+            <Route path="admin/integration" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <IntegrationHandoff />
               </ProtectedRoute>
             } />
 

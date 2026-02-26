@@ -12,6 +12,7 @@ import {
     Calendar,
     Hexagon,
     DollarSign,
+    Share2,
 } from 'lucide-react';
 import {
     Sidebar,
@@ -55,6 +56,7 @@ const ADMIN_NAV = [
     { name: 'Workflow Rules', href: '/admin/rules', icon: Settings },
     { name: 'Architecture', href: '/admin/architecture', icon: Hexagon },
     { name: 'Infrastructure Costs', href: '/admin/costs', icon: DollarSign },
+    { name: 'Drupal Integration', href: '/admin/integration', icon: Share2 },
     { name: 'Audit Logs', href: '/admin/audit', icon: ShieldAlert },
     { name: 'Branching Strategy', href: '/admin/strategy', icon: GitBranch },
 ];
