@@ -17,6 +17,9 @@ on:
       - 'frontend/**'
       - '.github/workflows/azure-static-web-apps.yml'
 
+env:
+  SWA_BASE_URL: ${{ vars.SWA_BASE_URL || 'https://thankful-field-0258f8110.3.azurestaticapps.net' }}
+
 jobs:
   build_and_deploy_job:
     # Azure Static Web Apps deploy via GitHub Actions (by design)
@@ -39,6 +42,23 @@ jobs:
           app_location: "/frontend"
           api_location: ""
           output_location: "dist"
+
+      - name: Verify deployment
+        run: |
+          SITE_URL="${{ env.SWA_BASE_URL }}"
+          echo "Verifying deployment at $SITE_URL ..."
+          for i in 1 2 3 4 5; do
+            sleep 10
+            echo "Verification attempt $i..."
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$SITE_URL")
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "Deployment verified: HTTP $HTTP_STATUS"
+              exit 0
+            fi
+            echo "Got HTTP $HTTP_STATUS, retrying..."
+          done
+          echo "Deployment verification failed after 5 attempts"
+          exit 1
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
