@@ -261,7 +261,10 @@ export const InviteVendorForm: React.FC = () => {
 
     const copyInvitationLink = () => {
         if (!invitationData) return;
-        const fullLink = `${window.location.origin}${invitationData.invitationLink}`;
+        // invitationLink from backend is already a full URL (includes BaseUrl)
+        // Only prepend origin if it's a relative path (starts with /)
+        const link = invitationData.invitationLink;
+        const fullLink = link.startsWith('http') ? link : `${window.location.origin}${link}`;
         navigator.clipboard.writeText(fullLink);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -276,7 +279,8 @@ export const InviteVendorForm: React.FC = () => {
     };
 
     if (submitted && invitationData) {
-        const fullLink = `${window.location.origin}${invitationData.invitationLink}`;
+        const link = invitationData.invitationLink;
+        const fullLink = link.startsWith('http') ? link : `${window.location.origin}${link}`;
         const expiresAt = new Date(invitationData.expiresAt).toLocaleString();
 
         return (

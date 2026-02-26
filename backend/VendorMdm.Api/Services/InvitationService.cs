@@ -228,12 +228,17 @@ public class InvitationService : IInvitationService
                 ("Error", emailError ?? "Unknown"));
         }
 
+        var baseUrl = _configuration["App:BaseUrl"] ?? "http://localhost:3000";
+        var invitationLink = $"{baseUrl}/invitation/register/{invitation.InvitationToken}";
+
         return Result.Ok(new CreateInvitationResponse
         {
             InvitationId = invitation.Id,
             InvitationToken = invitation.InvitationToken,
+            InvitationLink = invitationLink,
             ExpiresAt = invitation.ExpiresAt,
-            EmailSent = emailSuccess
+            EmailSent = emailSuccess,
+            EmailError = emailSuccess ? null : emailError
         });
     }
 

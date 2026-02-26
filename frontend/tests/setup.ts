@@ -1,3 +1,4 @@
+import React from 'react';
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 
@@ -165,6 +166,8 @@ Object.defineProperty(window, 'sessionStorage', {
   value: localStorageMock,
 });
 
-// Suppress console errors in tests (optional - comment out for debugging)
-// vi.spyOn(console, 'error').mockImplementation(() => {});
-// vi.spyOn(console, 'warn').mockImplementation(() => {});
+// Suppress console output in tests to prevent memory issues from verbose logging
+// Comment out these lines for debugging specific test failures
+vi.spyOn(console, 'log').mockImplementation(() => {});
+vi.spyOn(console, 'warn').mockImplementation(() => {});
+vi.spyOn(console, 'info').mockImplementation(() => {});

@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   useEffect(() => {
-    // Session expiration time in milliseconds (2 hours)
+    // Session expiration time in milliseconds (2 hours - Corporate standard per Golden Rule 7.A)
     const SESSION_EXPIRY_MS = 2 * 60 * 60 * 1000;
 
     // Check for session expiration
@@ -115,9 +115,10 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       // For now, let fetchProfile handle validity
     }
 
-    // Timeout - extended to 15 seconds to allow MSAL to complete initialization
+    // Timeout - only fires if fetchProfile hasn't resolved yet
+    let profileResolved = false;
     const timeout = setTimeout(() => {
-      if (isLoading) {
+      if (!profileResolved && isLoading) {
         console.warn('[AuthContext] Loading timeout - no auth found, redirecting to login');
         setIsLoading(false);
         setUser(null);
@@ -185,9 +186,11 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
           }
           setUser(null);
         } finally {
+          profileResolved = true;
           setIsLoading(false);
         }
       } else if (!account && inProgress === InteractionStatus.None) {
+        profileResolved = true;
         setUser(null);
         setIsLoading(false);
       }
@@ -238,7 +241,20 @@ export const AuthProvider = ({ children }: PropsWithChildren<{}>) => {
       // Redirect to login
       window.location.href = '/login';
     } else {
-      instance.logoutRedirect();
+      // Check if MSAL interaction is already in progress
+      if (inProgress !== InteractionStatus.None) {
+        console.warn('[AuthContext] MSAL interaction in progress, skipping logout redirect');
+        // Clear local state and redirect manually
+        setUser(null);
+        window.location.href = '/login';
+        return;
+      }
+      instance.logoutRedirect().catch((e) => {
+        console.error('[AuthContext] Logout redirect failed:', e);
+        // Fallback: clear state and redirect manually
+        setUser(null);
+        window.location.href = '/login';
+      });
     }
     setUser(null);
   };

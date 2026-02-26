@@ -68,47 +68,66 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
   const [connectionState, setConnectionState] = useState<ConnectionState>('Disconnected');
   const connectionRef = useRef<signalR.HubConnection | null>(null);
   const subscribersRef = useRef<Map<string, Set<(data: unknown) => void>>>(new Map());
-  const { isAuthenticated, isLoading, getToken } = useAuth();
+  const { isAuthenticated, isLoading, getToken, user } = useAuth();
 
-  // Get the base URL from environment or default, with mock user support
+  // Check if this is a mock user - derive from user object, not localStorage
+  // Mock users have id='mock-user-id' (see AuthContext.mockLogin)
+  const isMockUser = user?.id === 'mock-user-id' || user?.id?.startsWith('mock-');
+
+  // Get the hub URL - use relative path (Vite proxy handles routing) or explicit URL
   const getFullUrl = useCallback(() => {
-    const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const apiBaseUrl = import.meta.env.VITE_API_URL || '';
     let url = `${apiBaseUrl}${hubUrl}`;
 
-    // For mock users (no real token), append mockUser query param for backend auth
-    const mockUserData = localStorage.getItem('mockUser');
-    if (mockUserData) {
-      try {
-        const mockUser = JSON.parse(mockUserData);
-        if (mockUser.role) {
-          url += `?mockUser=${encodeURIComponent(mockUser.role)}`;
-        }
-      } catch {
-        // Ignore parse errors
-      }
+    // For mock users, append mockUser query param for backend auth
+    // Use the user from AuthContext (more reliable than re-reading localStorage)
+    if (isMockUser && user?.role) {
+      url += `?mockUser=${encodeURIComponent(user.role)}`;
+      console.log('[SignalR] Building URL with mock user role:', user.role);
     }
 
+    console.log('[SignalR] Full URL:', url);
     return url;
-  }, [hubUrl]);
+  }, [hubUrl, isMockUser, user?.role]);
 
   // Initialize connection only when authenticated
   useEffect(() => {
     // Don't connect if still loading auth or not authenticated
     if (isLoading || !isAuthenticated) {
-      console.log('[SignalR] Waiting for authentication...');
+      console.log('[SignalR] Waiting for authentication... isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
       return;
     }
 
-    // Check if this is a mock user (no real token available)
-    const isMockUser = !!localStorage.getItem('mockUser');
+    // For mock users, validate we have a role
+    if (isMockUser) {
+      if (!user?.role) {
+        console.error('[SignalR] Mock user detected but no role available');
+        return;
+      }
+      console.log('[SignalR] Connecting as mock user:', user.role);
+    } else {
+      console.log('[SignalR] Real user detected, will use token authentication');
+    }
+
+    const fullUrl = getFullUrl();
+
+    // Verify the URL has proper auth for mock users
+    if (isMockUser && !fullUrl.includes('mockUser=')) {
+      console.error('[SignalR] Mock user detected but URL is missing mockUser parameter');
+      console.error('[SignalR] URL:', fullUrl, 'user.role:', user?.role);
+      return;
+    }
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl(getFullUrl(), {
+      .withUrl(fullUrl, {
         withCredentials: true,
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
         // Only use accessTokenFactory for real tokens (not mock users)
         accessTokenFactory: isMockUser ? undefined : async () => {
           const token = await getToken();
+          if (!token) {
+            console.warn('[SignalR] No auth token available');
+          }
           return token || '';
         }
       })
@@ -147,12 +166,28 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
       try {
         setConnectionState('Connecting');
         await connection.start();
-        console.log('[SignalR] Connected to', getFullUrl());
+        console.log('[SignalR] Connected to', fullUrl);
         setConnectionState('Connected');
       } catch (error) {
-        console.error('[SignalR] Connection failed:', error);
+        // Extract useful error information
+        const errorMessage = error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : JSON.stringify(error);
+        console.error('[SignalR] Connection failed:', errorMessage);
+
+        // Check for auth-related failures
+        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('negotiation')) {
+          console.error('[SignalR] Authentication failed. Check that mock user is set correctly or token is valid.');
+          console.error('[SignalR] Mock user in localStorage:', localStorage.getItem('mockUser'));
+          // Don't retry on auth failures - user needs to re-login
+          setConnectionState('Disconnected');
+          return;
+        }
+
         setConnectionState('Disconnected');
-        // Retry after 5 seconds
+        // Retry after 5 seconds for transient failures
         setTimeout(startConnection, 5000);
       }
     };
@@ -166,7 +201,7 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
         connectionRef.current = null;
       }
     };
-  }, [getFullUrl, isAuthenticated, isLoading, getToken]);
+  }, [getFullUrl, isAuthenticated, isLoading, getToken, isMockUser, user]);
 
   // Subscribe to events
   const subscribe = useCallback(<T,>(eventName: string, callback: (data: T) => void) => {

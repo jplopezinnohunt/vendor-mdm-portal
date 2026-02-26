@@ -78,15 +78,15 @@ export const RequestReview: React.FC = () => {
             variant="danger" 
             onClick={() => handleDecision(ChangeRequestStatus.Rejected)}
             isLoading={processing}
-            disabled={request.status !== ChangeRequestStatus.New && request.status !== ChangeRequestStatus.InReview}
+            disabled={request.status !== ChangeRequestStatus.Submitted && request.status !== ChangeRequestStatus.UnderReview}
           >
             <XCircle className="mr-2 h-4 w-4" /> Reject
           </Button>
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => handleDecision(ChangeRequestStatus.Approved)}
             isLoading={processing}
-            disabled={request.status !== ChangeRequestStatus.New && request.status !== ChangeRequestStatus.InReview}
+            disabled={request.status !== ChangeRequestStatus.Submitted && request.status !== ChangeRequestStatus.UnderReview}
           >
             <CheckCircle className="mr-2 h-4 w-4" /> Approve
           </Button>

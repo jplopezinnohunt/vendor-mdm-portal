@@ -9,12 +9,16 @@ export enum ApplicationStatus {
 }
 
 export enum ChangeRequestStatus {
-  New = 'NEW',
-  InReview = 'IN_REVIEW',
-  Approved = 'APPROVED',
-  Rejected = 'REJECTED',
-  Applied = 'APPLIED',
-  Error = 'ERROR',
+  Draft = 'Draft',
+  Submitted = 'Submitted',
+  UnderReview = 'UnderReview',
+  InformationRequested = 'InformationRequested',
+  Approved = 'Approved',
+  Rejected = 'Rejected',
+  Cancelled = 'Cancelled',
+  Expired = 'Expired',
+  Applied = 'Applied',
+  Error = 'Error',
 }
 
 export enum RequestType {

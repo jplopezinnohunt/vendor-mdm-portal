@@ -156,6 +156,76 @@ resource cosmosContainerEvents 'Microsoft.DocumentDB/databaseAccounts/sqlDatabas
   }
 }
 
+resource cosmosContainerChangeRequests 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
+  parent: cosmosDatabase
+  name: 'ChangeRequestData'
+  properties: {
+    resource: {
+      id: 'ChangeRequestData'
+      partitionKey: {
+        paths: ['/RequestId']
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
+resource cosmosContainerAuditLogs 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
+  parent: cosmosDatabase
+  name: 'AuditLogs'
+  properties: {
+    resource: {
+      id: 'AuditLogs'
+      partitionKey: {
+        paths: ['/partitionKey']
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
+resource cosmosContainerIntegration 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
+  parent: cosmosDatabase
+  name: 'IntegrationEvents'
+  properties: {
+    resource: {
+      id: 'IntegrationEvents'
+      partitionKey: {
+        paths: ['/partitionKey']
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
+resource cosmosContainerConfig 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
+  parent: cosmosDatabase
+  name: 'Configuration'
+  properties: {
+    resource: {
+      id: 'Configuration'
+      partitionKey: {
+        paths: ['/configKey']
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
+resource cosmosContainerCanonical 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2023-11-15' = {
+  parent: cosmosDatabase
+  name: 'CanonicalArtifacts'
+  properties: {
+    resource: {
+      id: 'CanonicalArtifacts'
+      partitionKey: {
+        paths: ['/entityId']
+        kind: 'Hash'
+      }
+    }
+  }
+}
+
 // ============================================================================
 // 3. Service Bus (Basic Tier)
 // ============================================================================

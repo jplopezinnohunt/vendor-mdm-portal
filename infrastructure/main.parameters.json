@@ -1,6 +1,7 @@
 {
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
+  "_comment": "TEMPLATE FILE - Do not commit with real values. Copy to main.parameters.local.json and fill in secrets.",
   "parameters": {
     "environment": {
       "value": "dev"
@@ -12,16 +13,16 @@
       "value": "sqladmin"
     },
     "sqlAdminPassword": {
-      "value": "CHANGE_ME_SecureP@ssw0rd123!"
+      "value": "<<SET_VIA_KEYVAULT_OR_GITHUB_SECRETS>>"
     },
     "azureAdTenantId": {
-      "value": "YOUR_TENANT_ID_HERE"
+      "value": "<<SET_VIA_ENVIRONMENT_VARIABLE>>"
     },
     "azureAdClientId": {
-      "value": "YOUR_CLIENT_ID_HERE"
+      "value": "<<SET_VIA_ENVIRONMENT_VARIABLE>>"
     },
     "companyName": {
-      "value": "Your Company"
+      "value": "<<YOUR_COMPANY_NAME>>"
     }
   }
 }

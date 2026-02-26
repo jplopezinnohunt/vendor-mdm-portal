@@ -10,10 +10,15 @@ export const api = axios.create({
   },
 });
 
-// Interceptor to add Auth Token (Simulated for now, would use MSAL in prod)
-// Interceptor to add Auth Token (Simulated for now, would use MSAL in prod)
+// Interceptor to add Auth Token
 api.interceptors.request.use((config) => {
-  // Check for mock user in localStorage
+  // 1. Check for JWT Bearer token (real auth - LocalStrong/MagicLink)
+  const token = localStorage.getItem('localToken');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  // 2. Check for mock user in localStorage (dev mode)
   const mockUserJson = localStorage.getItem('mockUser');
   if (mockUserJson) {
     try {
@@ -24,8 +29,8 @@ api.interceptors.request.use((config) => {
     } catch (e) {
       console.error('Failed to parse mock user for header', e);
     }
-  } else if (import.meta.env.DEV) {
-    // Fallback for Local Dev: If no mock user set
+  } else if (import.meta.env.DEV && !token) {
+    // Fallback for Local Dev: If no mock user and no real token set
     console.warn('Dev Mode: Injecting fallback X-Mock-User: Admin');
     config.headers['X-Mock-User'] = 'Admin';
   }

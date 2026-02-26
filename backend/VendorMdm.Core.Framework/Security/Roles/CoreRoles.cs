@@ -36,6 +36,22 @@ public static class CoreRoles
     /// </summary>
     public const string Auditor = "Auditor";
 
+    // ============================================
+    // App-Specific Roles (Vendor MDM Portal)
+    // ============================================
+
+    /// <summary>MDM Administrator - Full admin within MDM portal</summary>
+    public const string MDMAdmin = "MDMAdmin";
+
+    /// <summary>IT Administrator - IT operations and configuration</summary>
+    public const string ITAdmin = "ITAdmin";
+
+    /// <summary>Requestor - Can submit vendor requests</summary>
+    public const string Requestor = "Requestor";
+
+    /// <summary>Vendor - External vendor user</summary>
+    public const string Vendor = "Vendor";
+
     /// <summary>
     /// All core roles
     /// </summary>
@@ -46,7 +62,11 @@ public static class CoreRoles
         Viewer,
         Editor,
         Approver,
-        Auditor
+        Auditor,
+        MDMAdmin,
+        ITAdmin,
+        Requestor,
+        Vendor
     };
 
     /// <summary>

@@ -39,7 +39,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("invite")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "MDMAdmin,ITAdmin")]
     public async Task<IActionResult> InviteUser([FromBody] InviteRequest request)
     {
         // 1. Check if user exists
@@ -200,7 +200,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = $"User configured for {user.AuthMethod}, not Password." });
 
         // Verify Password
-        if (user.PasswordHash != HashPassword(request.Password)) return Unauthorized();
+        if (!VerifyPassword(request.Password, user.PasswordHash!)) return Unauthorized();
 
         if (user.TwoFactorEnabled)
         {
@@ -250,7 +250,7 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Password change is not available for this account type (SSO/MagicLink)." });
 
         // Verify Old Password
-        if (user.PasswordHash != HashPassword(request.OldPassword))
+        if (!VerifyPassword(request.OldPassword, user.PasswordHash!))
             return BadRequest(new { message = "Incorrect current password." });
 
         // Set New Password
@@ -262,7 +262,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("resend-invite")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Roles = "MDMAdmin,ITAdmin")]
     public async Task<IActionResult> ResendInvite([FromBody] ResendInviteRequest request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
@@ -300,9 +300,19 @@ public class AuthController : ControllerBase
 
     private string HashPassword(string password)
     {
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        var bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
-        return Convert.ToBase64String(bytes);
+        return BCrypt.Net.BCrypt.HashPassword(password, workFactor: 12);
+    }
+
+    private bool VerifyPassword(string password, string hash)
+    {
+        // Support legacy SHA256 hashes during migration
+        if (!hash.StartsWith("$2"))
+        {
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var bytes = sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
+            return Convert.ToBase64String(bytes) == hash;
+        }
+        return BCrypt.Net.BCrypt.Verify(password, hash);
     }
 
     private string GenerateJwtToken(User user)
@@ -320,17 +330,16 @@ public class AuthController : ControllerBase
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes("THIS_IS_A_DEV_SECRET_KEY_REPLACE_IN_PROD_12345"));
+        var jwtSecret = _configuration["Jwt:SecretKey"] ?? throw new InvalidOperationException("Jwt:SecretKey not configured. Set it in Key Vault or appsettings.");
+        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwtSecret));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        // SECURITY: 15-minute sliding expiration (Pattern 7: Zero-Trust Security)
-        // Tokens expire after 15 minutes of inactivity
-        // Frontend must refresh token before expiration
+        var tokenExpiryMinutes = int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var expMins) ? expMins : 120; // Default 2h per Golden Rule 7.A
         var token = new JwtSecurityToken(
             issuer: "VendorMDM",
             audience: "VendorMDM",
             claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(15), // Changed from AddDays(1) to AddMinutes(15)
+            expires: DateTime.UtcNow.AddMinutes(tokenExpiryMinutes),
             signingCredentials: creds
         );
 

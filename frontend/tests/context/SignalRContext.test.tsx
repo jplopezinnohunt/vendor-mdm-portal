@@ -1,6 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { SignalRProvider, useSignalRContext, ConnectionState } from '../../src/context/SignalRContext';
+import React from 'react';
+
+// Create stable mock functions OUTSIDE the factory to prevent infinite re-renders
+// (Each call to vi.fn() creates a new reference which would trigger useEffect)
+const mockGetToken = vi.fn().mockResolvedValue('mock-token');
+const mockLogin = vi.fn();
+const mockLogout = vi.fn();
+const mockMockLogin = vi.fn();
+const mockLoginLocal = vi.fn();
+
+// Mock AuthContext - must be before any imports that use it
+vi.mock('../../src/context/AuthContext', () => ({
+  useAuth: () => ({
+    isAuthenticated: true,
+    isLoading: false,
+    user: { id: 'test-user', role: 'Admin' },
+    getToken: mockGetToken,
+    login: mockLogin,
+    logout: mockLogout,
+    mockLogin: mockMockLogin,
+    loginLocal: mockLoginLocal,
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 describe('SignalRContext', () => {
   beforeEach(() => {
@@ -89,6 +113,12 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
+
       const callback = vi.fn();
       let unsubscribe: (() => void) | undefined;
 
@@ -105,6 +135,12 @@ describe('SignalRContext', () => {
       );
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
+
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
 
       const callback1 = vi.fn();
       const callback2 = vi.fn();
@@ -124,6 +160,12 @@ describe('SignalRContext', () => {
       );
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
+
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
 
       const callback = vi.fn();
       let unsubscribe: (() => void) | undefined;
@@ -194,9 +236,13 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
-      // Try to join immediately (before connection is established)
-      // Note: Due to mocking, connection may already be "Connected"
-      // This test verifies the function doesn't crash
+      // Wait for connection to be established (mock resolves immediately)
+      // Due to mocking, connection will be "Connected" - this test verifies
+      // the function doesn't crash regardless of state
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
 
       await act(async () => {
         await result.current.joinGroup('TestGroup');
@@ -276,6 +322,12 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
+
       interface StatusChangedEvent {
         entityType: string;
         entityId: string;
@@ -284,7 +336,7 @@ describe('SignalRContext', () => {
         timestamp: string;
       }
 
-      const callback = vi.fn<[StatusChangedEvent], void>();
+      const callback = vi.fn<(event: StatusChangedEvent) => void>();
 
       await act(async () => {
         result.current.subscribe<StatusChangedEvent>('StatusChanged', callback);
@@ -300,13 +352,19 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
+
       interface VendorCreatedEvent {
         vendorId: string;
         legalName: string;
         accountGroup: string;
       }
 
-      const callback = vi.fn<[VendorCreatedEvent], void>();
+      const callback = vi.fn<(event: VendorCreatedEvent) => void>();
 
       await act(async () => {
         result.current.subscribe<VendorCreatedEvent>('VendorCreated', callback);
@@ -322,13 +380,19 @@ describe('SignalRContext', () => {
 
       const { result } = renderHook(() => useSignalRContext(), { wrapper });
 
+      // Wait for connection to be established first
+      await waitFor(
+        () => expect(result.current.connectionState).toBe('Connected'),
+        { timeout: 2000 }
+      );
+
       interface NotificationEvent {
         title: string;
         message: string;
         link?: string;
       }
 
-      const callback = vi.fn<[NotificationEvent], void>();
+      const callback = vi.fn<(event: NotificationEvent) => void>();
 
       await act(async () => {
         result.current.subscribe<NotificationEvent>('Notification', callback);

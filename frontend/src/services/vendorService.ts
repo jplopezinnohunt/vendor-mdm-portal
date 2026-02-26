@@ -112,7 +112,7 @@ let MOCK_REQUESTS_DB: ChangeRequest[] = [
     id: 'cr-002',
     vendorId: '100450',
     requestType: RequestType.BankData,
-    status: ChangeRequestStatus.InReview,
+    status: ChangeRequestStatus.UnderReview,
     createdAt: '2023-10-25T09:15:00Z',
     updatedAt: '2023-10-25T09:15:00Z',
     items: [
@@ -139,7 +139,7 @@ let MOCK_REQUESTS_DB: ChangeRequest[] = [
     id: 'cr-003',
     vendorId: '200999',
     requestType: RequestType.General,
-    status: ChangeRequestStatus.New,
+    status: ChangeRequestStatus.Draft,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     items: [
@@ -163,7 +163,7 @@ export const VendorService = {
     // Strategy: Always try API first if we are in MOCK or FINAL mode, or pointing to a real URL
     try {
       // Logic: If explicitly MOCK/FINAL, or if we just want to try the connection
-      const response = await api.get(`/changerequest/${vendorId}`);
+      const response = await api.get(`/changerequest/vendor/${vendorId}`);
       const data = response.data;
 
       // Map Backend DTO to Frontend Type
@@ -227,7 +227,7 @@ export const VendorService = {
 
   getChangeRequests: async (): Promise<ChangeRequest[]> => {
     try {
-      const response = await api.get('/changerequest/vendor/100450');
+      const response = await api.get('/changerequest/vendor/100450'); // Uses new /changerequest/vendor/{id} route
       return response.data;
     } catch (error) {
       console.warn('Backend unreachable, using Mock Data for Change Requests', error);
@@ -256,7 +256,7 @@ export const VendorService = {
         id: backendReq.id,
         vendorId: backendReq.sapVendorId || '100450',
         requestType: RequestType.General,
-        status: ChangeRequestStatus.New,
+        status: ChangeRequestStatus.Draft,
         createdAt: backendReq.createdAt,
         updatedAt: backendReq.updatedAt || backendReq.createdAt,
         items: deltaItems,
@@ -269,7 +269,7 @@ export const VendorService = {
           id: `cr-${Date.now()}`,
           vendorId: '100450',
           requestType: RequestType.General,
-          status: ChangeRequestStatus.New,
+          status: ChangeRequestStatus.Draft,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           items: deltaItems,
@@ -289,8 +289,8 @@ export const VendorService = {
       return response.data.map((item: any) => ({
         id: item.id,
         companyName: item.companyName,
-        taxId: 'N/A', // Not in SQL summary
-        contactName: item.contactEmail,
+        taxId: 'N/A',
+        contactName: item.contactName || item.contactEmail,
         email: item.contactEmail,
         status: ApplicationStatus.Submitted,
         submittedAt: item.createdAt,

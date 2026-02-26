@@ -1,4 +1,5 @@
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VendorMdm.Api.Services;
 using VendorMdm.Core.Framework.Primitives;
@@ -17,6 +18,7 @@ namespace VendorMdm.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Route("api/[controller]")] // Backwards compatibility during migration
+[Authorize]
 public class VendorController : ControllerBase
 {
     private readonly IVendorService _service;

@@ -19,6 +19,9 @@ public class SqlDbContext : DbContext
     public DbSet<Event> Events { get; set; }
     public DbSet<EventParticipant> EventParticipants { get; set; }
 
+    // Document Registry (Global Taxonomy)
+    public DbSet<VendorDocument> VendorDocuments { get; set; }
+
     // Canonical Entities
     public DbSet<Vendor> Vendors { get; set; }
     public DbSet<VendorInvitationCanonical> VendorInvitationsCanonical { get; set; }
@@ -64,6 +67,9 @@ public class SqlDbContext : DbContext
 
         // Configure Outbox Pattern (EDA)
         ConfigureOutboxEvents(modelBuilder);
+
+        // Configure Document Registry (Global Taxonomy)
+        ConfigureVendorDocuments(modelBuilder);
 
         // Seed Workflow States
         modelBuilder.Entity<WorkflowState>().HasData(
@@ -376,6 +382,50 @@ public class SqlDbContext : DbContext
             // Index for correlation tracking
             entity.HasIndex(e => e.CorrelationId)
                 .HasDatabaseName("IX_OutboxEvent_Correlation");
+        });
+    }
+
+    /// <summary>
+    /// Configure VendorDocument entity (Document Registry with Global Taxonomy).
+    /// Indexes optimized for document lookup, expiry tracking, and vendor queries.
+    /// </summary>
+    private void ConfigureVendorDocuments(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<VendorDocument>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Index for vendor document lookups
+            entity.HasIndex(e => new { e.VendorId, e.CategoryCode, e.Status })
+                .HasDatabaseName("IX_VendorDocument_VendorCategory");
+
+            // Index for document type queries
+            entity.HasIndex(e => new { e.DocumentType, e.Status })
+                .HasDatabaseName("IX_VendorDocument_Type");
+
+            // Index for expiry tracking (compliance monitoring)
+            entity.HasIndex(e => new { e.ExpiryDate, e.Status })
+                .HasDatabaseName("IX_VendorDocument_Expiry");
+
+            // Index for country-specific document queries
+            entity.HasIndex(e => new { e.CountryCode, e.DocumentType })
+                .HasDatabaseName("IX_VendorDocument_Country");
+
+            // Index for soft delete (Pattern 11)
+            entity.HasIndex(e => e.IsDeleted)
+                .HasDatabaseName("IX_VendorDocument_IsDeleted");
+
+            // JSON column configurations
+            entity.Property(e => e.ExtractedData)
+                .IsRequired()
+                .HasDefaultValue("{}");
+
+            entity.Property(e => e.Attributes)
+                .IsRequired()
+                .HasDefaultValue("{}");
+
+            // Pattern 11: Global Query Filter - Exclude soft-deleted records
+            entity.HasQueryFilter(e => !e.IsDeleted);
         });
     }
 }

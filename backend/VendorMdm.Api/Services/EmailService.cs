@@ -79,22 +79,26 @@ public class EmailService : IEmailService
                 Notes = data.Notes
             };
 
-            // Try Azure Function HTTP endpoint first (for local dev)
-            if (_useLocalEmulators)
+            // Try Azure Function HTTP endpoint first (for local dev with running function)
+            var functionUrl = _configuration["EmailService:FunctionUrl"];
+            if (_useLocalEmulators && !string.IsNullOrEmpty(functionUrl))
             {
-                var functionUrl = _configuration["EmailService:FunctionUrl"] 
-                    ?? "http://localhost:7071/api/invitation/send-email";
-                
-                // For simulation purposes, we'll just log if function call fails
                 var (fnSuccess, fnError) = await TrySendViaFunctionAsync(functionUrl, data);
                 if (fnSuccess)
                 {
                     return (true, null);
                 }
+                _logger.LogWarning("Azure Function email endpoint unreachable at {Url}, falling back to SMTP", functionUrl);
             }
 
             // Try SMTP if configured
             var smtpEnabled = _configuration.GetValue<bool>("EmailService:Smtp:Enabled", false);
+            var useMockStr = _configuration["Services:Email:UseMock"];
+            if (!string.IsNullOrEmpty(useMockStr) && !bool.Parse(useMockStr))
+            {
+                smtpEnabled = true; // Force SMTP if explicitly set to real mode
+            }
+
             if (smtpEnabled)
             {
             var (smtpSuccess, smtpError) = await TrySendViaSmtpAsync(data, subject, isMfa, mfaCode, isMagicLink, magicLink);
@@ -216,7 +220,7 @@ public class EmailService : IEmailService
         try
         {
             var httpClient = _httpClientFactory.CreateClient("resilient");
-            httpClient.Timeout = TimeSpan.FromSeconds(10);
+            httpClient.Timeout = TimeSpan.FromSeconds(30);
 
             var request = new
             {
@@ -279,6 +283,21 @@ public class EmailService : IEmailService
                 ?? _configuration["EmailService__Smtp__Username"];
             var smtpPassword = _configuration["EmailService:Smtp:Password"] 
                 ?? _configuration["EmailService__Smtp__Password"];
+
+            // Support the unified "Services:Email" config API Key for SendGrid / SMTP
+            var serviceApiKey = _configuration["Services:Email:RealSettings:ApiKey"] 
+                ?? _configuration["Services__Email__RealSettings__ApiKey"];
+            
+            if (!string.IsNullOrEmpty(serviceApiKey) && serviceApiKey != "from-keyvault" && string.IsNullOrEmpty(smtpPassword))
+            {
+                smtpUsername = "apikey";
+                smtpPassword = serviceApiKey;
+                if (string.IsNullOrEmpty(smtpHost) || smtpHost == "YOUR_SMTP_HOST")
+                {
+                    smtpHost = "smtp.sendgrid.net"; // Default provider if ApiKey is provided without host
+                }
+            }
+
             var fromEmail = _configuration["EmailService:Smtp:FromEmail"] 
                 ?? _configuration["EmailService__Smtp__FromEmail"] 
                 ?? smtpUsername;
@@ -536,7 +555,7 @@ public class EmailService : IEmailService
             return;
         }
 
-        var baseUrl = data.BaseUrl ?? _configuration["App:BaseUrl"] ?? "http://localhost:3002";
+        var baseUrl = data.BaseUrl ?? _configuration["App:BaseUrl"] ?? "http://localhost:3000";
         var invitationLink = $"{baseUrl}/invitation/register/{data.Token}";
         var expiresAt = data.ExpiresAt.ToString("MMMM dd, yyyy 'at' hh:mm tt");
         var companyName = data.CompanyName ?? "Your Company";
