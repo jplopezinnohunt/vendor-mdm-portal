@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.7.0 | **Last Updated**: 2026-02-05 | **Standards**: 34 (6 categories)
+**Version**: 1.8.0 | **Last Updated**: 2026-02-26 | **Standards**: 34 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -1307,6 +1307,41 @@ git push origin main
 - ✅ Re-run validation
 - ✅ Push only when clean
 
+### 15.6 Post-Deployment Verification (MANDATORY)
+
+**Status**: 🔴 CRITICAL | **Source**: Incident 2026-02-26 (Reported success without verifying live site)
+
+**The Rule**: NEVER report a deployment as "successful" based solely on CI/CD pipeline status. Always verify the live endpoint returns HTTP 200.
+
+**After Every Push That Triggers Deployment**:
+
+```bash
+# 1. Wait for CI to complete
+gh run list --branch <branch> --limit 3
+
+# 2. Check ALL CI jobs pass (not just the workflow status)
+gh run view <run-id> --json jobs --jq '.jobs[] | "\(.name) | \(.conclusion)"'
+
+# 3. Verify live endpoints (MANDATORY - do not skip)
+curl -s -o /dev/null -w "HTTP %{http_code}" <SITE_URL>       # Must be 200
+curl -s -o /dev/null -w "HTTP %{http_code}" <API_URL>/api/health  # Must be 200
+```
+
+**Live Endpoints to Verify**:
+
+| Service | URL | Expected |
+|---------|-----|----------|
+| Frontend (SWA) | `https://thankful-field-0258f8110.3.azurestaticapps.net` | HTTP 200 |
+| Backend API (Dev) | `https://app-vendor-mdm-api-dev.azurewebsites.net/api/health` | HTTP 200 |
+| Backend API (Prod) | `https://app-vendor-mdm-api-prod.azurewebsites.net/api/health` | HTTP 200 |
+
+**Agent Behavior**:
+- ❌ NEVER say "deployed successfully" without `curl` verification
+- ❌ NEVER guess or construct URLs — always extract from deploy logs
+- ✅ Always `curl` the live site after deployment
+- ✅ Report the actual HTTP status code to the user
+- ✅ If verification fails, diagnose the root cause immediately
+
 ### 15.6 Reference
 
 Full checklist: [docs/deployment/strict-deployment-checklist.md](../../docs/deployment/strict-deployment-checklist.md)
@@ -1373,6 +1408,7 @@ Agents MUST audit themselves against the brain rules. No external enforcement ex
    - [ ] Section 10: Retrospective completed
    - [ ] Section 11: Critical thinking applied
    - [ ] Section 15: Build verified (if merge)
+   - [ ] Section 15.6: Live deployment verified with curl (if deploy)
 
 📚 Retrospective (Section 10):
    - Learnings identified: [Yes/No/None]
@@ -1398,6 +1434,7 @@ At key decision points, agent should pause and verify:
 | Before external integration | "Did I evaluate EDA requirements?" (Section 14) |
 | Before commit | "Did I run build checks?" (Section 8) |
 | Before merge | "Did I run post-merge builds?" (Section 15) |
+| After deployment | "Did I curl the live URL and get HTTP 200?" (Section 15.6) |
 | Before closing | "Did I complete retrospective?" (Section 10) |
 
 ### 16.5 Violation Response Protocol
