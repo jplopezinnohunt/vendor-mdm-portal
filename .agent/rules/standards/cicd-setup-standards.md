@@ -339,6 +339,26 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ---
 
+## 8. Environment Alignment (MANDATORY)
+
+**CRITICAL**: Every deployment MUST maintain alignment between frontend origins, backend CORS, and environment variables. See [deployment-environment-standard.md](deployment-environment-standard.md) for the full standard.
+
+### Key Rules
+
+1. **ASPNETCORE_ENVIRONMENT**: Must be set explicitly in every App Service deployment via `azure/appservice-settings@v1` (never rely on Azure defaults)
+2. **CORS Origins**: The Origin Registry in [deployment-environment-standard.md](deployment-environment-standard.md) is the source of truth. Every SWA URL MUST be in the backend CORS config.
+3. **Frontend Env Vars**: `.env.production` MUST set both `VITE_API_BASE_URL` (with `/api`) and `VITE_API_URL` (without `/api`)
+4. **Post-Deployment Verification**: Every backend deployment MUST include CORS preflight + SignalR negotiate checks
+
+### When Adding New Environments
+
+1. Update Origin Registry in `deployment-environment-standard.md`
+2. Add CORS origin in `Program.cs` → `GetAllowedOrigins()`
+3. Add App Settings step in `deploy-backend-api.yml`
+4. Create/update `.env.[environment]` in frontend
+
+---
+
 ## Next Steps
 
 1. ✅ Add all required secrets to GitHub
@@ -349,4 +369,4 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 ---
 
-**All workflows created! Ready for automated deployments.** 🚀
+**All workflows created! Ready for automated deployments.**
