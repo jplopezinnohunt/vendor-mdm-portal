@@ -90,6 +90,16 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
     return url;
   }, [hubUrl, isMockUser, user?.role]);
 
+  // Stable refs for functions that shouldn't trigger reconnection
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
+  const getFullUrlRef = useRef(getFullUrl);
+  getFullUrlRef.current = getFullUrl;
+
+  // Derive stable primitive values from user to avoid object-reference re-renders
+  const userRole = user?.role;
+  const userId = user?.id;
+
   // Initialize connection only when authenticated
   useEffect(() => {
     // Don't connect if still loading auth or not authenticated
@@ -100,23 +110,25 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
 
     // For mock users, validate we have a role
     if (isMockUser) {
-      if (!user?.role) {
+      if (!userRole) {
         console.error('[SignalR] Mock user detected but no role available');
         return;
       }
-      console.log('[SignalR] Connecting as mock user:', user.role);
+      console.log('[SignalR] Connecting as mock user:', userRole);
     } else {
       console.log('[SignalR] Real user detected, will use token authentication');
     }
 
-    const fullUrl = getFullUrl();
+    const fullUrl = getFullUrlRef.current();
 
     // Verify the URL has proper auth for mock users
     if (isMockUser && !fullUrl.includes('mockUser=')) {
       console.error('[SignalR] Mock user detected but URL is missing mockUser parameter');
-      console.error('[SignalR] URL:', fullUrl, 'user.role:', user?.role);
+      console.error('[SignalR] URL:', fullUrl, 'user.role:', userRole);
       return;
     }
+
+    let cancelled = false;
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(fullUrl, {
@@ -124,7 +136,7 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
         transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
         // Only use accessTokenFactory for real tokens (not mock users)
         accessTokenFactory: isMockUser ? undefined : async () => {
-          const token = await getToken();
+          const token = await getTokenRef.current();
           if (!token) {
             console.warn('[SignalR] No auth token available');
           }
@@ -163,12 +175,18 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
 
     // Start connection
     const startConnection = async () => {
+      if (cancelled) return;
       try {
         setConnectionState('Connecting');
         await connection.start();
+        if (cancelled) {
+          connection.stop();
+          return;
+        }
         console.log('[SignalR] Connected to', fullUrl);
         setConnectionState('Connected');
       } catch (error) {
+        if (cancelled) return;
         // Extract useful error information
         const errorMessage = error instanceof Error
           ? error.message
@@ -178,7 +196,7 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
         console.error('[SignalR] Connection failed:', errorMessage);
 
         // Check for auth-related failures
-        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized') || errorMessage.includes('negotiation')) {
+        if (errorMessage.includes('401') || errorMessage.includes('Unauthorized')) {
           console.error('[SignalR] Authentication failed. Check that mock user is set correctly or token is valid.');
           console.error('[SignalR] Mock user in localStorage:', localStorage.getItem('mockUser'));
           // Don't retry on auth failures - user needs to re-login
@@ -186,22 +204,31 @@ export const SignalRProvider: React.FC<SignalRProviderProps> = ({
           return;
         }
 
+        // "stopped during negotiation" is typically caused by cleanup, not a real error
+        if (errorMessage.includes('negotiation')) {
+          console.log('[SignalR] Connection stopped during negotiation (effect cleanup)');
+          return;
+        }
+
         setConnectionState('Disconnected');
         // Retry after 5 seconds for transient failures
-        setTimeout(startConnection, 5000);
+        if (!cancelled) {
+          setTimeout(startConnection, 5000);
+        }
       }
     };
 
     startConnection();
 
-    // Cleanup on unmount
+    // Cleanup on unmount or dependency change
     return () => {
+      cancelled = true;
       if (connectionRef.current) {
         connectionRef.current.stop();
         connectionRef.current = null;
       }
     };
-  }, [getFullUrl, isAuthenticated, isLoading, getToken, isMockUser, user]);
+  }, [isAuthenticated, isLoading, isMockUser, userRole, userId]);
 
   // Subscribe to events
   const subscribe = useCallback(<T,>(eventName: string, callback: (data: T) => void) => {
