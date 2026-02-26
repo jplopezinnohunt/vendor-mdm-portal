@@ -131,6 +131,11 @@ VITE_API_URL=https://app-vendor-mdm-api-dev.azurewebsites.net              # Wit
 **Cause**: `staticwebapp.config.json` has `/api/*` route with `allowedRoles: ["authenticated"]`
 **Fix**: Remove `/api/*` route rules when using an external backend
 
+### FM-4: App Service Disabled / Site Disabled (403)
+**Symptom**: `Deployment Failed, Error: Site Disabled (CODE: 403)`
+**Cause**: Azure App Service is stopped/disabled (cost management, manual stop, or Azure auto-stop on free/dev tiers)
+**Fix**: Workflow MUST check App Service state and start it before deploying. Use `az webapp show --query "state"` and `az webapp start` if not Running.
+
 ---
 
 ## Anti-Patterns
@@ -141,6 +146,7 @@ VITE_API_URL=https://app-vendor-mdm-api-dev.azurewebsites.net              # Wit
 - Hardcoding CORS origins in only one environment block when the same SWA is used across environments
 - Deploying backend without post-deployment CORS/SignalR verification
 - Assuming a passing health check means the app works (health check doesn't test CORS or auth)
+- Deploying to an App Service without first checking if it is running
 
 ---
 
