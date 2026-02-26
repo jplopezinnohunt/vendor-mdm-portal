@@ -118,11 +118,65 @@ jobs:
           echo "Health check attempt $i..."
           if curl -sf "$APP_URL/api/health" -o /dev/null; then
             echo "Health check passed on attempt $i"
-            exit 0
+            break
+          fi
+          if [ "$i" -eq 5 ]; then
+            echo "Health check did not pass after 5 attempts"
+            exit 1
           fi
         done
-        echo "Health check did not pass after 5 attempts (deployment may still be starting)"
-        exit 1
+
+    - name: API Smoke Tests (CRITICAL GATE)
+      run: |
+        APP_URL="https://${{ vars.AZURE_APP_SERVICE_NAME_DEV || 'app-vendor-mdm-api-dev' }}.azurewebsites.net"
+        FAILED=0
+
+        echo "🔍 POST-DEPLOY API SMOKE TESTS"
+        echo "================================"
+        echo "Testing critical API endpoints return non-500 responses..."
+        echo ""
+
+        # Test each critical endpoint with mock auth
+        declare -A ENDPOINTS
+        ENDPOINTS=(
+          ["/api/invitation/list"]="GET"
+          ["/api/vendor"]="GET"
+          ["/api/review/pending"]="GET"
+        )
+
+        for ENDPOINT in "${!ENDPOINTS[@]}"; do
+          METHOD="${ENDPOINTS[$ENDPOINT]}"
+          STATUS=$(curl -s -o /tmp/api-response.txt -w "%{http_code}" \
+            -X "$METHOD" \
+            -H "X-Mock-User: Admin" \
+            -H "Content-Type: application/json" \
+            "$APP_URL$ENDPOINT" 2>&1)
+
+          BODY=$(cat /tmp/api-response.txt 2>/dev/null | head -c 200)
+
+          if [ "$STATUS" -ge 500 ]; then
+            echo "❌ $METHOD $ENDPOINT → HTTP $STATUS"
+            echo "   Response: $BODY"
+            FAILED=$((FAILED + 1))
+          elif [ "$STATUS" -eq 401 ] || [ "$STATUS" -eq 403 ]; then
+            echo "⚠️  $METHOD $ENDPOINT → HTTP $STATUS (auth issue, not a schema problem)"
+          else
+            echo "✅ $METHOD $ENDPOINT → HTTP $STATUS"
+          fi
+        done
+
+        echo ""
+        if [ "$FAILED" -gt 0 ]; then
+          echo "🚨 API SMOKE TEST FAILURE: $FAILED endpoint(s) returned 500!"
+          echo ""
+          echo "This likely means the database schema is out of sync with the deployed code."
+          echo "Check: Are all EF migrations applied? Run deploy-database-migrations workflow."
+          echo ""
+          echo "DEPLOYMENT IS BROKEN - Manual intervention required."
+          exit 1
+        fi
+
+        echo "✅ All API endpoints responding correctly."
 
     - name: Verify CORS and SignalR
       run: |
@@ -173,33 +227,45 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Ensure App Service is running (Prod)
-      continue-on-error: true
+    - name: Verify Prod App Service Exists (Pre-flight)
+      id: prod-preflight
       run: |
         APP_NAME="${{ vars.AZURE_APP_SERVICE_NAME_PROD || 'app-vendor-mdm-api-prod' }}"
-        echo "Discovering resource group for $APP_NAME..."
+        echo "Checking if $APP_NAME exists..."
         RG=$(az webapp list --query "[?name=='$APP_NAME'].resourceGroup" -o tsv 2>/dev/null | head -1)
         if [ -z "$RG" ]; then
-          echo "WARNING: Could not find resource group for $APP_NAME - skipping state check"
-          exit 0
+          echo "🚨 App Service '$APP_NAME' does NOT exist in any resource group."
+          echo "Cannot deploy to a non-existent resource."
+          echo "Create the App Service first or check the AZURE_APP_SERVICE_NAME_PROD variable."
+          echo "exists=false" >> $GITHUB_OUTPUT
+          exit 1
         fi
-        echo "Found resource group: $RG"
+        echo "Found: $APP_NAME in resource group $RG"
+        echo "exists=true" >> $GITHUB_OUTPUT
+        echo "rg=$RG" >> $GITHUB_OUTPUT
+
+    - name: Ensure App Service is running (Prod)
+      if: steps.prod-preflight.outputs.exists == 'true'
+      run: |
+        APP_NAME="${{ vars.AZURE_APP_SERVICE_NAME_PROD || 'app-vendor-mdm-api-prod' }}"
+        RG="${{ steps.prod-preflight.outputs.rg }}"
         STATE=$(az webapp show --name "$APP_NAME" --resource-group "$RG" --query "state" -o tsv 2>/dev/null || echo "Unknown")
         echo "App Service state: $STATE"
         if [ "$STATE" != "Running" ]; then
           echo "Starting App Service..."
           az webapp start --name "$APP_NAME" --resource-group "$RG"
-          echo "Waiting for App Service to start..."
           sleep 15
         fi
 
     - name: Deploy to Azure App Service (Prod)
+      if: steps.prod-preflight.outputs.exists == 'true'
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ vars.AZURE_APP_SERVICE_NAME_PROD || 'app-vendor-mdm-api-prod' }}
         package: ./publish
 
     - name: Health check
+      if: steps.prod-preflight.outputs.exists == 'true'
       run: |
         APP_URL="https://${{ vars.AZURE_APP_SERVICE_NAME_PROD || 'app-vendor-mdm-api-prod' }}.azurewebsites.net"
         echo "Waiting for deployment to stabilize..."

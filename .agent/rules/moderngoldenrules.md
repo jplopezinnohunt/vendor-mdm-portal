@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.9.0 | **Last Updated**: 2026-02-26 | **Standards**: 35 (6 categories)
+**Version**: 1.10.0 | **Last Updated**: 2026-02-26 | **Standards**: 36 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -31,6 +31,7 @@ You are an expert agent co-developing this system. You MUST follow these rules u
 | [14](#14-event-driven-architecture-eda-governance) | EDA Governance | 🟠 IMPORTANT |
 | [15](#15-pre-merge-build-protocol) | Pre-Merge Build Protocol | 🔴 CRITICAL |
 | [16](#16-self-audit--enforcement-gates) | Self-Audit & Enforcement | 🔴 CRITICAL |
+| [17](#17-deployment-verification-protocol) | Deployment Verification | 🔴 CRITICAL |
 
 **Priority Legend**: 🔴 CRITICAL = Must follow always | 🟠 IMPORTANT = Must follow for new code | 🟡 STANDARD = Recommended
 
@@ -1535,6 +1536,59 @@ Next conversation benefits
 - Retrospectives completed consistently
 - Brain rules evolve from learnings
 - User trust in agent compliance increases
+
+---
+
+## 17. Deployment Verification Protocol
+
+**Priority**: 🔴 CRITICAL | **Added**: 2026-02-26 | **Trigger**: Every deployment
+
+### 17.1 Root Cause (Incident 2026-02-26)
+
+Migrations generated against SQLite (TEXT types) were deployed to SQL Server via a crude `sed` patch. The patch couldn't handle type conversions (e.g., `uniqueidentifier`→`TEXT`), causing 3 migrations to silently fail. Meanwhile, the C# model gained new columns (`IsDeleted`, `TenantId`, `DataResidencyRegion`) with no migration ever created. Result: **all API endpoints returning 500 on production**.
+
+### 17.2 Migration Generation Rules
+
+| Rule | Detail |
+|------|--------|
+| **Always use `--DataSourceMode Connected`** | Migrations MUST be generated against SQL Server, never SQLite |
+| **Verify snapshot types** | After `dotnet ef migrations add`, confirm snapshot uses `nvarchar`, `uniqueidentifier`, `datetime2` — NOT `TEXT` |
+| **No `TEXT` in migration files** | If any `.cs` migration file contains `type: "TEXT"`, it was generated wrong. Reject it. |
+| **One concern per migration** | Don't mix schema changes with type-system corrections |
+
+### 17.3 Pipeline Verification Gates (Mandatory)
+
+Every deployment pipeline MUST include these gates. A failure at any gate MUST block the deployment.
+
+#### Gate 1: Post-Migration Schema Sync Check
+After applying migrations, verify `__EFMigrationsHistory` contains ALL migrations that exist in code. If any are missing, **RED ALERT — block all further deployments**.
+
+#### Gate 2: Critical Column Verification
+After migration, query `INFORMATION_SCHEMA.COLUMNS` and verify that columns expected by the C# model actually exist in the database. Focus on recently-added columns.
+
+#### Gate 3: API Smoke Tests (Post-Deploy)
+After deploying the backend API, call critical endpoints (`/api/vendor`, `/api/invitation/list`, etc.) and verify they return non-500 responses. A 500 means the model-to-schema contract is broken.
+
+#### Gate 4: Pre-Flight Resource Check
+Before deploying to any environment, verify the target Azure resource (App Service, SQL Server) actually exists. Fail early with a clear error, don't let `azure/webapps-deploy` crash.
+
+### 17.4 Silent Failure Prevention
+
+| Anti-Pattern | Prevention |
+|---|---|
+| Migration applies but rows in `__EFMigrationsHistory` don't increase | Gate 1 catches this |
+| C# model has columns that don't exist in DB | Gate 2 catches this |
+| API returns 500 but health check passes | Gate 3 catches this (health endpoint doesn't query DB) |
+| Deploy to non-existent resource | Gate 4 catches this |
+| Pipeline shows "success" but SQL errors were swallowed | Use `-ErrorAction Stop` in PowerShell, `set -e` in bash |
+
+### 17.5 Agent Responsibility
+
+When the agent (AI) makes schema changes:
+1. **Generate migration immediately** — don't add model properties without a migration
+2. **Verify the migration file** — check for `TEXT` types, ensure only intended columns are changed
+3. **Test locally** — run `dotnet ef migrations script --idempotent` and inspect the SQL
+4. **Never speculate about deployments** — use Azure CLI, query the actual DB, hit the actual endpoints
 
 ---
 

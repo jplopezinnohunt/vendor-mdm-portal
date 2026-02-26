@@ -222,7 +222,126 @@ jobs:
             --name "GitHubRunner-${{ github.run_id }}"
         fi
     
-    - name: Verify Migration
+    - name: Verify Schema Sync (CRITICAL GATE)
       run: |
-        echo "Migration applied successfully to ${{ inputs.environment }}"
-        echo "Verify tables in Azure Portal SQL Query Editor"
+        export PATH="$PATH:/opt/mssql-tools18/bin"
+
+        TARGET_ENV="${{ inputs.environment }}"
+        if [ -z "$TARGET_ENV" ]; then TARGET_ENV="dev"; fi
+        if [ "$TARGET_ENV" == "dev" ]; then SQL_SERVER="sql-vendor-mdm-dev"; else SQL_SERVER="sql-vendor-mdm-prod"; fi
+        DATABASE="VendorMdmDb"
+
+        echo "🔍 SCHEMA VERIFICATION: Checking all expected migrations are applied..."
+
+        # Step 1: Get expected migrations from code
+        cd backend/VendorMdm.Api
+        EXPECTED_MIGRATIONS=$(ls -1 Migrations/*.cs 2>/dev/null | grep -oP '\d{14}_\w+' | sort -u)
+        cd ../..
+
+        # Step 2: Get applied migrations from Azure SQL
+        pwsh -Command "
+          \$token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
+
+          if (-not (Get-Module -ListAvailable -Name SqlServer)) {
+            Install-Module -Name SqlServer -Force -AllowClobber -Scope CurrentUser
+          }
+
+          \$result = Invoke-Sqlcmd -ServerInstance '${SQL_SERVER}.database.windows.net' \`\`
+            -Database '$DATABASE' \`\`
+            -AccessToken \$token \`\`
+            -Query 'SELECT MigrationId FROM [__EFMigrationsHistory] ORDER BY MigrationId' \`\`
+            -ErrorAction Stop
+
+          \$applied = \$result | ForEach-Object { \$_.MigrationId }
+          \$applied | Out-File -FilePath 'applied-migrations.txt'
+          Write-Host 'Applied migrations:'
+          \$applied | ForEach-Object { Write-Host \"  ✅ \$_\" }
+        "
+
+        echo ""
+        echo "=== MIGRATION SYNC CHECK ==="
+        FAILED=0
+
+        # Step 3: Compare expected vs applied
+        while IFS= read -r migration; do
+          if ! grep -q "$migration" applied-migrations.txt 2>/dev/null; then
+            echo "❌ MISSING: $migration is in code but NOT in database!"
+            FAILED=1
+          fi
+        done <<< "$EXPECTED_MIGRATIONS"
+
+        if [ "$FAILED" -eq 1 ]; then
+          echo ""
+          echo "🚨 SCHEMA SYNC FAILURE: Database is missing migrations that exist in code."
+          echo "This means the API deployment will produce 500 errors."
+          echo "DO NOT deploy the backend API until this is resolved."
+          echo ""
+          echo "Applied migrations in DB:"
+          cat applied-migrations.txt
+          exit 1
+        fi
+
+        echo "✅ All migrations in code are applied to the database."
+
+    - name: Verify Critical Columns Exist (CRITICAL GATE)
+      run: |
+        export PATH="$PATH:/opt/mssql-tools18/bin"
+
+        TARGET_ENV="${{ inputs.environment }}"
+        if [ -z "$TARGET_ENV" ]; then TARGET_ENV="dev"; fi
+        if [ "$TARGET_ENV" == "dev" ]; then SQL_SERVER="sql-vendor-mdm-dev"; else SQL_SERVER="sql-vendor-mdm-prod"; fi
+        DATABASE="VendorMdmDb"
+
+        echo "🔍 COLUMN VERIFICATION: Checking critical columns exist in database..."
+
+        pwsh -Command "
+          \$token = az account get-access-token --resource https://database.windows.net/ --query accessToken -o tsv
+
+          if (-not (Get-Module -ListAvailable -Name SqlServer)) {
+            Install-Module -Name SqlServer -Force -AllowClobber -Scope CurrentUser
+          }
+
+          # Define critical columns that MUST exist (model-to-schema contract)
+          \$checks = @(
+            @{Table='Vendors'; Column='IsDeleted'},
+            @{Table='Vendors'; Column='DeletedAt'},
+            @{Table='Vendors'; Column='DeletedBy'},
+            @{Table='Vendors'; Column='TenantId'},
+            @{Table='Vendors'; Column='DataResidencyRegion'},
+            @{Table='VendorInvitationsCanonical'; Column='IsDeleted'},
+            @{Table='ChangeRequestsCanonical'; Column='IsDeleted'},
+            @{Table='Employees'; Column='IsDeleted'},
+            @{Table='Users'; Column='IsDeleted'},
+            @{Table='AuditLogs'; Column='Id'}
+          )
+
+          \$failed = 0
+          foreach (\$check in \$checks) {
+            \$query = \"SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '\$(\$check.Table)' AND COLUMN_NAME = '\$(\$check.Column)'\"
+            \$result = Invoke-Sqlcmd -ServerInstance '${SQL_SERVER}.database.windows.net' \`\`
+              -Database '$DATABASE' \`\`
+              -AccessToken \$token \`\`
+              -Query \$query \`\`
+              -ErrorAction Stop
+
+            if (\$result.cnt -eq 0) {
+              Write-Host \"❌ MISSING: \$(\$check.Table).\$(\$check.Column) does not exist!\"
+              \$failed++
+            } else {
+              Write-Host \"✅ \$(\$check.Table).\$(\$check.Column) exists\"
+            }
+          }
+
+          if (\$failed -gt 0) {
+            Write-Host ''
+            Write-Host '🚨 SCHEMA VERIFICATION FAILED: \$failed critical column(s) missing!'
+            Write-Host 'The EF model expects these columns. API will return 500 errors.'
+            Write-Host 'DO NOT deploy backend until this is fixed.'
+            exit 1
+          }
+
+          Write-Host ''
+          Write-Host '✅ All critical columns verified in database.'
+        "
+
+        echo "✅ Post-migration verification complete."
