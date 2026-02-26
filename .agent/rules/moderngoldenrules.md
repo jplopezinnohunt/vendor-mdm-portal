@@ -4,7 +4,7 @@ trigger: always_on
 
 # Rules Brain: Modern Golden Rules (Master Authority)
 
-**Version**: 1.8.0 | **Last Updated**: 2026-02-26 | **Standards**: 34 (6 categories)
+**Version**: 1.9.0 | **Last Updated**: 2026-02-26 | **Standards**: 35 (6 categories)
 
 You are an expert agent co-developing this system. You MUST follow these rules unconditionally. This document is your **Executive Directive**.
 
@@ -238,7 +238,7 @@ You MUST load and apply the relevant standard based on task type.
 | Soft Delete | [soft-delete-standard.md](standards/soft-delete-standard.md) |
 | GDPR & PII | [gdpr-pii-standard.md](standards/gdpr-pii-standard.md) |
 
-### Category 4: Integration & Infrastructure (5 standards)
+### Category 4: Integration & Infrastructure (6 standards)
 | Pattern | Standard |
 |---------|----------|
 | SAP Integration | [sap-integration-standard.md](standards/sap-integration-standard.md) |
@@ -246,6 +246,7 @@ You MUST load and apply the relevant standard based on task type.
 | Email Service | [email-service-standard.md](standards/email-service-standard.md) |
 | Multi-Tenancy | [multi-tenancy-standard.md](standards/multi-tenancy-standard.md) |
 | Data Residency | [data-residency-standard.md](standards/data-residency-standard.md) |
+| Deployment Environment | [deployment-environment-standard.md](standards/deployment-environment-standard.md) |
 
 ### Category 5: Operations & Quality (7 standards)
 | Pattern | Standard |
@@ -306,6 +307,10 @@ What are you implementing?
 │
 ├─► Testing?
 │   └─► Read: testing-standard.md
+│
+├─► Deployment / CORS / SignalR / environment issue?
+│   ├─► Read: deployment-environment-standard.md
+│   └─► Read: cicd-setup-standards.md
 │
 └─► Not sure?
     └─► Start with: hexagonal-architecture-standards.md

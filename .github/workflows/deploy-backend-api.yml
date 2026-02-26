@@ -73,6 +73,16 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Configure App Settings (Dev)
+      uses: azure/appservice-settings@v1
+      with:
+        app-name: ${{ vars.AZURE_APP_SERVICE_NAME_DEV || 'app-vendor-mdm-api-dev' }}
+        app-settings-json: |
+          [
+            { "name": "ASPNETCORE_ENVIRONMENT", "value": "Development" },
+            { "name": "App__BaseUrl", "value": "https://thankful-field-0258f8110.3.azurestaticapps.net" }
+          ]
+
     - name: Deploy to Azure App Service (Dev)
       uses: azure/webapps-deploy@v3
       with:
@@ -93,6 +103,35 @@ jobs:
         done
         echo "Health check did not pass after 5 attempts (deployment may still be starting)"
         exit 1
+
+    - name: Verify CORS and SignalR
+      run: |
+        APP_URL="https://${{ vars.AZURE_APP_SERVICE_NAME_DEV || 'app-vendor-mdm-api-dev' }}.azurewebsites.net"
+        SWA_ORIGIN="https://thankful-field-0258f8110.3.azurestaticapps.net"
+        echo "=== CORS Preflight Check ==="
+        CORS_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+          -X OPTIONS "$APP_URL/api/health" \
+          -H "Origin: $SWA_ORIGIN" \
+          -H "Access-Control-Request-Method: GET" \
+          -H "Access-Control-Request-Headers: Content-Type")
+        echo "CORS preflight status: $CORS_RESPONSE"
+        if [ "$CORS_RESPONSE" -ne 204 ] && [ "$CORS_RESPONSE" -ne 200 ]; then
+          echo "WARNING: CORS preflight returned $CORS_RESPONSE (expected 200/204)"
+        fi
+        echo "=== CORS Headers Check ==="
+        curl -s -I "$APP_URL/api/health" \
+          -H "Origin: $SWA_ORIGIN" | grep -i "access-control" || echo "WARNING: No CORS headers in response"
+        echo "=== SignalR Negotiate Check ==="
+        SIGNALR_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          -X POST "$APP_URL/hubs/events/negotiate?negotiateVersion=1&mockUser=Requestor" \
+          -H "Origin: $SWA_ORIGIN" \
+          -H "Content-Type: application/json")
+        echo "SignalR negotiate status: $SIGNALR_STATUS"
+        if [ "$SIGNALR_STATUS" -eq 405 ]; then
+          echo "ERROR: SignalR negotiate returned 405 - check ASPNETCORE_ENVIRONMENT and MockAuth"
+          exit 1
+        fi
+        echo "Post-deployment verification complete"
 
   deploy-prod:
     needs: build

@@ -283,6 +283,7 @@ string[] GetAllowedOrigins(IConfiguration config, IWebHostEnvironment env)
         return new[]
         {
             baseUrl ?? "https://purple-moss-066604e03.4.azurestaticapps.net",
+            "https://thankful-field-0258f8110.3.azurestaticapps.net",
             "http://localhost:3000",
             "http://localhost:5173"
         };
@@ -298,6 +299,7 @@ string[] GetAllowedOrigins(IConfiguration config, IWebHostEnvironment env)
             "http://localhost:3003",
             "http://localhost:5173",
             "http://localhost:5174",
+            "https://thankful-field-0258f8110.3.azurestaticapps.net",
             "https://victorious-water-095da360f.5.azurestaticapps.net",
             "https://purple-moss-066604e03.4.azurestaticapps.net",
             "https://stvendormdmdev.blob.core.windows.net"
